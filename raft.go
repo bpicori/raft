@@ -3,9 +3,6 @@ package raft
 import (
 	"fmt"
 	"math/rand"
-	"net"
-	"os"
-	"strings"
 	"time"
 )
 
@@ -35,21 +32,7 @@ type RequestVoteReply struct {
 	VoteGranted bool // true means candidate received vote
 }
 
-type ServerConfig struct {
-	ID   string
-	Addr string
-}
-
-type Config struct {
-	Servers    map[string]ServerConfig
-	SelfID     string
-	SelfServer ServerConfig
-}
-
 type Server struct {
-	// Server Port
-	port int
-
 	// Persistent state on all servers
 	currentTerm int
 	votedFor    int
@@ -74,11 +57,11 @@ type Server struct {
 }
 
 // NewServer creates a new server with a random election timeout.
-func NewServer() (*Server, error) {
+func NewServer() *Server {
 	config, err := LoadConfig()
 
 	if err != nil {
-		return &Server{}, err
+		panic(fmt.Sprintf("Error loading config %v", err))
 	}
 
 	s := &Server{
@@ -86,49 +69,10 @@ func NewServer() (*Server, error) {
 		state:           Follower,
 		electionTimeout: time.NewTimer(randomTimeout()),
 	}
-	return s, nil
-}
 
-func LoadConfig() (Config, error) {
-	serversStr := os.Getenv("RAFT_SERVERS")
-	currentSrv := os.Getenv("CURRENT_SERVER")
+	go StartServer(s)
 
-	if serversStr == "" || currentSrv == "" {
-		return Config{}, fmt.Errorf("RAFT_SERVERS and CURRENT_SERVER must be set")
-	}
-
-	servers := make(map[string]ServerConfig)
-	var selfID string
-	var selfServer ServerConfig
-
-	for _, addr := range strings.Split(serversStr, ",") {
-		host, port, err := net.SplitHostPort(addr)
-
-		if err != nil {
-			return Config{}, fmt.Errorf("invalid address format: %s", addr)
-		}
-
-		id := fmt.Sprintf("%s:%s", host, port)
-		server := ServerConfig{ID: id, Addr: addr}
-		servers[id] = server
-
-		if addr == currentSrv {
-			selfID = id
-			selfServer = server
-		}
-
-	}
-
-	if selfID == "" {
-		return Config{}, fmt.Errorf("current server %s not found in RAFT_SERVERS", currentSrv)
-	}
-
-	return Config{
-		Servers:    servers,
-		SelfID:     selfID,
-		SelfServer: selfServer,
-	}, nil
-
+	return s
 }
 
 // RequestVote is called by candidates to gather votes.
