@@ -2,7 +2,7 @@ package raft
 
 import (
 	"fmt"
-	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -19,20 +19,10 @@ type LogEntry struct {
 	Command interface{} // any command
 }
 
-type RequestVoteArgs struct {
-	server       *Server
-	Term         int
-	CandidateId  int
-	LastLogIndex int
-	LastLogTerm  int
-}
-
-type RequestVoteReply struct {
-	Term        int  // currentTerm, for candidate to update itself
-	VoteGranted bool // true means candidate received vote
-}
-
 type Server struct {
+	// add a mutex to access server
+	mu sync.Mutex
+
 	// Persistent state on all servers
 	currentTerm int
 	votedFor    int
@@ -54,6 +44,7 @@ type Server struct {
 	// Channels for communication
 	electionTimeout *time.Timer
 	heartbeat       chan bool
+	voteChannel     chan RequestResponse[RequestVoteArgs, RequestVoteReply]
 }
 
 // NewServer creates a new server with a random election timeout.
@@ -67,58 +58,80 @@ func NewServer() *Server {
 	s := &Server{
 		config:          config,
 		state:           Follower,
-		electionTimeout: time.NewTimer(randomTimeout()),
+		electionTimeout: time.NewTimer(randomTimeout(150, 300)),
+		voteChannel:     make(chan RequestResponse[RequestVoteArgs, RequestVoteReply]),
 	}
 
 	go StartServer(s)
+	go RunStateMachine(s)
 
 	return s
 }
 
-// RequestVote is called by candidates to gather votes.
-func (s *Server) RequestVote(args *RequestVoteArgs) (*RequestVoteReply, error) {
-	// TODO: Implement RequestVote RPC.
-
-	return nil, nil
-
-}
-
-// run is the main event loop for the server.
-func (s *Server) run() {
+func RunStateMachine(s *Server) {
 	for {
-		switch s.state {
-		case Follower:
-			s.runFollower()
+		select {
+		case rr := <-s.voteChannel:
 
-		case Candidate:
-			s.runCandidate()
+			args := rr.Request
 
-		case Leader:
-			s.runLeader()
+			if args.Term < s.currentTerm {
+				rr.Response = RequestVoteReply{
+					Term:        s.currentTerm,
+					VoteGranted: false,
+				}
+				close(rr.Done)
+				continue
+			}
+
+			rr.Response = RequestVoteReply{
+				Term:        s.currentTerm,
+				VoteGranted: false,
+			}
+			close(rr.Done)
 		}
 	}
 }
 
-func (s *Server) runFollower() {
-	select {
-	case <-s.electionTimeout.C:
-		s.state = Candidate
-	}
-}
+// RequestVote is called by candidates to gather votes.
+// func (s *Server) RequestVote(args *RequestVoteArgs) (*RequestVoteReply, error) {
+// 	// TODO: Implement RequestVote RPC.
 
-func (s *Server) runCandidate() {
+// 	return nil, nil
 
-	s.currentTerm = s.currentTerm + 1
+// }
 
-	// send RequestVote RPCs to all other servers
+// // run is the main event loop for the server.
+// func (s *Server) run() {
+// 	for {
+// 		switch s.state {
+// 		case Follower:
+// 			s.runFollower()
 
-}
+// 		case Candidate:
+// 			s.runCandidate()
 
-func (s *Server) runLeader() {
-	// TODO: Implement the leader state.
-}
+// 		case Leader:
+// 			s.runLeader()
+// 		}
+// 	}
+// }
 
-// randomTimeout returns a random number between 150ms and 300ms.
-func randomTimeout() time.Duration {
-	return time.Duration(150+rand.Intn(150)) * time.Microsecond
-}
+// func (s *Server) runFollower() {
+// 	select {
+// 	case <-s.electionTimeout.C:
+// 		s.state = Candidate
+// 	}
+// }
+
+// func (s *Server) runCandidate() {
+
+// 	s.currentTerm = s.currentTerm + 1
+
+// 	// send RequestVote RPCs to all other servers
+
+// }
+
+// func (s *Server) runLeader() {
+// 	// TODO: Implement the leader state.
+// }
