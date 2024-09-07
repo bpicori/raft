@@ -2,8 +2,7 @@ package raft
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
+	"log/slog"
 	"net"
 )
 
@@ -30,16 +29,16 @@ func handleConnection(conn net.Conn, server *Server) {
 	defer conn.Close()
 
 	decoder := json.NewDecoder(conn)
-	// encoder := json.NewEncoder(conn)
+	encoder := json.NewEncoder(conn)
 
 	for {
 		var rpc RaftRPC
 		if err := decoder.Decode(&rpc); err != nil {
-			fmt.Println("Error decoding RPC:", err)
+			slog.Error("Error decoding RPC:", "error", err)
 			return
 		}
 
-		fmt.Printf("Received RPC: %+v\n", rpc)
+		slog.Debug("Received RPC", "body", rpc)
 
 		switch rpc.Type {
 		case "RequestVote":
@@ -58,8 +57,7 @@ func handleConnection(conn net.Conn, server *Server) {
 
 				server.voteChannel <- rr
 				<-rr.Done
-				fmt.Println("Sending RequestVoteReply RPC")
-				json.NewEncoder(conn).Encode(rr.Response)
+				encoder.Encode(rr.Response)
 			}
 		}
 
@@ -67,25 +65,39 @@ func handleConnection(conn net.Conn, server *Server) {
 
 }
 
-func StartServer(server *Server) {
-	listener, err := net.Listen("tcp", server.config.SelfServer.Addr)
+func (s *Server) RunTcp() {
+	defer s.wg.Done()
+
+	listener, err := net.Listen("tcp", s.config.SelfServer.Addr)
 
 	if err != nil {
+		slog.Error("Error starting TCP server", "error", err)
 		panic("cannot start tcp server")
 	}
 
 	defer listener.Close()
 
-	log.Printf("Server listening on %s", server.config.SelfServer.Addr)
+	go func() {
+		<-s.ctx.Done()
+		listener.Close()
+	}()
+
+	slog.Info("Server started", "address", s.config.SelfServer.Addr)
 
 	for {
-		conn, err := listener.Accept()
+		select {
+		case <-s.ctx.Done():
+			slog.Info("Shutting down TCP server")
+			return
+		default:
+			conn, err := listener.Accept()
 
-		if err != nil {
-			log.Println("Error accepting connection:", err)
-			continue
+			if err != nil {
+				slog.Info("TCP server stopped accepting connections", "error", err)
+				return
+			}
+
+			go handleConnection(conn, s)
 		}
-
-		go handleConnection(conn, server)
 	}
 }

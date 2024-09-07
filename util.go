@@ -1,8 +1,15 @@
 package raft
 
 import (
+	"log"
 	"math/rand"
 	"time"
+)
+
+var (
+	WarningLogger *log.Logger
+	InfoLogger    *log.Logger
+	ErrorLogger   *log.Logger
 )
 
 type RequestResponse[Req, Resp any] struct {

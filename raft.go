@@ -1,7 +1,9 @@
 package raft
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -45,6 +47,11 @@ type Server struct {
 	electionTimeout *time.Timer
 	heartbeat       chan bool
 	voteChannel     chan RequestResponse[RequestVoteArgs, RequestVoteReply]
+
+	// Server lifecycle
+	wg     sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // NewServer creates a new server with a random election timeout.
@@ -55,22 +62,42 @@ func NewServer() *Server {
 		panic(fmt.Sprintf("Error loading config %v", err))
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	s := &Server{
 		config:          config,
 		state:           Follower,
 		electionTimeout: time.NewTimer(randomTimeout(150, 300)),
 		voteChannel:     make(chan RequestResponse[RequestVoteArgs, RequestVoteReply]),
+		ctx:             ctx,
+		cancel:          cancel,
 	}
-
-	go StartServer(s)
-	go RunStateMachine(s)
 
 	return s
 }
 
-func RunStateMachine(s *Server) {
+func (s *Server) Start() error {
+
+	s.wg.Add(2)
+	go s.RunTcp()
+	go s.RunStateMachine()
+
+	return nil
+}
+
+func (s *Server) Stop() {
+	s.cancel()
+	s.wg.Wait()
+}
+
+func (s *Server) RunStateMachine() {
+	defer s.wg.Done()
+
 	for {
 		select {
+		case <-s.ctx.Done():
+			slog.Info("Shutting down state machine")
+			return
 		case rr := <-s.voteChannel:
 
 			args := rr.Request
