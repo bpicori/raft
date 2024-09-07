@@ -2,6 +2,7 @@ package main
 
 import (
 	"bpicori/raft"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -23,6 +24,31 @@ func init() {
 }
 
 func main() {
+	var (
+		raftServers   string
+		currentServer string
+	)
+
+	flag.StringVar(&raftServers, "servers", "", "Comma-separated list of Raft server addresses")
+	flag.StringVar(&currentServer, "current", "", "Address of the current server")
+	flag.Parse()
+
+	// If not provided try to get from environment variables
+	if raftServers == "" {
+		raftServers = os.Getenv("RAFT_SERVERS")
+	}
+	if currentServer == "" {
+		currentServer = os.Getenv("CURRENT_SERVER")
+	}
+
+	if raftServers == "" || currentServer == "" {
+		slog.Error("Missing required flags")
+		os.Exit(1)
+	}
+
+	os.Setenv("RAFT_SERVERS", raftServers)
+	os.Setenv("CURRENT_SERVER", currentServer)
+
 	server := raft.NewServer()
 
 	if err := server.Start(); err != nil {
