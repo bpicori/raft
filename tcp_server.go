@@ -57,6 +57,7 @@ func handleConnection(conn net.Conn, server *Server) {
 
 				server.voteChannel <- rr
 				<-rr.Done
+				slog.Debug("Sending RequestVote reply", "reply", rr.Response)
 				encoder.Encode(rr.Response)
 			}
 		}
@@ -79,6 +80,7 @@ func (s *Server) RunTcp() {
 
 	go func() {
 		<-s.ctx.Done()
+		slog.Info("Gracefully shutting down TCP server")
 		listener.Close()
 	}()
 

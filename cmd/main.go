@@ -25,12 +25,14 @@ func init() {
 
 func main() {
 	var (
-		raftServers   string
-		currentServer string
+		raftServers    string
+		currentServer  string
+		persistentPath string
 	)
 
 	flag.StringVar(&raftServers, "servers", "", "Comma-separated list of Raft server addresses")
 	flag.StringVar(&currentServer, "current", "", "Address of the current server")
+	flag.StringVar(&persistentPath, "persistent-path", "", "Path to store persistent state")
 	flag.Parse()
 
 	// If not provided try to get from environment variables
@@ -41,13 +43,32 @@ func main() {
 		currentServer = os.Getenv("CURRENT_SERVER")
 	}
 
-	if raftServers == "" || currentServer == "" {
-		slog.Error("Missing required flags")
+	if persistentPath == "" {
+		persistentPath = os.Getenv("PERSISTENT_FILE_PATH")
+	}
+
+	if raftServers == "" || currentServer == "" || persistentPath == "" {
+		// slog.Error("Missing required flags")
+		// detect the missing flags
+		missingFlags := []string{}
+		if raftServers == "" {
+			missingFlags = append(missingFlags, "servers")
+		}
+		if currentServer == "" {
+			missingFlags = append(missingFlags, "current")
+		}
+		if persistentPath == "" {
+			missingFlags = append(missingFlags, "persistent-path")
+		}
+
+		slog.Error("Missing required flags", "flags", missingFlags)
+
 		os.Exit(1)
 	}
 
 	os.Setenv("RAFT_SERVERS", raftServers)
 	os.Setenv("CURRENT_SERVER", currentServer)
+	os.Setenv("PERSISTENT_FILE_PATH", persistentPath)
 
 	server := raft.NewServer()
 

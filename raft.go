@@ -2,18 +2,20 @@ package raft
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/rpc"
+	"os"
 	"sync"
 	"time"
 )
 
-type ServerState int
+type Role int
 
 const (
-	Follower ServerState = iota
+	Follower Role = iota
 	Candidate
 	Leader
 )
@@ -23,25 +25,47 @@ type LogEntry struct {
 	Command interface{} // any command
 }
 
+type ServerState struct {
+	CurrentTerm  int        `json:"currentTerm"`
+	VotedFor     string     `json:"votedFor"`
+	LogEntry     []LogEntry `json:"logEntry"`
+	CommitLength int        `json:"commitLength"`
+}
+
+func (s *ServerState) SaveToFile(serverId string, path string) error {
+	fileName := fmt.Sprintf("%s.json", serverId)
+	filePath := fmt.Sprintf("%s/%s", path, fileName)
+
+	slog.Info("Saving state to file", "path", filePath)
+
+	// Check if file already exists and overwrite
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(s)
+}
+
 type Server struct {
 	// mu sync.Mutex
 	mu sync.RWMutex
 
 	// Persistent state on all servers
-	currentTerm int
-	votedFor    string
-	logEntry    []LogEntry
+	currentTerm  int        // latest term server has seen
+	votedFor     string     // candidateId that received vote in current term
+	logEntry     []LogEntry // log entries
+	commitLength int        // index of highest log entry known to be committed
 
 	// Volatile state on all servers
-	commitIndex int
-	lastApplied int
-
-	// Volatile state on leaders
-	nextIndex  []int
-	matchIndex []int
-
-	// the current server state
-	state ServerState
+	currentRole   Role
+	currentLeader string
+	votesReceived map[string]bool
+	sentLength    map[string]int
+	ackLength     map[string]int
 
 	// cluster configuration
 	config Config
@@ -67,11 +91,22 @@ func NewServer() *Server {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	currentTerm, votedFor, logEntry, commitLength := LoadPersistedState(config)
+
 	s := &Server{
-		config:          config,
-		state:           Follower,
-		currentTerm:     0,
-		votedFor:        config.SelfID,
+		config: config,
+
+		currentTerm:  currentTerm,  // should be fetched from persistent storage
+		votedFor:     votedFor,     // should be fetched from persistent storage
+		logEntry:     logEntry,     // should be fetched from persistent storage
+		commitLength: commitLength, // should be fetched from persistent storage
+
+		currentRole:   Follower,
+		currentLeader: "",
+		votesReceived: make(map[string]bool),
+		sentLength:    make(map[string]int),
+		ackLength:     make(map[string]int),
+
 		electionTimeout: time.NewTimer(randomTimeout(150, 300)),
 		voteChannel:     make(chan RequestResponse[RequestVoteArgs, RequestVoteReply]),
 		ctx:             ctx,
@@ -92,7 +127,42 @@ func (s *Server) Start() error {
 
 func (s *Server) Stop() {
 	s.cancel()
+	s.PersistState()
 	s.wg.Wait()
+}
+
+func (s *Server) PersistState() {
+	persistedState := ServerState{
+		CurrentTerm:  s.currentTerm,
+		VotedFor:     s.votedFor,
+		LogEntry:     s.logEntry,
+		CommitLength: s.commitLength,
+	}
+
+	err := persistedState.SaveToFile(s.config.SelfID, s.config.PersistentFilePath)
+	if err != nil {
+		fmt.Printf("Error saving state: %v\n", err)
+	}
+}
+
+func LoadPersistedState(config Config) (currentTerm int, votedFor string, logEntry []LogEntry, commitLength int) {
+	fileName := fmt.Sprintf("%s.json", config.SelfID)
+	filePath := fmt.Sprintf("%s/%s", config.PersistentFilePath, fileName)
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return 0, "", nil, 0
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	var state ServerState
+	err = decoder.Decode(&state)
+	if err != nil {
+		return 0, "", nil, 0
+	}
+
+	return state.CurrentTerm, state.VotedFor, state.LogEntry, state.CommitLength
 }
 
 func (s *Server) RunStateMachine() {
@@ -101,12 +171,10 @@ func (s *Server) RunStateMachine() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			slog.Info("Shutting down state machine")
+			slog.Info("Gracefully shutting down state machine")
 			return
-		case <-s.heartbeat:
-			slog.Info("Received heartbeat")
 		default:
-			switch s.state {
+			switch s.currentRole {
 			case Follower:
 				slog.Info("Running Follower")
 				s.runFollower()
@@ -138,9 +206,10 @@ func (s *Server) runFollower() {
 
 func (s *Server) startElection() {
 	s.mu.Lock()
-	s.state = Candidate
-	s.currentTerm++
+	s.currentRole = Candidate
+	s.currentTerm += 1
 	s.votedFor = s.config.SelfID
+	s.votesReceived[s.config.SelfID] = true
 	s.mu.Unlock()
 
 	slog.Info("Starting election", "term", s.currentTerm)
@@ -152,76 +221,76 @@ func (s *Server) runCandidate() {
 	majority := len(s.config.Servers)/2 + 1
 	slog.Info("Running candidate", "votes", votes, "majority", majority)
 
-	s.mu.Lock()
-	startTerm := s.currentTerm
-	lastLogIndex := len(s.logEntry) - 1
-	var lastLogTerm int
-	if lastLogIndex >= 0 {
-		lastLogTerm = s.logEntry[lastLogIndex].Term
-	}
-	args := RequestVoteArgs{
-		Term:         startTerm,
-		CandidateID:  s.config.SelfID,
-		LastLogIndex: lastLogIndex,
-		LastLogTerm:  lastLogTerm,
-	}
-	s.mu.Unlock()
+	// startTerm := s.currentTerm
+	// lastLogIndex := len(s.logEntry) - 1
+	// var lastLogTerm int
+	// if lastLogIndex >= 0 {
+	// 	lastLogTerm = s.logEntry[lastLogIndex].Term
+	// }
+	// _ = RequestVoteArgs{
+	// 	Term:         startTerm,
+	// 	CandidateID:  s.config.SelfID,
+	// 	LastLogIndex: lastLogIndex,
+	// 	LastLogTerm:  lastLogTerm,
+	// }
+	// s.mu.Unlock()
 
-	for _, server := range s.config.Servers {
-		if server.ID == s.config.SelfID {
-			continue
-		}
-		go s.sendRequestVote(server, args)
-	}
+	// for _, server := range s.config.Servers {
+	// 	if server.ID == s.config.SelfID {
+	// 		continue
+	// 	}
+	// 	// go s.sendRequestVote(server, args)
+	// }
 
-	electionTimeout := time.After(randomTimeout(150, 300))
+	// electionTimeout := time.After(randomTimeout(150, 300))
 
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case rr := <-s.voteChannel:
-			s.mu.Lock()
-			if s.state != Candidate {
-				s.mu.Unlock()
-				return
-			}
-			if rr.Request.Term != s.currentTerm {
-				rr.Response = RequestVoteReply{
-					Term:        s.currentTerm,
-					VoteGranted: false,
-				}
-				s.mu.Unlock()
-				// reply to the channel with negative response
-				<-rr.Done
-				continue
-			}
-			if rr.Response.Term > s.currentTerm {
-				// Discover higher term, become follower
-				s.mu.Unlock()
-				s.becomeFollower(rr.Response.Term)
-				return
-			}
-			if rr.Response.VoteGranted {
-				votes++
-				if votes >= majority {
-					s.becomeLeader()
-					s.mu.Unlock()
-					return
-				}
-			}
-			s.mu.Unlock()
-		case <-electionTimeout:
-			// Election timeout, start new election
-			slog.Info("Election timeout from Candidate state, starting new election")
-			s.startElection()
-			return
-		case <-s.heartbeat:
-			// Received heartbeat from leader, become follower
-			s.becomeFollower(s.currentTerm)
-			return
-		}
-	}
+	// for {
+	// 	select {
+	// 	case <-s.ctx.Done():
+	// 		return
+	// 	case rr := <-s.voteChannel:
+	// 		s.mu.Lock()
+	// 		if s.currentRole != Candidate {
+	// 			s.mu.Unlock()
+	// 			return
+	// 		}
+	// 		if rr.Request.Term != s.currentTerm {
+	// 			slog.Info("Received RequestVote response with different term, ignoring")
+	// 			rr.Response = RequestVoteReply{
+	// 				Term:        s.currentTerm,
+	// 				VoteGranted: false,
+	// 			}
+	// 			s.mu.Unlock()
+	// 			rr.Done <- struct{}{}
+
+	// 			continue
+	// 		}
+	// 		if rr.Response.Term > s.currentTerm {
+	// 			// Discover higher term, become follower
+	// 			s.mu.Unlock()
+	// 			s.becomeFollower(rr.Response.Term)
+	// 			return
+	// 		}
+	// 		if rr.Response.VoteGranted {
+	// 			votes++
+	// 			if votes >= majority {
+	// 				s.becomeLeader()
+	// 				s.mu.Unlock()
+	// 				return
+	// 			}
+	// 		}
+	// 		s.mu.Unlock()
+	// 	case <-electionTimeout:
+	// 		// Election timeout, start new election
+	// 		slog.Info("Election timeout from Candidate state, starting new election")
+	// 		s.startElection()
+	// 		return
+	// 	case <-s.heartbeat:
+	// 		// Received heartbeat from leader, become follower
+	// 		s.becomeFollower(s.currentTerm)
+	// 		return
+	// 	}
+	// }
 
 }
 
@@ -249,7 +318,7 @@ func (s *Server) becomeLeader() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.state = Leader
+	s.currentRole = Leader
 	// Initialize nextIndex and matchIndex
 	// s.nextIndex = make([]int, len(s.config.Peers))
 	// s.matchIndex = make([]int, len(s.config.Peers))
@@ -263,7 +332,7 @@ func (s *Server) becomeFollower(term int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.state = Follower
+	s.currentRole = Follower
 	s.currentTerm = term
 	s.votedFor = ""
 	s.electionTimeout.Reset(randomTimeout(150, 300))

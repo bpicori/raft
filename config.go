@@ -13,17 +13,23 @@ type ServerConfig struct {
 }
 
 type Config struct {
-	Servers    map[string]ServerConfig
-	SelfID     string
-	SelfServer ServerConfig
+	Servers            map[string]ServerConfig
+	SelfID             string
+	SelfServer         ServerConfig
+	PersistentFilePath string
 }
 
 func LoadConfig() (Config, error) {
 	serversStr := os.Getenv("RAFT_SERVERS")
 	currentSrv := os.Getenv("CURRENT_SERVER")
+	persistentFilePath := os.Getenv("PERSISTENT_FILE_PATH")
 
 	if serversStr == "" || currentSrv == "" {
 		return Config{}, fmt.Errorf("RAFT_SERVERS and CURRENT_SERVER must be set")
+	}
+
+	if persistentFilePath == "" {
+		persistentFilePath = "./ignore"
 	}
 
 	servers := make(map[string]ServerConfig)
@@ -53,8 +59,9 @@ func LoadConfig() (Config, error) {
 	}
 
 	return Config{
-		Servers:    servers,
-		SelfID:     selfID,
-		SelfServer: selfServer,
+		Servers:            servers,
+		SelfID:             selfID,
+		SelfServer:         selfServer,
+		PersistentFilePath: persistentFilePath,
 	}, nil
 }
