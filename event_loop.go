@@ -1,0 +1,46 @@
+package raft
+
+type EventType int
+
+const (
+	RequestVoteReq EventType = iota
+	RequestVoteResp
+	AppendEntriesReq
+	AppendEntriesResp
+	HeartbeatReq
+	HeartbeatResp
+)
+
+type Event[T any] struct {
+	Type EventType
+	Data T
+}
+
+type EventLoop struct {
+	requestVoteReqCh   chan Event[RequestVoteArgs]
+	requestVoteRespCh  chan Event[RequestVoteReply]
+	appendEntriesReqCh chan Event[AppendEntriesArgs]
+	appendEntriesResCh chan Event[AppendEntriesReply]
+	heartbeatReqCh     chan Event[AppendEntriesArgs]
+	heartbeatRespCh    chan Event[AppendEntriesReply]
+}
+
+func NewEventLoop() *EventLoop {
+	return &EventLoop{
+		requestVoteReqCh:   make(chan Event[RequestVoteArgs]),
+		requestVoteRespCh:  make(chan Event[RequestVoteReply]),
+		appendEntriesReqCh: make(chan Event[AppendEntriesArgs]),
+		appendEntriesResCh: make(chan Event[AppendEntriesReply]),
+		heartbeatReqCh:     make(chan Event[AppendEntriesArgs]),
+		heartbeatRespCh:    make(chan Event[AppendEntriesReply]),
+	}
+}
+
+func (el *EventLoop) Close() {
+	close(el.requestVoteReqCh)
+	close(el.requestVoteRespCh)
+	close(el.appendEntriesReqCh)
+	close(el.appendEntriesResCh)
+	close(el.heartbeatReqCh)
+	close(el.heartbeatRespCh)
+}
