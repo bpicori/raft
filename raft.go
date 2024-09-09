@@ -70,10 +70,12 @@ type Server struct {
 	// cluster configuration
 	config Config
 
+	// event loop
+	eventLoop      *EventLoop
+	connectionPool *ConnectionPool
+
 	// Channels for communication
 	electionTimeout *time.Timer
-	heartbeat       chan bool
-	voteChannel     chan RequestResponse[RequestVoteArgs, RequestVoteReply]
 
 	// Server lifecycle
 	wg     sync.WaitGroup
@@ -93,8 +95,14 @@ func NewServer() *Server {
 
 	currentTerm, votedFor, logEntry, commitLength := LoadPersistedState(config)
 
+	eventLoop := NewEventLoop()
+	connectionPool := NewConnectionPool()
+
 	s := &Server{
 		config: config,
+
+		eventLoop:      eventLoop,
+		connectionPool: connectionPool,
 
 		currentTerm:  currentTerm,  // should be fetched from persistent storage
 		votedFor:     votedFor,     // should be fetched from persistent storage
@@ -108,7 +116,6 @@ func NewServer() *Server {
 		ackLength:     make(map[string]int),
 
 		electionTimeout: time.NewTimer(randomTimeout(150, 300)),
-		voteChannel:     make(chan RequestResponse[RequestVoteArgs, RequestVoteReply]),
 		ctx:             ctx,
 		cancel:          cancel,
 	}
@@ -128,6 +135,10 @@ func (s *Server) Start() error {
 func (s *Server) Stop() {
 	s.cancel()
 	s.PersistState()
+
+	s.connectionPool.Close()
+	s.eventLoop.Close()
+
 	s.wg.Wait()
 }
 
@@ -194,7 +205,7 @@ func (s *Server) runFollower() {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-s.heartbeat:
+		case <-s.eventLoop.heartbeatReqCh:
 			slog.Info("Received heartbeat, resetting election timeout")
 			s.electionTimeout.Reset(randomTimeout(150, 300))
 		case <-s.electionTimeout.C:
@@ -221,97 +232,41 @@ func (s *Server) runCandidate() {
 	majority := len(s.config.Servers)/2 + 1
 	slog.Info("Running candidate", "votes", votes, "majority", majority)
 
-	// startTerm := s.currentTerm
-	// lastLogIndex := len(s.logEntry) - 1
-	// var lastLogTerm int
-	// if lastLogIndex >= 0 {
-	// 	lastLogTerm = s.logEntry[lastLogIndex].Term
+	// lastLogTerm := 0
+	// if len(s.logEntry) > 0 {
+	// 	lastLogTerm = s.logEntry[len(s.logEntry)-1].Term
 	// }
-	// _ = RequestVoteArgs{
-	// 	Term:         startTerm,
-	// 	CandidateID:  s.config.SelfID,
+
+	// lastLogIndex := len(s.logEntry) - 1
+
+	// voteRequestArgs := RequestVoteArgs{
+	// 	Term:         s.currentTerm,
+	// 	CandidateID:  s.votedFor,
 	// 	LastLogIndex: lastLogIndex,
 	// 	LastLogTerm:  lastLogTerm,
 	// }
-	// s.mu.Unlock()
 
-	// for _, server := range s.config.Servers {
-	// 	if server.ID == s.config.SelfID {
-	// 		continue
-	// 	}
-	// 	// go s.sendRequestVote(server, args)
-	// }
+	electionTimeout := time.After(randomTimeout(150, 300))
 
-	// electionTimeout := time.After(randomTimeout(150, 300))
-
-	// for {
-	// 	select {
-	// 	case <-s.ctx.Done():
-	// 		return
-	// 	case rr := <-s.voteChannel:
-	// 		s.mu.Lock()
-	// 		if s.currentRole != Candidate {
-	// 			s.mu.Unlock()
-	// 			return
-	// 		}
-	// 		if rr.Request.Term != s.currentTerm {
-	// 			slog.Info("Received RequestVote response with different term, ignoring")
-	// 			rr.Response = RequestVoteReply{
-	// 				Term:        s.currentTerm,
-	// 				VoteGranted: false,
-	// 			}
-	// 			s.mu.Unlock()
-	// 			rr.Done <- struct{}{}
-
-	// 			continue
-	// 		}
-	// 		if rr.Response.Term > s.currentTerm {
-	// 			// Discover higher term, become follower
-	// 			s.mu.Unlock()
-	// 			s.becomeFollower(rr.Response.Term)
-	// 			return
-	// 		}
-	// 		if rr.Response.VoteGranted {
-	// 			votes++
-	// 			if votes >= majority {
-	// 				s.becomeLeader()
-	// 				s.mu.Unlock()
-	// 				return
-	// 			}
-	// 		}
-	// 		s.mu.Unlock()
-	// 	case <-electionTimeout:
-	// 		// Election timeout, start new election
-	// 		slog.Info("Election timeout from Candidate state, starting new election")
-	// 		s.startElection()
-	// 		return
-	// 	case <-s.heartbeat:
-	// 		// Received heartbeat from leader, become follower
-	// 		s.becomeFollower(s.currentTerm)
-	// 		return
-	// 	}
-	// }
-
-}
-
-func (s *Server) sendRequestVote(server ServerConfig, args RequestVoteArgs) {
-	slog.Info("Sending RequestVote",
-		"to", server.ID,
-		"term", args.Term,
-		"lastLogIndex", args.LastLogIndex,
-		"lastLogTerm", args.LastLogTerm)
-
-	var reply RequestVoteReply
-	err := s.sendRPC(server.ID, "Raft.RequestVote", args, &reply)
-	if err != nil {
-		slog.Error("Error sending RequestVote RPC", "error", err, "to", server.ID)
-		return
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-electionTimeout:
+			// Election timeout, start new election
+			slog.Info("Election timeout from Candidate state, starting new election")
+			s.startElection()
+			return // close this goroutine, will start new election in a new goroutine
+		case appendEntriesRequest := <-s.eventLoop.heartbeatReqCh:
+			// Received heartbeat from leader
+			slog.Info("Received heartbeat from leader", "leader", appendEntriesRequest.Data.LeaderID)
+			if appendEntriesRequest.Data.Term >= s.currentTerm {
+				s.becomeFollower(appendEntriesRequest.Data.Term)
+				return // close this goroutine
+			}
+		}
 	}
 
-	s.voteChannel <- RequestResponse[RequestVoteArgs, RequestVoteReply]{
-		Request:  args,
-		Response: reply,
-	}
 }
 
 func (s *Server) becomeLeader() {
@@ -343,7 +298,7 @@ func (s *Server) runLeader() {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-s.heartbeat:
+		case <-s.eventLoop.heartbeatReqCh:
 			s.sendHeartbeat()
 		}
 	}

@@ -1,38 +1,50 @@
 package raft
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"net"
 )
 
-func sendRPC(addr string, rpcRequest RaftRPC) (RaftRPC, error) {
-	// Create a connection
-	conn, err := net.Dial("tcp", addr)
+func (s *Server) sendRequestVoteReqRpc(addr string, args RequestVoteArgs) error {
+	conn, err := s.connectionPool.GetConnection(addr)
 	if err != nil {
-		return RaftRPC{}, fmt.Errorf("error connecting to server %s: %v", addr, err)
+		return fmt.Errorf("error getting connection: %v", err)
 	}
-	defer conn.Close()
 
 	// Create the RPC request
+	rpcRequest := RaftRPC{
+		Type: "RequestVote",
+		Args: args,
+	}
 
 	// Encode and send the request
 	encoder := json.NewEncoder(conn)
 	err = encoder.Encode(rpcRequest)
 	if err != nil {
-		return RaftRPC{}, fmt.Errorf("error encoding request: %v", err)
+		return fmt.Errorf("error encoding request: %v", err)
 	}
 
-	// Receive and decode the response
-	reader := bufio.NewReader(conn)
-	decoder := json.NewDecoder(reader)
+	return nil
+}
 
-	var response RaftRPC
-	err = decoder.Decode(&response)
+func (s *Server) sendRequestVoteRespRpc(addr string, reply RequestVoteReply) error {
+	conn, err := s.connectionPool.GetConnection(addr)
 	if err != nil {
-		return RaftRPC{}, fmt.Errorf("error decoding response: %v", err)
+		return fmt.Errorf("error getting connection: %v", err)
 	}
 
-	return response, nil
+	// Create the RPC request
+	rpcRequest := RaftRPC{
+		Type: "RequestVoteReply",
+		Args: reply,
+	}
+
+	// Encode and send the request
+	encoder := json.NewEncoder(conn)
+	err = encoder.Encode(rpcRequest)
+	if err != nil {
+		return fmt.Errorf("error encoding request: %v", err)
+	}
+
+	return nil
 }

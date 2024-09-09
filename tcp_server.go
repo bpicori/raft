@@ -13,6 +13,7 @@ type RaftRPC struct {
 
 // RequestVoteArgs represents the arguments for a RequestVote RPC
 type RequestVoteArgs struct {
+	NodeID       string
 	Term         int    `json:"term"`
 	CandidateID  string `json:"candidateId"`
 	LastLogIndex int    `json:"lastLogIndex"`
@@ -21,15 +22,30 @@ type RequestVoteArgs struct {
 
 // RequestVoteReply represents the reply for a RequestVote RPC
 type RequestVoteReply struct {
+	NodeID      string
 	Term        int  `json:"term"`
 	VoteGranted bool `json:"voteGranted"`
+}
+
+type AppendEntriesArgs struct {
+	NodeID       string
+	Term         int        `json:"term"`
+	LeaderID     string     `json:"leaderId"`
+	PrevLogIndex int        `json:"prevLogIndex"`
+	PrevLogTerm  int        `json:"prevLogTerm"`
+	Entries      []LogEntry `json:"entries"`
+	LeaderCommit int        `json:"leaderCommit"`
+}
+
+type AppendEntriesReply struct {
+	Term    int  `json:"term"`
+	Success bool `json:"success"`
 }
 
 func handleConnection(conn net.Conn, server *Server) {
 	defer conn.Close()
 
 	decoder := json.NewDecoder(conn)
-	encoder := json.NewEncoder(conn)
 
 	for {
 		var rpc RaftRPC
@@ -50,20 +66,49 @@ func handleConnection(conn net.Conn, server *Server) {
 					LastLogTerm:  int(args["lastLogTerm"].(float64)),
 				}
 
-				rr := RequestResponse[RequestVoteArgs, RequestVoteReply]{
-					Request: requestVoteArgs,
-					Done:    make(chan struct{}),
+				server.eventLoop.requestVoteReqCh <- Event[RequestVoteArgs]{
+					Type: RequestVoteReq,
+					Data: requestVoteArgs,
+				}
+			}
+		case "AppendEntries":
+			if args, ok := rpc.Args.(map[string]interface{}); ok {
+				entries := make([]LogEntry, 0)
+				for _, entry := range args["entries"].([]interface{}) {
+					entryMap := entry.(map[string]interface{})
+					entries = append(entries, LogEntry{
+						Term:    int(entryMap["term"].(float64)),
+						Command: entryMap["command"].(string),
+					})
 				}
 
-				server.voteChannel <- rr
-				<-rr.Done
-				slog.Debug("Sending RequestVote reply", "reply", rr.Response)
-				encoder.Encode(rr.Response)
+				appendEntriesArgs := AppendEntriesArgs{
+					Term:         int(args["term"].(float64)),
+					LeaderID:     args["leaderId"].(string),
+					PrevLogIndex: int(args["prevLogIndex"].(float64)),
+					PrevLogTerm:  int(args["prevLogTerm"].(float64)),
+					Entries:      entries,
+					LeaderCommit: int(args["leaderCommit"].(float64)),
+				}
+
+				if len(entries) > 0 {
+					slog.Debug("Received AppendEntries RPC", "entries", entries)
+
+					server.eventLoop.appendEntriesReqCh <- Event[AppendEntriesArgs]{
+						Type: AppendEntriesReq,
+						Data: appendEntriesArgs,
+					}
+				} else {
+					slog.Debug("Received Heartbeat RPC", "leader", appendEntriesArgs.LeaderID)
+
+					server.eventLoop.heartbeatReqCh <- Event[AppendEntriesArgs]{
+						Type: HeartbeatReq,
+						Data: appendEntriesArgs,
+					}
+				}
 			}
 		}
-
 	}
-
 }
 
 func (s *Server) RunTcp() {
