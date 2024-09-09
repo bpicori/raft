@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net"
-	"net/rpc"
 	"os"
 	"sync"
 	"time"
@@ -115,7 +113,7 @@ func NewServer() *Server {
 		sentLength:    make(map[string]int),
 		ackLength:     make(map[string]int),
 
-		electionTimeout: time.NewTimer(randomTimeout(150, 300)),
+		electionTimeout: time.NewTimer(randomTimeout(500, 1000)),
 		ctx:             ctx,
 		cancel:          cancel,
 	}
@@ -205,9 +203,23 @@ func (s *Server) runFollower() {
 		select {
 		case <-s.ctx.Done():
 			return
+		case requestVoteReq := <-s.eventLoop.requestVoteReqCh:
+			slog.Info(
+				"[FOLLOWER] Received RequestVoteReq",
+				"candidate", requestVoteReq.Data.CandidateID,
+				"term", requestVoteReq.Data.Term,
+				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
+				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
+			s.OnRequestVoteReq(requestVoteReq.Data)
+		case requestVoteRes := <-s.eventLoop.requestVoteRespCh:
+			slog.Info("[FOLLOWER] Received vote response from peer, discarding",
+				"peer", requestVoteRes.Data.NodeID,
+				"granted", requestVoteRes.Data.VoteGranted,
+				"term", requestVoteRes.Data.Term)
 		case <-s.eventLoop.heartbeatReqCh:
 			slog.Info("Received heartbeat, resetting election timeout")
-			s.electionTimeout.Reset(randomTimeout(150, 300))
+			// TODO: implement this
+			s.electionTimeout.Reset(randomTimeout(500, 1000))
 		case <-s.electionTimeout.C:
 			slog.Info("Election timeout from Follower state, starting new election")
 			s.startElection()
@@ -230,23 +242,26 @@ func (s *Server) startElection() {
 func (s *Server) runCandidate() {
 	votes := 1
 	majority := len(s.config.Servers)/2 + 1
+	lastTerm := 0
+	if len(s.logEntry) > 0 {
+		lastTerm = s.logEntry[len(s.logEntry)-1].Term
+	}
 	slog.Info("Running candidate", "votes", votes, "majority", majority)
 
-	// lastLogTerm := 0
-	// if len(s.logEntry) > 0 {
-	// 	lastLogTerm = s.logEntry[len(s.logEntry)-1].Term
-	// }
+	for _, peer := range s.config.Servers {
+		if peer.ID == s.config.SelfID {
+			continue
+		}
 
-	// lastLogIndex := len(s.logEntry) - 1
+		go s.sendRequestVoteReqRpc(peer.Addr, RequestVoteArgs{
+			Term:         s.currentTerm,
+			CandidateID:  s.config.SelfID,
+			LastLogIndex: len(s.logEntry),
+			LastLogTerm:  lastTerm,
+		})
+	}
 
-	// voteRequestArgs := RequestVoteArgs{
-	// 	Term:         s.currentTerm,
-	// 	CandidateID:  s.votedFor,
-	// 	LastLogIndex: lastLogIndex,
-	// 	LastLogTerm:  lastLogTerm,
-	// }
-
-	electionTimeout := time.After(randomTimeout(150, 300))
+	electionTimeout := time.After(randomTimeout(500, 1000))
 
 	for {
 		select {
@@ -257,6 +272,24 @@ func (s *Server) runCandidate() {
 			slog.Info("Election timeout from Candidate state, starting new election")
 			s.startElection()
 			return // close this goroutine, will start new election in a new goroutine
+
+		case requestVoteReq := <-s.eventLoop.requestVoteReqCh:
+			slog.Info("[CANDIDATE] Received RequestVoteReq",
+				"candidate", requestVoteReq.Data.CandidateID,
+				"term", requestVoteReq.Data.Term,
+				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
+				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
+
+			s.OnRequestVoteReq(requestVoteReq.Data)
+
+		case requestVoteResp := <-s.eventLoop.requestVoteRespCh:
+			slog.Info("[CANDIDATE] Received vote response from peer",
+				"peer", requestVoteResp.Data.NodeID,
+				"granted", requestVoteResp.Data.VoteGranted,
+				"term", requestVoteResp.Data.Term)
+
+			s.OnRequestVoteResp(requestVoteResp.Data)
+
 		case appendEntriesRequest := <-s.eventLoop.heartbeatReqCh:
 			// Received heartbeat from leader
 			slog.Info("Received heartbeat from leader", "leader", appendEntriesRequest.Data.LeaderID)
@@ -265,6 +298,10 @@ func (s *Server) runCandidate() {
 				return // close this goroutine
 			}
 		}
+
+		// case requestVoteResp := <-s.eventLoop.requestVoteRespCh:
+		// Received vote from peer
+
 	}
 
 }
@@ -283,6 +320,75 @@ func (s *Server) becomeLeader() {
 	// }
 }
 
+func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
+	// Received vote request from candidate
+	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateID)
+	cTerm := requestVoteArgs.Term
+	cID := requestVoteArgs.CandidateID
+	cLastLogIndex := requestVoteArgs.LastLogIndex
+	cLastLogTerm := requestVoteArgs.LastLogTerm
+
+	if cTerm > s.currentTerm {
+		s.becomeFollower(cTerm)
+		s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+			Term:        s.currentTerm,
+			VoteGranted: true,
+		})
+
+		return
+	}
+
+	// get the last term from the log
+	lastTerm := 0
+	if len(s.logEntry) > 0 {
+		lastTerm = s.logEntry[len(s.logEntry)-1].Term
+	}
+
+	// verify if candidate's log is at least as up-to-date as receiver's log
+	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= len(s.logEntry))
+
+	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
+		s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+			Term:        s.currentTerm,
+			VoteGranted: true,
+		})
+	} else {
+		s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+			Term:        s.currentTerm,
+			VoteGranted: false,
+		})
+	}
+}
+
+func (s *Server) OnRequestVoteResp(requestVoteReply RequestVoteReply) {
+	if requestVoteReply.Term > s.currentTerm {
+		s.becomeFollower(requestVoteReply.Term)
+		return
+	}
+
+	if s.currentRole != Candidate {
+		return
+	}
+
+	if requestVoteReply.VoteGranted {
+		s.votesReceived[requestVoteReply.NodeID] = true
+	}
+	slog.Info("[IMPORTANT] Received vote response from peer")
+
+	votes := 0
+	for _, vote := range s.votesReceived {
+		if vote {
+			votes++
+		}
+	}
+
+	majority := len(s.config.Servers)/2 + 1
+	if votes >= majority {
+		slog.Info("Received majority votes, becoming leader")
+		panic("Becoming leader, panic attack :)")
+	}
+}
+
 func (s *Server) becomeFollower(term int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -290,7 +396,7 @@ func (s *Server) becomeFollower(term int) {
 	s.currentRole = Follower
 	s.currentTerm = term
 	s.votedFor = ""
-	s.electionTimeout.Reset(randomTimeout(150, 300))
+	s.electionTimeout.Reset(randomTimeout(500, 1000))
 }
 
 func (s *Server) runLeader() {
@@ -299,47 +405,7 @@ func (s *Server) runLeader() {
 		case <-s.ctx.Done():
 			return
 		case <-s.eventLoop.heartbeatReqCh:
-			s.sendHeartbeat()
+			// s.sendHeartbeat()
 		}
 	}
-}
-
-func (s *Server) sendHeartbeat() {
-	// TODO: Implement this
-}
-
-func (s *Server) sendRPC(serverID string, method string, args interface{}, reply interface{}) error {
-	// In a real implementation, you would use actual RPC here.
-	// This is a simplified version for demonstration purposes.
-
-	// Find the server in the config
-	var serverConfig ServerConfig
-	for _, sc := range s.config.Servers {
-		if sc.ID == serverID {
-			serverConfig = sc
-			break
-		}
-	}
-	if serverConfig.ID == "" {
-		return fmt.Errorf("server %s not found in config", serverID)
-	}
-
-	// Create a connection (in a real implementation, you might want to maintain a connection pool)
-	conn, err := net.Dial("tcp", serverConfig.Addr)
-	if err != nil {
-		return fmt.Errorf("error connecting to server %s: %v", serverID, err)
-	}
-	defer conn.Close()
-
-	// Create an RPC client
-	client := rpc.NewClient(conn)
-	defer client.Close()
-
-	// Make the RPC call
-	err = client.Call(method, args, reply)
-	if err != nil {
-		return fmt.Errorf("error making RPC call to %s.%s: %v", serverID, method, err)
-	}
-
-	return nil
 }

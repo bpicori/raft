@@ -13,6 +13,7 @@ import (
 func init() {
 	os.Setenv("RAFT_SERVERS", "localhost:8080,localhost:8081,localhost:8082")
 	os.Setenv("CURRENT_SERVER", "localhost:8080")
+	os.Setenv("PERSISTENT_FILE_PATH", "./ignore")
 
 	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
