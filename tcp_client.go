@@ -13,7 +13,7 @@ func (s *Server) sendRequestVoteReqRpc(addr string, args RequestVoteArgs) error 
 
 	// Create the RPC request
 	rpcRequest := RaftRPC{
-		Type: "RequestVote",
+		Type: "RequestVoteReq",
 		Args: args,
 	}
 
@@ -35,7 +35,7 @@ func (s *Server) sendRequestVoteRespRpc(addr string, reply RequestVoteReply) err
 
 	// Create the RPC request
 	rpcRequest := RaftRPC{
-		Type: "RequestVoteReply",
+		Type: "RequestVoteResp",
 		Args: reply,
 	}
 

@@ -61,7 +61,7 @@ type Server struct {
 	// Volatile state on all servers
 	currentRole   Role
 	currentLeader string
-	votesReceived map[string]bool
+	votesReceived sync.Map
 	sentLength    map[string]int
 	ackLength     map[string]int
 
@@ -109,7 +109,7 @@ func NewServer() *Server {
 
 		currentRole:   Follower,
 		currentLeader: "",
-		votesReceived: make(map[string]bool),
+		votesReceived: sync.Map{},
 		sentLength:    make(map[string]int),
 		ackLength:     make(map[string]int),
 
@@ -180,18 +180,18 @@ func (s *Server) RunStateMachine() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			slog.Info("Gracefully shutting down state machine")
+			slog.Info("[STATE_MACHINE] Gracefully shutting down state machine")
 			return
 		default:
 			switch s.currentRole {
 			case Follower:
-				slog.Info("Running Follower")
+				slog.Info("[STATE_MACHINE] Current role is Follower")
 				s.runFollower()
 			case Candidate:
-				slog.Info("Running Candidate")
+				slog.Info("[STATE_MACHINE] Current role is Candidate")
 				s.runCandidate()
 			case Leader:
-				slog.Info("Running Leader")
+				slog.Info("[STATE_MACHINE] Current role is Leader")
 				s.runLeader()
 			}
 		}
@@ -222,21 +222,24 @@ func (s *Server) runFollower() {
 			s.electionTimeout.Reset(randomTimeout(500, 1000))
 		case <-s.electionTimeout.C:
 			slog.Info("Election timeout from Follower state, starting new election")
+			s.electionTimeout.Reset(randomTimeout(500, 1000))
 			s.startElection()
+			return
 		}
 	}
 }
 
 func (s *Server) startElection() {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.currentRole = Candidate
 	s.currentTerm += 1
 	s.votedFor = s.config.SelfID
-	s.votesReceived[s.config.SelfID] = true
-	s.mu.Unlock()
+	s.votesReceived.Clear()
+	s.votesReceived.Store(s.config.SelfID, true)
 
-	slog.Info("Starting election", "term", s.currentTerm)
-	go s.runCandidate()
+	slog.Info("[CANDIDATE] Starting election", "term", s.currentTerm)
 }
 
 func (s *Server) runCandidate() {
@@ -246,7 +249,11 @@ func (s *Server) runCandidate() {
 	if len(s.logEntry) > 0 {
 		lastTerm = s.logEntry[len(s.logEntry)-1].Term
 	}
-	slog.Info("Running candidate", "votes", votes, "majority", majority)
+
+	slog.Info("[CANDIDATE] Running...",
+		"term", s.currentTerm,
+		"votes", votes,
+		"majority", majority)
 
 	for _, peer := range s.config.Servers {
 		if peer.ID == s.config.SelfID {
@@ -254,6 +261,7 @@ func (s *Server) runCandidate() {
 		}
 
 		go s.sendRequestVoteReqRpc(peer.Addr, RequestVoteArgs{
+			NodeID:       s.config.SelfID,
 			Term:         s.currentTerm,
 			CandidateID:  s.config.SelfID,
 			LastLogIndex: len(s.logEntry),
@@ -261,15 +269,15 @@ func (s *Server) runCandidate() {
 		})
 	}
 
-	electionTimeout := time.After(randomTimeout(500, 1000))
+	s.electionTimeout.Reset(randomTimeout(500, 1000))
 
 	for {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-electionTimeout:
+		case <-s.electionTimeout.C:
 			// Election timeout, start new election
-			slog.Info("Election timeout from Candidate state, starting new election")
+			slog.Info("[CANDIDATE] Election timeout, starting new election")
 			s.startElection()
 			return // close this goroutine, will start new election in a new goroutine
 
@@ -280,15 +288,15 @@ func (s *Server) runCandidate() {
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
 
-			s.OnRequestVoteReq(requestVoteReq.Data)
+			go s.OnRequestVoteReq(requestVoteReq.Data)
 
 		case requestVoteResp := <-s.eventLoop.requestVoteRespCh:
-			slog.Info("[CANDIDATE] Received vote response from peer",
+			slog.Info("[CANDIDATE] Received vote response from",
 				"peer", requestVoteResp.Data.NodeID,
 				"granted", requestVoteResp.Data.VoteGranted,
 				"term", requestVoteResp.Data.Term)
 
-			s.OnRequestVoteResp(requestVoteResp.Data)
+			go s.OnRequestVoteResp(requestVoteResp.Data)
 
 		case appendEntriesRequest := <-s.eventLoop.heartbeatReqCh:
 			// Received heartbeat from leader
@@ -330,7 +338,8 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 
 	if cTerm > s.currentTerm {
 		s.becomeFollower(cTerm)
-		s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+		go s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+			NodeID:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
 		})
@@ -348,12 +357,16 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= len(s.logEntry))
 
 	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
-		s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+		go s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+			NodeID:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
 		})
+
+		s.votedFor = cID
 	} else {
-		s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+		go s.sendRequestVoteRespRpc(cID, RequestVoteReply{
+			NodeID:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: false,
 		})
@@ -371,16 +384,16 @@ func (s *Server) OnRequestVoteResp(requestVoteReply RequestVoteReply) {
 	}
 
 	if requestVoteReply.VoteGranted {
-		s.votesReceived[requestVoteReply.NodeID] = true
+		s.votesReceived.Store(requestVoteReply.NodeID, true)
 	}
+
 	slog.Info("[IMPORTANT] Received vote response from peer")
 
 	votes := 0
-	for _, vote := range s.votesReceived {
-		if vote {
-			votes++
-		}
-	}
+	s.votesReceived.Range(func(_, _ interface{}) bool {
+		votes++
+		return true
+	})
 
 	majority := len(s.config.Servers)/2 + 1
 	if votes >= majority {

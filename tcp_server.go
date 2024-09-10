@@ -13,7 +13,7 @@ type RaftRPC struct {
 
 // RequestVoteArgs represents the arguments for a RequestVote RPC
 type RequestVoteArgs struct {
-	NodeID       string
+	NodeID       string `json:"nodeId"`
 	Term         int    `json:"term"`
 	CandidateID  string `json:"candidateId"`
 	LastLogIndex int    `json:"lastLogIndex"`
@@ -22,9 +22,9 @@ type RequestVoteArgs struct {
 
 // RequestVoteReply represents the reply for a RequestVote RPC
 type RequestVoteReply struct {
-	NodeID      string
-	Term        int  `json:"term"`
-	VoteGranted bool `json:"voteGranted"`
+	NodeID      string `json:"nodeId"`
+	Term        int    `json:"term"`
+	VoteGranted bool   `json:"voteGranted"`
 }
 
 type AppendEntriesArgs struct {
@@ -50,16 +50,33 @@ func handleConnection(conn net.Conn, server *Server) {
 	for {
 		var rpc RaftRPC
 		if err := decoder.Decode(&rpc); err != nil {
-			slog.Error("Error decoding RPC:", "error", err)
+			slog.Error("[TCP_SERVER] Error decoding RPC:", "error", err)
 			return
 		}
 
-		slog.Debug("Received RPC", "body", rpc)
+		slog.Debug("[TCP_SERVER] Received RPC", "body", rpc)
 
 		switch rpc.Type {
-		case "RequestVote":
+		case "RequestVoteResp":
+			if args, ok := rpc.Args.(map[string]interface{}); ok {
+
+				reply := RequestVoteReply{
+					NodeID:      args["nodeId"].(string),
+					Term:        int(args["term"].(float64)),
+					VoteGranted: args["voteGranted"].(bool),
+				}
+
+				server.eventLoop.requestVoteRespCh <- Event[RequestVoteReply]{
+					Type: RequestVoteResp,
+					Data: reply,
+				}
+			} else {
+				slog.Debug("[TCP_SERVER] Error decoding RequestVoteResp RPC")
+			}
+		case "RequestVoteReq":
 			if args, ok := rpc.Args.(map[string]interface{}); ok {
 				requestVoteArgs := RequestVoteArgs{
+					NodeID:       server.config.SelfServer.ID,
 					Term:         int(args["term"].(float64)),
 					CandidateID:  args["candidateId"].(string),
 					LastLogIndex: int(args["lastLogIndex"].(float64)),
@@ -92,14 +109,14 @@ func handleConnection(conn net.Conn, server *Server) {
 				}
 
 				if len(entries) > 0 {
-					slog.Debug("Received AppendEntries RPC", "entries", entries)
+					slog.Debug("[TCP_SERVER] Received AppendEntries RPC", "entries", entries)
 
 					server.eventLoop.appendEntriesReqCh <- Event[AppendEntriesArgs]{
 						Type: AppendEntriesReq,
 						Data: appendEntriesArgs,
 					}
 				} else {
-					slog.Debug("Received Heartbeat RPC", "leader", appendEntriesArgs.LeaderID)
+					slog.Debug("[TCP_SERVER] Received Heartbeat RPC", "leader", appendEntriesArgs.LeaderID)
 
 					server.eventLoop.heartbeatReqCh <- Event[AppendEntriesArgs]{
 						Type: HeartbeatReq,
@@ -117,7 +134,7 @@ func (s *Server) RunTcp() {
 	listener, err := net.Listen("tcp", s.config.SelfServer.Addr)
 
 	if err != nil {
-		slog.Error("Error starting TCP server", "error", err)
+		slog.Error("[TCP_SERVER] Error starting TCP server", "error", err)
 		panic("cannot start tcp server")
 	}
 
@@ -125,22 +142,22 @@ func (s *Server) RunTcp() {
 
 	go func() {
 		<-s.ctx.Done()
-		slog.Info("Gracefully shutting down TCP server")
+		slog.Info("[TCP_SERVER] Gracefully shutting down TCP server")
 		listener.Close()
 	}()
 
-	slog.Info("Server started", "address", s.config.SelfServer.Addr)
+	slog.Info("[TCP_SERVER] Server started", "address", s.config.SelfServer.Addr)
 
 	for {
 		select {
 		case <-s.ctx.Done():
-			slog.Info("Shutting down TCP server")
+			slog.Info("[TCP_SERVER] Shutting down TCP server")
 			return
 		default:
 			conn, err := listener.Accept()
 
 			if err != nil {
-				slog.Info("TCP server stopped accepting connections", "error", err)
+				slog.Info("[TCP_SERVER] Server stopped accepting connections", "error", err)
 				return
 			}
 
