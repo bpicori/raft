@@ -74,6 +74,7 @@ type Server struct {
 
 	// Channels for communication
 	electionTimeout *time.Timer
+	heartbeatTimer  *time.Timer
 
 	// Server lifecycle
 	wg     sync.WaitGroup
@@ -171,6 +172,10 @@ func LoadPersistedState(config Config) (currentTerm int, votedFor string, logEnt
 		return 0, "", nil, 0
 	}
 
+	if state.LogEntry == nil {
+		state.LogEntry = make([]LogEntry, 0)
+	}
+
 	return state.CurrentTerm, state.VotedFor, state.LogEntry, state.CommitLength
 }
 
@@ -203,6 +208,7 @@ func (s *Server) runFollower() {
 		select {
 		case <-s.ctx.Done():
 			return
+
 		case requestVoteReq := <-s.eventLoop.requestVoteReqCh:
 			slog.Info(
 				"[FOLLOWER] Received RequestVoteReq",
@@ -211,17 +217,21 @@ func (s *Server) runFollower() {
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
 			s.OnRequestVoteReq(requestVoteReq.Data)
+
 		case requestVoteRes := <-s.eventLoop.requestVoteRespCh:
 			slog.Info("[FOLLOWER] Received vote response from peer, discarding",
 				"peer", requestVoteRes.Data.NodeID,
 				"granted", requestVoteRes.Data.VoteGranted,
 				"term", requestVoteRes.Data.Term)
+			return
+
 		case <-s.eventLoop.heartbeatReqCh:
-			slog.Info("Received heartbeat, resetting election timeout")
-			// TODO: implement this
-			s.electionTimeout.Reset(randomTimeout(500, 1000))
+			slog.Info("[FOLLOWER] Received heartbeat, resetting election timeout")
+			s.becomeFollower(s.currentTerm)
+			return
+
 		case <-s.electionTimeout.C:
-			slog.Info("Election timeout from Follower state, starting new election")
+			slog.Info("[FOLLOWER] Election timeout from Follower state, starting new election")
 			s.electionTimeout.Reset(randomTimeout(500, 1000))
 			s.startElection()
 			return
@@ -287,7 +297,6 @@ func (s *Server) runCandidate() {
 				"term", requestVoteReq.Data.Term,
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
-
 			go s.OnRequestVoteReq(requestVoteReq.Data)
 
 		case requestVoteResp := <-s.eventLoop.requestVoteRespCh:
@@ -295,23 +304,19 @@ func (s *Server) runCandidate() {
 				"peer", requestVoteResp.Data.NodeID,
 				"granted", requestVoteResp.Data.VoteGranted,
 				"term", requestVoteResp.Data.Term)
-
 			go s.OnRequestVoteResp(requestVoteResp.Data)
 
 		case appendEntriesRequest := <-s.eventLoop.heartbeatReqCh:
-			// Received heartbeat from leader
-			slog.Info("Received heartbeat from leader", "leader", appendEntriesRequest.Data.LeaderID)
+			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", appendEntriesRequest.Data.LeaderID)
 			if appendEntriesRequest.Data.Term >= s.currentTerm {
 				s.becomeFollower(appendEntriesRequest.Data.Term)
 				return // close this goroutine
 			}
+		case <-s.eventLoop.leaderElectedCh:
+			slog.Info("[CANDIDATE] Received leader elected event")
+			return
 		}
-
-		// case requestVoteResp := <-s.eventLoop.requestVoteRespCh:
-		// Received vote from peer
-
 	}
-
 }
 
 func (s *Server) becomeLeader() {
@@ -319,13 +324,38 @@ func (s *Server) becomeLeader() {
 	defer s.mu.Unlock()
 
 	s.currentRole = Leader
-	// Initialize nextIndex and matchIndex
-	// s.nextIndex = make([]int, len(s.config.Peers))
-	// s.matchIndex = make([]int, len(s.config.Peers))
-	// for i := range s.config.Peers {
-	// 	s.nextIndex[i] = len(s.logEntry)
-	// 	s.matchIndex[i] = 0
-	// }
+	s.electionTimeout.Stop()
+	s.currentLeader = s.config.SelfID
+
+	s.eventLoop.leaderElectedCh <- Event[bool]{Data: true}
+
+	for _, peer := range s.config.Servers {
+		if peer.ID == s.config.SelfID {
+			continue
+		}
+
+		s.sentLength[peer.ID] = len(s.logEntry)
+		s.ackLength[peer.ID] = 0
+
+		prevLogTerm := 0
+		if len(s.logEntry) > 0 {
+			prevLogTerm = s.logEntry[len(s.logEntry)-1].Term
+		}
+
+		prevLogIndex := 0
+		if len(s.logEntry) > 0 {
+			prevLogIndex = len(s.logEntry) - 1
+		}
+
+		go s.sendAppendEntriesReqRpc(peer.Addr, AppendEntriesArgs{
+			Term:         s.currentTerm,
+			LeaderID:     s.config.SelfID,
+			PrevLogIndex: prevLogIndex,
+			PrevLogTerm:  prevLogTerm,
+			Entries:      s.logEntry,
+			LeaderCommit: s.commitLength,
+		})
+	}
 }
 
 func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
@@ -353,7 +383,6 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 		lastTerm = s.logEntry[len(s.logEntry)-1].Term
 	}
 
-	// verify if candidate's log is at least as up-to-date as receiver's log
 	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= len(s.logEntry))
 
 	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
@@ -387,8 +416,6 @@ func (s *Server) OnRequestVoteResp(requestVoteReply RequestVoteReply) {
 		s.votesReceived.Store(requestVoteReply.NodeID, true)
 	}
 
-	slog.Info("[IMPORTANT] Received vote response from peer")
-
 	votes := 0
 	s.votesReceived.Range(func(_, _ interface{}) bool {
 		votes++
@@ -398,7 +425,7 @@ func (s *Server) OnRequestVoteResp(requestVoteReply RequestVoteReply) {
 	majority := len(s.config.Servers)/2 + 1
 	if votes >= majority {
 		slog.Info("Received majority votes, becoming leader")
-		panic("Becoming leader, panic attack :)")
+		s.becomeLeader()
 	}
 }
 
@@ -413,12 +440,43 @@ func (s *Server) becomeFollower(term int) {
 }
 
 func (s *Server) runLeader() {
+
+	for _, peer := range s.config.Servers {
+		if peer.ID == s.config.SelfID {
+			continue
+		}
+
+		s.sentLength[peer.ID] = len(s.logEntry)
+		s.ackLength[peer.ID] = 0
+
+		prevLogTerm := 0
+		if len(s.logEntry) > 0 {
+			prevLogTerm = s.logEntry[len(s.logEntry)-1].Term
+		}
+
+		prevLogIndex := 0
+		if len(s.logEntry) > 0 {
+			prevLogIndex = len(s.logEntry) - 1
+		}
+
+		go s.sendAppendEntriesReqRpc(peer.Addr, AppendEntriesArgs{
+			Term:         s.currentTerm,
+			LeaderID:     s.config.SelfID,
+			PrevLogIndex: prevLogIndex,
+			PrevLogTerm:  prevLogTerm,
+			Entries:      s.logEntry,
+			LeaderCommit: s.commitLength,
+		})
+	}
+
+	s.heartbeatTimer = time.NewTimer(200 * time.Millisecond)
+
 	for {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-s.eventLoop.heartbeatReqCh:
-			// s.sendHeartbeat()
+		case <-s.heartbeatTimer.C:
+			return
 		}
 	}
 }

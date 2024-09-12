@@ -57,6 +57,21 @@ func handleConnection(conn net.Conn, server *Server) {
 		slog.Debug("[TCP_SERVER] Received RPC", "body", rpc)
 
 		switch rpc.Type {
+		case "RequestVoteReq":
+			if args, ok := rpc.Args.(map[string]interface{}); ok {
+				requestVoteArgs := RequestVoteArgs{
+					NodeID:       server.config.SelfServer.ID,
+					Term:         int(args["term"].(float64)),
+					CandidateID:  args["candidateId"].(string),
+					LastLogIndex: int(args["lastLogIndex"].(float64)),
+					LastLogTerm:  int(args["lastLogTerm"].(float64)),
+				}
+
+				server.eventLoop.requestVoteReqCh <- Event[RequestVoteArgs]{
+					Type: RequestVoteReq,
+					Data: requestVoteArgs,
+				}
+			}
 		case "RequestVoteResp":
 			if args, ok := rpc.Args.(map[string]interface{}); ok {
 
@@ -73,22 +88,21 @@ func handleConnection(conn net.Conn, server *Server) {
 			} else {
 				slog.Debug("[TCP_SERVER] Error decoding RequestVoteResp RPC")
 			}
-		case "RequestVoteReq":
-			if args, ok := rpc.Args.(map[string]interface{}); ok {
-				requestVoteArgs := RequestVoteArgs{
-					NodeID:       server.config.SelfServer.ID,
-					Term:         int(args["term"].(float64)),
-					CandidateID:  args["candidateId"].(string),
-					LastLogIndex: int(args["lastLogIndex"].(float64)),
-					LastLogTerm:  int(args["lastLogTerm"].(float64)),
+		case "AppendEntriesResp":
+			if _, ok := rpc.Args.(map[string]interface{}); ok {
+				reply := AppendEntriesReply{
+					Term:    int(rpc.Args.(map[string]interface{})["term"].(float64)),
+					Success: rpc.Args.(map[string]interface{})["success"].(bool),
 				}
 
-				server.eventLoop.requestVoteReqCh <- Event[RequestVoteArgs]{
-					Type: RequestVoteReq,
-					Data: requestVoteArgs,
+				server.eventLoop.appendEntriesResCh <- Event[AppendEntriesReply]{
+					Type: AppendEntriesResp,
+					Data: reply,
 				}
+			} else {
+				slog.Debug("[TCP_SERVER] Error decoding AppendEntriesResp RPC")
 			}
-		case "AppendEntries":
+		case "AppendEntriesReq":
 			if args, ok := rpc.Args.(map[string]interface{}); ok {
 				entries := make([]LogEntry, 0)
 				for _, entry := range args["entries"].([]interface{}) {
@@ -109,20 +123,23 @@ func handleConnection(conn net.Conn, server *Server) {
 				}
 
 				if len(entries) > 0 {
-					slog.Debug("[TCP_SERVER] Received AppendEntries RPC", "entries", entries)
+					slog.Debug("[TCP_SERVER] Received AppendEntriesReq RPC", "entries", entries)
 
 					server.eventLoop.appendEntriesReqCh <- Event[AppendEntriesArgs]{
 						Type: AppendEntriesReq,
 						Data: appendEntriesArgs,
 					}
+
 				} else {
-					slog.Debug("[TCP_SERVER] Received Heartbeat RPC", "leader", appendEntriesArgs.LeaderID)
+					slog.Debug("[TCP_SERVER] Received HeartbeatReq RPC", "leader", appendEntriesArgs.LeaderID)
 
 					server.eventLoop.heartbeatReqCh <- Event[AppendEntriesArgs]{
 						Type: HeartbeatReq,
 						Data: appendEntriesArgs,
 					}
 				}
+			} else {
+				slog.Debug("[TCP_SERVER] Error decoding AppendEntriesReq RPC")
 			}
 		}
 	}
@@ -164,4 +181,5 @@ func (s *Server) RunTcp() {
 			go handleConnection(conn, s)
 		}
 	}
+
 }

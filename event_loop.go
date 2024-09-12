@@ -23,6 +23,7 @@ type EventLoop struct {
 	appendEntriesResCh chan Event[AppendEntriesReply]
 	heartbeatReqCh     chan Event[AppendEntriesArgs]
 	heartbeatRespCh    chan Event[AppendEntriesReply]
+	leaderElectedCh    chan Event[bool]
 }
 
 func NewEventLoop() *EventLoop {
@@ -33,6 +34,7 @@ func NewEventLoop() *EventLoop {
 		appendEntriesResCh: make(chan Event[AppendEntriesReply]),
 		heartbeatReqCh:     make(chan Event[AppendEntriesArgs]),
 		heartbeatRespCh:    make(chan Event[AppendEntriesReply]),
+		leaderElectedCh:    make(chan Event[bool]),
 	}
 }
 
@@ -43,4 +45,5 @@ func (el *EventLoop) Close() {
 	close(el.appendEntriesResCh)
 	close(el.heartbeatReqCh)
 	close(el.heartbeatRespCh)
+	close(el.leaderElectedCh)
 }

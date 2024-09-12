@@ -3,6 +3,7 @@ package raft
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 )
 
 func (s *Server) sendRequestVoteReqRpc(addr string, args RequestVoteArgs) error {
@@ -38,6 +39,54 @@ func (s *Server) sendRequestVoteRespRpc(addr string, reply RequestVoteReply) err
 		Type: "RequestVoteResp",
 		Args: reply,
 	}
+
+	// Encode and send the request
+	encoder := json.NewEncoder(conn)
+	err = encoder.Encode(rpcRequest)
+	if err != nil {
+		return fmt.Errorf("error encoding request: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Server) sendAppendEntriesReqRpc(addr string, args AppendEntriesArgs) error {
+	conn, err := s.connectionPool.GetConnection(addr)
+	if err != nil {
+		return fmt.Errorf("error getting connection: %v", err)
+	}
+
+	// Create the RPC request
+	rpcRequest := RaftRPC{
+		Type: "AppendEntriesReq",
+		Args: args,
+	}
+
+	slog.Info("[TCP_CLIENT] Sending AppendEntriesReq RPC", "addr", addr, "args", args)
+
+	// Encode and send the request
+	encoder := json.NewEncoder(conn)
+	err = encoder.Encode(rpcRequest)
+	if err != nil {
+		return fmt.Errorf("error encoding request: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Server) sendAppendEntriesRespRpc(addr string, reply AppendEntriesReply) error {
+	conn, err := s.connectionPool.GetConnection(addr)
+	if err != nil {
+		return fmt.Errorf("error getting connection: %v", err)
+	}
+
+	// Create the RPC request
+	rpcRequest := RaftRPC{
+		Type: "AppendEntriesResp",
+		Args: reply,
+	}
+
+	slog.Info("[TCP_CLIENT] Sending AppendEntriesResp RPC", "addr", addr, "reply", reply)
 
 	// Encode and send the request
 	encoder := json.NewEncoder(conn)
