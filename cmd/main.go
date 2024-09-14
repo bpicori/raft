@@ -15,8 +15,14 @@ func init() {
 	os.Setenv("CURRENT_SERVER", "localhost:8080")
 	os.Setenv("PERSISTENT_FILE_PATH", "./ignore")
 
+	debugEnv := os.Getenv("DEBUG")
+	logLevel := slog.LevelInfo
+	if debugEnv != "" {
+		logLevel = slog.LevelDebug
+	}
+
 	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+		Level: logLevel,
 	})
 	logger := slog.New(jsonHandler)
 

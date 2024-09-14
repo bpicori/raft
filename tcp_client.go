@@ -18,6 +18,8 @@ func (s *Server) sendRequestVoteReqRpc(addr string, args RequestVoteArgs) error 
 		Args: args,
 	}
 
+	slog.Debug("[TCP_CLIENT] Sending RequestVoteReq RPC", "addr", addr, "args", args)
+
 	// Encode and send the request
 	encoder := json.NewEncoder(conn)
 	err = encoder.Encode(rpcRequest)
@@ -39,6 +41,8 @@ func (s *Server) sendRequestVoteRespRpc(addr string, reply RequestVoteReply) err
 		Type: "RequestVoteResp",
 		Args: reply,
 	}
+
+	slog.Debug("[TCP_CLIENT] Sending RequestVoteResp RPC", "addr", addr, "reply", reply)
 
 	// Encode and send the request
 	encoder := json.NewEncoder(conn)
@@ -62,7 +66,7 @@ func (s *Server) sendAppendEntriesReqRpc(addr string, args AppendEntriesArgs) er
 		Args: args,
 	}
 
-	slog.Info("[TCP_CLIENT] Sending AppendEntriesReq RPC", "addr", addr, "args", args)
+	slog.Debug("[TCP_CLIENT] Sending AppendEntriesReq RPC", "addr", addr, "args", args)
 
 	// Encode and send the request
 	encoder := json.NewEncoder(conn)
@@ -86,7 +90,7 @@ func (s *Server) sendAppendEntriesRespRpc(addr string, reply AppendEntriesReply)
 		Args: reply,
 	}
 
-	slog.Info("[TCP_CLIENT] Sending AppendEntriesResp RPC", "addr", addr, "reply", reply)
+	slog.Debug("[TCP_CLIENT] Sending AppendEntriesResp RPC", "addr", addr, "reply", reply)
 
 	// Encode and send the request
 	encoder := json.NewEncoder(conn)

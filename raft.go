@@ -190,13 +190,13 @@ func (s *Server) RunStateMachine() {
 		default:
 			switch s.currentRole {
 			case Follower:
-				slog.Info("[STATE_MACHINE] Current role is Follower")
+				slog.Debug("[STATE_MACHINE] Current role is Follower")
 				s.runFollower()
 			case Candidate:
-				slog.Info("[STATE_MACHINE] Current role is Candidate")
+				slog.Debug("[STATE_MACHINE] Current role is Candidate")
 				s.runCandidate()
 			case Leader:
-				slog.Info("[STATE_MACHINE] Current role is Leader")
+				slog.Debug("[STATE_MACHINE] Current role is Leader")
 				s.runLeader()
 			}
 		}
@@ -219,14 +219,14 @@ func (s *Server) runFollower() {
 			s.OnRequestVoteReq(requestVoteReq.Data)
 
 		case requestVoteRes := <-s.eventLoop.requestVoteRespCh:
-			slog.Info("[FOLLOWER] Received vote response from peer, discarding",
+			slog.Debug("[FOLLOWER] Received vote response from peer, discarding",
 				"peer", requestVoteRes.Data.NodeID,
 				"granted", requestVoteRes.Data.VoteGranted,
 				"term", requestVoteRes.Data.Term)
 			return
 
 		case <-s.eventLoop.heartbeatReqCh:
-			slog.Info("[FOLLOWER] Received heartbeat, resetting election timeout")
+			slog.Debug("[FOLLOWER] Received heartbeat, resetting election timeout")
 			s.becomeFollower(s.currentTerm)
 			return
 
