@@ -3,18 +3,13 @@ package main
 import (
 	"bpicori/raft"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-func init() {
-	os.Setenv("RAFT_SERVERS", "localhost:8080,localhost:8081,localhost:8082")
-	os.Setenv("CURRENT_SERVER", "localhost:8080")
-	os.Setenv("PERSISTENT_FILE_PATH", "./ignore")
-
+func logSetup() {
 	debugEnv := os.Getenv("DEBUG")
 	logLevel := slog.LevelInfo
 	if debugEnv != "" {
@@ -26,8 +21,11 @@ func init() {
 	})
 	logger := slog.New(jsonHandler)
 
-	// Set the logger as the default logger
 	slog.SetDefault(logger)
+}
+
+func init() {
+	logSetup()
 }
 
 func main() {
@@ -55,9 +53,8 @@ func main() {
 	}
 
 	if raftServers == "" || currentServer == "" || persistentPath == "" {
-		// slog.Error("Missing required flags")
-		// detect the missing flags
 		missingFlags := []string{}
+
 		if raftServers == "" {
 			missingFlags = append(missingFlags, "servers")
 		}
@@ -91,7 +88,7 @@ func main() {
 	// Wait for termination signal
 	<-sigChan
 
-	fmt.Println("Shutting down...")
+	slog.Info("Shutting down...")
 	server.Stop()
-	fmt.Println("Server stopped")
+	slog.Info("Server stopped")
 }
