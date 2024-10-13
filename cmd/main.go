@@ -12,7 +12,7 @@ import (
 func logSetup() {
 	debugEnv := os.Getenv("DEBUG")
 	logLevel := slog.LevelInfo
-	if debugEnv != "" {
+	if debugEnv == "true" {
 		logLevel = slog.LevelDebug
 	}
 

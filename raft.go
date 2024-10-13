@@ -422,7 +422,7 @@ func (s *Server) OnRequestVoteResp(requestVoteReply RequestVoteReply) {
 		return true
 	})
 
-	majority := len(s.config.Servers)/2 + 1
+	majority := len(s.config.Servers) / 2 + 1
 	if votes >= majority {
 		slog.Info("Received majority votes, becoming leader")
 		s.becomeLeader()
@@ -469,7 +469,7 @@ func (s *Server) runLeader() {
 		})
 	}
 
-	s.heartbeatTimer = time.NewTimer(200 * time.Millisecond)
+	s.heartbeatTimer = time.NewTimer(100 * time.Millisecond)
 
 	for {
 		select {

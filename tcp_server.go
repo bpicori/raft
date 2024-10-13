@@ -11,6 +11,12 @@ type RaftRPC struct {
 	Args interface{} `json:"args"`
 }
 
+type CurrentLeaderReq struct{}
+
+type CurrentLeaderResp struct {
+	Leader string `json:"leader"`
+}
+
 // RequestVoteArgs represents the arguments for a RequestVote RPC
 type RequestVoteArgs struct {
 	NodeID       string `json:"nodeId"`
@@ -141,6 +147,24 @@ func handleConnection(conn net.Conn, server *Server) {
 			} else {
 				slog.Debug("[TCP_SERVER] Error decoding AppendEntriesReq RPC")
 			}
+		case "CurrentLeaderReq":
+			if _, ok := rpc.Args.(map[string]interface{}); ok {
+
+				err := json.NewEncoder(conn).Encode(RaftRPC{
+					Type: "CurrentLeaderResp",
+					Args: map[string]interface{}{
+						"leader": server.currentLeader,
+					},
+				})
+
+				if err != nil {
+					slog.Error("[TCP_SERVER] Error encoding CurrentLeaderResp RPC", "error", err)
+				}
+
+			} else {
+				slog.Debug("[TCP_SERVER] Error decoding CurrentLeaderReq RPC")
+			}
+
 		}
 	}
 }
