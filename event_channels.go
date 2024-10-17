@@ -16,7 +16,7 @@ type Event[T any] struct {
 	Data T
 }
 
-type EventLoop struct {
+type EventChannels struct {
 	requestVoteReqCh   chan Event[RequestVoteArgs]
 	requestVoteRespCh  chan Event[RequestVoteReply]
 	appendEntriesReqCh chan Event[AppendEntriesArgs]
@@ -26,8 +26,8 @@ type EventLoop struct {
 	leaderElectedCh    chan Event[bool]
 }
 
-func NewEventLoop() *EventLoop {
-	return &EventLoop{
+func NewEventLoop() *EventChannels {
+	return &EventChannels{
 		requestVoteReqCh:   make(chan Event[RequestVoteArgs]),
 		requestVoteRespCh:  make(chan Event[RequestVoteReply]),
 		appendEntriesReqCh: make(chan Event[AppendEntriesArgs]),
@@ -38,7 +38,7 @@ func NewEventLoop() *EventLoop {
 	}
 }
 
-func (el *EventLoop) Close() {
+func (el *EventChannels) Close() {
 	close(el.requestVoteReqCh)
 	close(el.requestVoteRespCh)
 	close(el.appendEntriesReqCh)

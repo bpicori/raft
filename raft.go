@@ -69,7 +69,7 @@ type Server struct {
 	config Config
 
 	// event loop
-	eventLoop      *EventLoop
+	eventLoop      *EventChannels
 	connectionPool *ConnectionPool
 
 	// Channels for communication
