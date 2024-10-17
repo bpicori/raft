@@ -225,9 +225,9 @@ func (s *Server) runFollower() {
 				"term", requestVoteRes.Data.Term)
 			return
 
-		case <-s.eventLoop.heartbeatReqCh:
+		case heartbeatReq := <-s.eventLoop.heartbeatReqCh:
 			slog.Debug("[FOLLOWER] Received heartbeat, resetting election timeout")
-			s.becomeFollower(s.currentTerm)
+			s.becomeFollower(s.currentTerm, heartbeatReq.Data.LeaderID)
 			return
 
 		case <-s.electionTimeout.C:
@@ -309,7 +309,7 @@ func (s *Server) runCandidate() {
 		case appendEntriesRequest := <-s.eventLoop.heartbeatReqCh:
 			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", appendEntriesRequest.Data.LeaderID)
 			if appendEntriesRequest.Data.Term >= s.currentTerm {
-				s.becomeFollower(appendEntriesRequest.Data.Term)
+				s.becomeFollower(appendEntriesRequest.Data.Term, appendEntriesRequest.Data.LeaderID)
 				return // close this goroutine
 			}
 		case <-s.eventLoop.leaderElectedCh:
@@ -367,7 +367,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 	cLastLogTerm := requestVoteArgs.LastLogTerm
 
 	if cTerm > s.currentTerm {
-		s.becomeFollower(cTerm)
+		s.becomeFollower(cTerm, "")
 		go s.sendRequestVoteRespRpc(cID, RequestVoteReply{
 			NodeID:      s.config.SelfID,
 			Term:        s.currentTerm,
@@ -404,7 +404,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 
 func (s *Server) OnRequestVoteResp(requestVoteReply RequestVoteReply) {
 	if requestVoteReply.Term > s.currentTerm {
-		s.becomeFollower(requestVoteReply.Term)
+		s.becomeFollower(requestVoteReply.Term, "")
 		return
 	}
 
@@ -422,19 +422,20 @@ func (s *Server) OnRequestVoteResp(requestVoteReply RequestVoteReply) {
 		return true
 	})
 
-	majority := len(s.config.Servers) / 2 + 1
+	majority := len(s.config.Servers)/2 + 1
 	if votes >= majority {
 		slog.Info("Received majority votes, becoming leader")
 		s.becomeLeader()
 	}
 }
 
-func (s *Server) becomeFollower(term int) {
+func (s *Server) becomeFollower(term int, leader string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.currentRole = Follower
 	s.currentTerm = term
+	s.currentLeader = leader
 	s.votedFor = ""
 	s.electionTimeout.Reset(randomTimeout(500, 1000))
 }
