@@ -127,6 +127,7 @@ func (s *Server) Start() error {
 	s.wg.Add(2)
 	go s.RunTcp()
 	go s.RunStateMachine()
+	go s.RunHTTPServer()
 
 	return nil
 }

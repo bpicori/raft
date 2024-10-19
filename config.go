@@ -17,15 +17,17 @@ type Config struct {
 	SelfID             string
 	SelfServer         ServerConfig
 	PersistentFilePath string
+	HttpPort           string
 }
 
 func LoadConfig() (Config, error) {
 	serversStr := os.Getenv("RAFT_SERVERS")
 	currentSrv := os.Getenv("CURRENT_SERVER")
 	persistentFilePath := os.Getenv("PERSISTENT_FILE_PATH")
+	httpPort := os.Getenv("HTTP_PORT")
 
-	if serversStr == "" || currentSrv == "" {
-		return Config{}, fmt.Errorf("RAFT_SERVERS and CURRENT_SERVER must be set")
+	if serversStr == "" || currentSrv == "" || httpPort == "" {
+		return Config{}, fmt.Errorf("RAFT_SERVERS, CURRENT_SERVER and HTTP_PORT environment variables must be all set")
 	}
 
 	if persistentFilePath == "" {
@@ -63,5 +65,6 @@ func LoadConfig() (Config, error) {
 		SelfID:             selfID,
 		SelfServer:         selfServer,
 		PersistentFilePath: persistentFilePath,
+		HttpPort:           httpPort,
 	}, nil
 }
