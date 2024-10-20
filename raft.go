@@ -162,7 +162,9 @@ func LoadPersistedState(config Config) (currentTerm int, votedFor string, logEnt
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return 0, "", nil, 0
+		// this is the first time the server is starting
+		logEntry = make([]LogEntry, 0)
+		return 0, "", logEntry, 0
 	}
 	defer file.Close()
 
