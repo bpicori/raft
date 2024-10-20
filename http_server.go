@@ -8,18 +8,18 @@ import (
 )
 
 func (s *Server) status(w http.ResponseWriter, r *http.Request) {
-	slog.Info("[HTTP_SERVER] Status request received")
+	slog.Debug("[HTTP_SERVER] Status request received")
 
 	status := struct {
-		NodeID    string `json:"node_id"`
-		State     string `json:"state"`
-		Term      int    `json:"term"`
-		Leader    string `json:"leader_id"`
+		NodeID string `json:"node_id"`
+		Role   string `json:"role"`
+		Term   int    `json:"term"`
+		Leader string `json:"leader_id"`
 	}{
-		NodeID:    s.config.SelfID,
-		State:     string(s.currentRole),
-		Term:      s.currentTerm,
-		Leader:    s.currentLeader,
+		NodeID: s.config.SelfID,
+		Role:   roleToString(s.currentRole),
+		Term:   s.currentTerm,
+		Leader: s.currentLeader,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
