@@ -9,6 +9,7 @@ import (
 func (s *Server) sendRequestVoteReqRpc(addr string, args RequestVoteArgs) error {
 	conn, err := s.connectionPool.GetConnection(addr)
 	if err != nil {
+		slog.Info("[TPC_CLIENT][sendRequestVoteReqRpc] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
 	}
 
@@ -18,12 +19,13 @@ func (s *Server) sendRequestVoteReqRpc(addr string, args RequestVoteArgs) error 
 		Args: args,
 	}
 
-	slog.Debug("[TCP_CLIENT] Sending RequestVoteReq RPC", "addr", addr, "args", args)
+	slog.Debug("[TCP_CLIENT][sendRequestVoteReqRpc] Sending RPC", "addr", addr, "args", args)
 
 	// Encode and send the request
 	encoder := json.NewEncoder(conn)
 	err = encoder.Encode(rpcRequest)
 	if err != nil {
+		slog.Debug("[TCP_CLIENT][sendRequestVoteReqRpc] Error encoding request", "error", err)
 		return fmt.Errorf("error encoding request: %v", err)
 	}
 
@@ -33,6 +35,7 @@ func (s *Server) sendRequestVoteReqRpc(addr string, args RequestVoteArgs) error 
 func (s *Server) sendRequestVoteRespRpc(addr string, reply RequestVoteReply) error {
 	conn, err := s.connectionPool.GetConnection(addr)
 	if err != nil {
+		slog.Debug("[TCP_CLIENT][sendRequestVoteRespRpc] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
 	}
 
@@ -42,12 +45,13 @@ func (s *Server) sendRequestVoteRespRpc(addr string, reply RequestVoteReply) err
 		Args: reply,
 	}
 
-	slog.Debug("[TCP_CLIENT] Sending RequestVoteResp RPC", "addr", addr, "reply", reply)
+	slog.Debug("[TCP_CLIENT][sendRequestVoteRespRpc] Sending RPC", "addr", addr, "reply", reply)
 
 	// Encode and send the request
 	encoder := json.NewEncoder(conn)
 	err = encoder.Encode(rpcRequest)
 	if err != nil {
+		slog.Info("[TCP_CLIENT][sendRequestVoteRespRpc] Error encoding request", "error", err)
 		return fmt.Errorf("error encoding request: %v", err)
 	}
 
@@ -57,6 +61,7 @@ func (s *Server) sendRequestVoteRespRpc(addr string, reply RequestVoteReply) err
 func (s *Server) sendAppendEntriesReqRpc(addr string, args AppendEntriesArgs) error {
 	conn, err := s.connectionPool.GetConnection(addr)
 	if err != nil {
+		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
 	}
 

@@ -28,29 +28,42 @@ func (cp *ConnectionPool) Close() {
 	cp.connections = make(map[string]net.Conn)
 }
 
+func isConnectionAlive(conn net.Conn) bool {
+	// Set a deadline for reading
+	err := conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	if err != nil {
+		fmt.Println("Error setting read deadline:", err)
+		return false
+	}
+
+	// Try to read a single byte from the connection
+	var buf [1]byte
+	_, err = conn.Read(buf[:])
+
+	// If we get a timeout error, it means the connection is still alive
+	if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+		return true
+	}
+
+	// Any other error likely means the connection is closed
+	return err == nil
+}
+
 func (cp *ConnectionPool) GetConnection(addr string) (net.Conn, error) {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
 
 	conn, exists := cp.connections[addr]
 	if exists {
+		slog.Debug("Reusing existing connection", "addr", addr)
+
 		// Check if the existing connection is still valid
-		err := conn.SetReadDeadline(time.Now().Add(time.Second))
-		if err != nil {
-			slog.Debug("Error setting read deadline", "error", err)
-		}
-
-		_, err = conn.Read(make([]byte, 0))
-		if err == nil {
-			// Connection is still good, reset the read deadline and return
-			conn.SetReadDeadline(time.Time{})
+		if isConnectionAlive(conn) {
 			return conn, nil
+		} else {
+			slog.Debug("Detected closed connection, removing from pool", "addr", addr)
+			delete(cp.connections, addr)
 		}
-
-		// Connection is dead, close it and remove from the pool
-		slog.Debug("Detected closed connection, removing from pool", "addr", addr)
-		conn.Close()
-		delete(cp.connections, addr)
 	}
 
 	// Create a new connection

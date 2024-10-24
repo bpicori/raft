@@ -114,7 +114,7 @@ func NewServer() *Server {
 		sentLength:    make(map[string]int),
 		ackLength:     make(map[string]int),
 
-		electionTimeout: time.NewTimer(randomTimeout(500, 1000)),
+		electionTimeout: time.NewTimer(randomTimeout(1000, 2000)),
 		ctx:             ctx,
 		cancel:          cancel,
 	}
@@ -127,7 +127,7 @@ func (s *Server) Start() error {
 	s.wg.Add(2)
 	go s.RunTcp()
 	go s.RunStateMachine()
-	go s.RunHTTPServer()
+	// go s.RunHTTPServer()
 
 	return nil
 }
@@ -136,7 +136,7 @@ func (s *Server) Stop() {
 	s.cancel()
 	s.PersistState()
 
-	s.connectionPool.Close()
+	// s.connectionPool.Close()
 	s.eventLoop.Close()
 
 	s.wg.Wait()
@@ -152,8 +152,10 @@ func (s *Server) PersistState() {
 
 	err := persistedState.SaveToFile(s.config.SelfID, s.config.PersistentFilePath)
 	if err != nil {
-		fmt.Printf("Error saving state: %v\n", err)
+		slog.Error("Error saving state to file", "error", err)
 	}
+
+	slog.Info("State saved to file", "term", s.currentTerm, "votedFor", s.votedFor, "commitLength", s.commitLength)
 }
 
 func LoadPersistedState(config Config) (currentTerm int, votedFor string, logEntry []LogEntry, commitLength int) {
@@ -235,7 +237,6 @@ func (s *Server) runFollower() {
 
 		case <-s.electionTimeout.C:
 			slog.Info("[FOLLOWER] Election timeout from Follower state, starting new election")
-			s.electionTimeout.Reset(randomTimeout(500, 1000))
 			s.startElection()
 			return
 		}
@@ -282,7 +283,7 @@ func (s *Server) runCandidate() {
 		})
 	}
 
-	s.electionTimeout.Reset(randomTimeout(500, 1000))
+	s.electionTimeout.Reset(randomTimeout(1000, 2000))
 
 	for {
 		select {
@@ -473,7 +474,7 @@ func (s *Server) runLeader() {
 		})
 	}
 
-	s.heartbeatTimer = time.NewTimer(100 * time.Millisecond)
+	s.heartbeatTimer = time.NewTimer(300 * time.Millisecond)
 
 	for {
 		select {
