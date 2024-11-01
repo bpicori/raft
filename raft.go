@@ -51,31 +51,25 @@ func (s *ServerState) SaveToFile(serverId string, path string) error {
 type Server struct {
 	// mu sync.Mutex
 	mu sync.RWMutex
-
 	// Persistent state on all servers
 	currentTerm  int        // latest term server has seen
 	votedFor     string     // candidateId that received vote in current term
 	logEntry     []LogEntry // log entries
 	commitLength int        // index of highest log entry known to be committed
-
 	// Volatile state on all servers
 	currentRole   Role
 	currentLeader string
 	votesReceived sync.Map
 	sentLength    map[string]int
 	ackLength     map[string]int
-
 	// cluster configuration
 	config Config
-
 	// event loop
 	eventLoop      *EventChannels
 	connectionPool *ConnectionPool
-
 	// Channels for communication
 	electionTimeout *time.Timer
 	heartbeatTimer  *time.Timer
-
 	// Server lifecycle
 	wg     sync.WaitGroup
 	ctx    context.Context
@@ -85,60 +79,48 @@ type Server struct {
 // NewServer creates a new server with a random election timeout.
 func NewServer() *Server {
 	config, err := LoadConfig()
-
 	if err != nil {
 		panic(fmt.Sprintf("Error loading config %v", err))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
 	currentTerm, votedFor, logEntry, commitLength := LoadPersistedState(config)
-
 	eventLoop := NewEventLoop()
 	connectionPool := NewConnectionPool()
 
 	s := &Server{
-		config: config,
-
-		eventLoop:      eventLoop,
-		connectionPool: connectionPool,
-
-		currentTerm:  currentTerm,  // should be fetched from persistent storage
-		votedFor:     votedFor,     // should be fetched from persistent storage
-		logEntry:     logEntry,     // should be fetched from persistent storage
-		commitLength: commitLength, // should be fetched from persistent storage
-
-		currentRole:   Follower,
-		currentLeader: "",
-		votesReceived: sync.Map{},
-		sentLength:    make(map[string]int),
-		ackLength:     make(map[string]int),
-
-		electionTimeout: time.NewTimer(randomTimeout(1000, 2000)),
+		config:          config,
+		eventLoop:       eventLoop,
+		connectionPool:  connectionPool,
+		currentTerm:     currentTerm,  // should be fetched from persistent storage
+		votedFor:        votedFor,     // should be fetched from persistent storage
+		logEntry:        logEntry,     // should be fetched from persistent storage
+		commitLength:    commitLength, // should be fetched from persistent storage
+		currentRole:     Follower,
+		currentLeader:   "",
+		votesReceived:   sync.Map{},
+		sentLength:      make(map[string]int),
+		ackLength:       make(map[string]int),
+		electionTimeout: time.NewTimer(randomTimeout(config.TimeoutMin, config.TimeoutMax)),
 		ctx:             ctx,
 		cancel:          cancel,
 	}
-
 	return s
 }
 
 func (s *Server) Start() error {
-
 	s.wg.Add(2)
 	go s.RunTcp()
 	go s.RunStateMachine()
 	// go s.RunHTTPServer()
-
 	return nil
 }
 
 func (s *Server) Stop() {
 	s.cancel()
 	s.PersistState()
-
 	// s.connectionPool.Close()
 	s.eventLoop.Close()
-
 	s.wg.Wait()
 }
 
@@ -283,7 +265,7 @@ func (s *Server) runCandidate() {
 		})
 	}
 
-	s.electionTimeout.Reset(randomTimeout(1000, 2000))
+	s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 
 	for {
 		select {
@@ -441,7 +423,7 @@ func (s *Server) becomeFollower(term int, leader string) {
 	s.currentTerm = term
 	s.currentLeader = leader
 	s.votedFor = ""
-	s.electionTimeout.Reset(randomTimeout(500, 1000))
+	s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 }
 
 func (s *Server) runLeader() {
@@ -464,7 +446,7 @@ func (s *Server) runLeader() {
 			prevLogIndex = len(s.logEntry) - 1
 		}
 
-		go s.sendAppendEntriesReqRpc(peer.Addr, AppendEntriesArgs{
+		s.sendAppendEntriesReqRpc(peer.Addr, AppendEntriesArgs{
 			Term:         s.currentTerm,
 			LeaderID:     s.config.SelfID,
 			PrevLogIndex: prevLogIndex,
@@ -474,7 +456,7 @@ func (s *Server) runLeader() {
 		})
 	}
 
-	s.heartbeatTimer = time.NewTimer(300 * time.Millisecond)
+	s.heartbeatTimer = time.NewTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
 
 	for {
 		select {
