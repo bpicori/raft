@@ -164,7 +164,6 @@ func handleConnection(conn net.Conn, server *Server) {
 			} else {
 				slog.Debug("[TCP_SERVER] Error decoding CurrentLeaderReq RPC")
 			}
-
 		}
 	}
 }

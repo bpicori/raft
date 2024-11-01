@@ -446,7 +446,7 @@ func (s *Server) runLeader() {
 			prevLogIndex = len(s.logEntry) - 1
 		}
 
-		s.sendAppendEntriesReqRpc(peer.Addr, AppendEntriesArgs{
+		go s.sendAppendEntriesReqRpc(peer.Addr, AppendEntriesArgs{
 			Term:         s.currentTerm,
 			LeaderID:     s.config.SelfID,
 			PrevLogIndex: prevLogIndex,
@@ -464,6 +464,18 @@ func (s *Server) runLeader() {
 			return
 		case <-s.heartbeatTimer.C:
 			return
+    case requestVoteReq := <-s.eventLoop.requestVoteReqCh:
+      slog.Info("[LEADER] Received RequestVoteReq", "candidate", requestVoteReq.Data.CandidateID)
+      if requestVoteReq.Data.Term > s.currentTerm {
+        s.becomeFollower(requestVoteReq.Data.Term, "")
+        return
+      }
+		case heartbeatReq := <-s.eventLoop.heartbeatReqCh:
+			slog.Info("[LEADER] Received heartbeat from another leader", "another_leader", heartbeatReq.Data.LeaderID)
+			if heartbeatReq.Data.Term > s.currentTerm {
+				s.becomeFollower(heartbeatReq.Data.Term, heartbeatReq.Data.LeaderID)
+				return
+			}
 		}
 	}
 }
