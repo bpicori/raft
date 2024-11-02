@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package raft;
+
+option go_package = "./";
+
+// Define RPC messages
+message RaftRPC {
+  string type = 1;
+  oneof args {
+    CurrentLeaderReq currentLeaderReq = 2;
+    CurrentLeaderResp currentLeaderResp = 3;
+    RequestVoteArgs requestVoteArgs = 4;
+    RequestVoteReply requestVoteReply = 5;
+    AppendEntriesArgs appendEntriesArgs = 6;
+    AppendEntriesReply appendEntriesReply = 7;
+  }
+}
+
+message CurrentLeaderReq {}
+
+message CurrentLeaderResp { string leader = 1; }
+
+message RequestVoteArgs {
+  string nodeId = 1;
+  int32 term = 2;
+  string candidateId = 3;
+  int32 lastLogIndex = 4;
+  int32 lastLogTerm = 5;
+}
+
+message RequestVoteReply {
+  string nodeId = 1;
+  int32 term = 2;
+  bool voteGranted = 3;
+}
+
+message LogEntry {
+  int32 term = 1;
+  string command = 2;
+}
+
+message AppendEntriesArgs {
+  string nodeId = 1;
+  int32 term = 2;
+  string leaderId = 3;
+  int32 prevLogIndex = 4;
+  int32 prevLogTerm = 5;
+  repeated LogEntry entries = 6;
+  int32 leaderCommit = 7;
+}
+
+message AppendEntriesReply {
+  int32 term = 1;
+  bool success = 2;
+}

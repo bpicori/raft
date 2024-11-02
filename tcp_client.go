@@ -1,108 +1,123 @@
 package raft
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
+
+	"google.golang.org/protobuf/proto"
 )
 
-func (s *Server) sendRequestVoteReqRpc(addr string, args RequestVoteArgs) error {
-	conn, err := s.connectionPool.GetConnection(addr)
+// Helper function to send a protobuf message
+func sendProtobufMessage(conn net.Conn, message proto.Message) error {
+	data, err := proto.Marshal(message)
 	if err != nil {
-		slog.Info("[TPC_CLIENT][sendRequestVoteReqRpc] Error getting connection", "addr", addr, "error", err)
-		return fmt.Errorf("error getting connection: %v", err)
+		slog.Debug("Error marshaling message", "error", err)
+		return fmt.Errorf("error marshaling message: %v", err)
 	}
 
+	_, err = conn.Write(data)
+	if err != nil {
+		slog.Debug("Error sending data", "error", err)
+		return fmt.Errorf("error sending data: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Server) sendRequestVoteReqRpc(addr string, args *RequestVoteArgs) error {
+	conn, err := s.connectionPool.GetConnection(addr)
+	if err != nil {
+		slog.Info("[TCP_CLIENT][sendRequestVoteReqRpc] Error getting connection", "addr", addr, "error", err)
+		return fmt.Errorf("error getting connection: %v", err)
+	}
+	defer conn.Close()
+
 	// Create the RPC request
-	rpcRequest := RaftRPC{
+	rpcRequest := &RaftRPC{
 		Type: "RequestVoteReq",
-		Args: args,
+		Args: &RaftRPC_RequestVoteArgs{RequestVoteArgs: args},
 	}
 
 	slog.Debug("[TCP_CLIENT][sendRequestVoteReqRpc] Sending RPC", "addr", addr, "args", args)
 
 	// Encode and send the request
-	encoder := json.NewEncoder(conn)
-	err = encoder.Encode(rpcRequest)
-	if err != nil {
-		slog.Debug("[TCP_CLIENT][sendRequestVoteReqRpc] Error encoding request", "error", err)
-		return fmt.Errorf("error encoding request: %v", err)
+	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
+		return fmt.Errorf("error sending RequestVoteReq RPC: %v", err)
 	}
 
 	return nil
 }
 
-func (s *Server) sendRequestVoteRespRpc(addr string, reply RequestVoteReply) error {
+func (s *Server) sendRequestVoteRespRpc(addr string, reply *RequestVoteReply) error {
 	conn, err := s.connectionPool.GetConnection(addr)
 	if err != nil {
 		slog.Debug("[TCP_CLIENT][sendRequestVoteRespRpc] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
 	}
+	defer conn.Close()
 
 	// Create the RPC request
-	rpcRequest := RaftRPC{
+	rpcRequest := &RaftRPC{
 		Type: "RequestVoteResp",
-		Args: reply,
+		Args: &RaftRPC_RequestVoteReply{RequestVoteReply: reply},
 	}
 
 	slog.Debug("[TCP_CLIENT][sendRequestVoteRespRpc] Sending RPC", "addr", addr, "reply", reply)
 
 	// Encode and send the request
-	encoder := json.NewEncoder(conn)
-	err = encoder.Encode(rpcRequest)
-	if err != nil {
-		slog.Info("[TCP_CLIENT][sendRequestVoteRespRpc] Error encoding request", "error", err)
-		return fmt.Errorf("error encoding request: %v", err)
+	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
+		return fmt.Errorf("error sending RequestVoteResp RPC: %v", err)
 	}
 
 	return nil
 }
 
-func (s *Server) sendAppendEntriesReqRpc(addr string, args AppendEntriesArgs) error {
+func (s *Server) sendAppendEntriesReqRpc(addr string, args *AppendEntriesArgs) error {
 	conn, err := s.connectionPool.GetConnection(addr)
 	if err != nil {
 		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
 	}
+	defer conn.Close()
 
 	// Create the RPC request
-	rpcRequest := RaftRPC{
+	rpcRequest := &RaftRPC{
 		Type: "AppendEntriesReq",
-		Args: args,
+		Args: &RaftRPC_AppendEntriesArgs{AppendEntriesArgs: args},
 	}
 
 	slog.Debug("[TCP_CLIENT] Sending AppendEntriesReq RPC", "addr", addr, "args", args)
 
 	// Encode and send the request
-	encoder := json.NewEncoder(conn)
-	err = encoder.Encode(rpcRequest)
-	if err != nil {
-		return fmt.Errorf("error encoding request: %v", err)
+	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
+		return fmt.Errorf("error sending AppendEntriesReq RPC: %v", err)
 	}
 
 	return nil
 }
 
-func (s *Server) sendAppendEntriesRespRpc(addr string, reply AppendEntriesReply) error {
+func (s *Server) sendAppendEntriesRespRpc(addr string, reply *AppendEntriesReply) error {
 	conn, err := s.connectionPool.GetConnection(addr)
 	if err != nil {
+		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
 	}
+	defer conn.Close()
 
 	// Create the RPC request
-	rpcRequest := RaftRPC{
+	rpcRequest := &RaftRPC{
 		Type: "AppendEntriesResp",
-		Args: reply,
+		Args: &RaftRPC_AppendEntriesReply{AppendEntriesReply: reply},
 	}
 
 	slog.Debug("[TCP_CLIENT] Sending AppendEntriesResp RPC", "addr", addr, "reply", reply)
 
 	// Encode and send the request
-	encoder := json.NewEncoder(conn)
-	err = encoder.Encode(rpcRequest)
-	if err != nil {
-		return fmt.Errorf("error encoding request: %v", err)
+	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
+		return fmt.Errorf("error sending AppendEntriesResp RPC: %v", err)
 	}
 
 	return nil
 }
+

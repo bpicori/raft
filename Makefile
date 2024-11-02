@@ -1,3 +1,5 @@
+PHONY: install-tools proto mod-tidy run srv1 srv2 srv3 clean
+
 SERVERS = "localhost:8080,localhost:8081,localhost:8082"
 PERSISTENT_PATH = ./ignore
 DEBUG = DEBUG=true
@@ -8,6 +10,21 @@ TMUX_SPLIT_WINDOW = tmux split-window
 HEARTBEAT = 1000
 TIMEOUT_MIN = 3000
 TIMEOUT_MAX = 5000
+PROTO_SRC = raft.proto
+PROTO_OUT = .
+
+install-tools:
+	@echo "Installing protoc-gen-go..."
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	@echo "protoc-gen-go installed."
+
+proto:
+	@echo "Compiling protobuf files..."
+	protoc --plugin=$(go env GOPATH)/bin/protoc-gen-go --go_out=$(PROTO_OUT) $(PROTO_SRC)
+	@echo "Protobuf compilation complete."
+
+mod-tidy:
+	go mod tidy
 
 run:
 	$(TMUX_NEW_WINDOW) "$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8080 -persistent-path=$(PERSISTENT_PATH) -http-port=7070 -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)" && \
