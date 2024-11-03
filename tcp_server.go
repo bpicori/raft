@@ -6,6 +6,8 @@ import (
 	"net"
 
 	"google.golang.org/protobuf/proto"
+
+  "bpicori/raft/dto"
 )
 
 func handleConnection(conn net.Conn, server *Server) {
@@ -21,7 +23,7 @@ func handleConnection(conn net.Conn, server *Server) {
 		}
 
 		// Unmarshal the protobuf message
-		var rpc RaftRPC // Use the correct type from the generated package
+		var rpc dto.RaftRPC // Use the correct type from the generated package
 		if err := proto.Unmarshal(buffer[:n], &rpc); err != nil {
 			log.Printf("Error unmarshaling protobuf message: %v", err)
 			return
@@ -31,39 +33,39 @@ func handleConnection(conn net.Conn, server *Server) {
 		case "RequestVoteReq":
 			if args := rpc.GetRequestVoteArgs(); args != nil {
 
-				server.eventLoop.requestVoteReqCh <- Event[RequestVoteArgs]{
+				server.eventLoop.requestVoteReqCh <- Event[dto.RequestVoteArgs]{
 					Type: RequestVoteReq,
-					Data: *args,
+					Data: args,
 				}
 			}
 		case "RequestVoteResp":
 			if args := rpc.GetRequestVoteReply(); args != nil {
 
-				server.eventLoop.requestVoteRespCh <- Event[RequestVoteReply]{
+				server.eventLoop.requestVoteRespCh <- Event[dto.RequestVoteReply]{
 					Type: RequestVoteResp,
-					Data: *args,
+					Data: args,
 				}
 			}
 		case "AppendEntriesResp":
 			if args := rpc.GetAppendEntriesReply(); args != nil {
 
-				server.eventLoop.appendEntriesResCh <- Event[AppendEntriesReply]{
+				server.eventLoop.appendEntriesResCh <- Event[dto.AppendEntriesReply]{
 					Type: AppendEntriesResp,
-					Data: *args,
+					Data: args,
 				}
 			}
 		case "AppendEntriesReq":
 			if args := rpc.GetAppendEntriesArgs(); args != nil {
 
 				if len(args.Entries) > 0 {
-					server.eventLoop.appendEntriesReqCh <- Event[AppendEntriesArgs]{
+					server.eventLoop.appendEntriesReqCh <- Event[dto.AppendEntriesArgs]{
 						Type: AppendEntriesReq,
-						Data: *args,
+						Data: args,
 					}
 				} else {
-					server.eventLoop.heartbeatReqCh <- Event[AppendEntriesArgs]{
+					server.eventLoop.heartbeatReqCh <- Event[dto.AppendEntriesArgs]{
 						Type: HeartbeatReq,
-						Data: *args,
+						Data: args,
 					}
 				}
 			}

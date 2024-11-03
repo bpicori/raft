@@ -8,6 +8,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+  "bpicori/raft/dto"
 )
 
 type Role int
@@ -21,7 +23,7 @@ const (
 type ServerState struct {
 	CurrentTerm  int32       `json:"currentTerm"`
 	VotedFor     string      `json:"votedFor"`
-	LogEntry     []*LogEntry `json:"logEntry"`
+	LogEntry     []*dto.LogEntry `json:"logEntry"`
 	CommitLength int32       `json:"commitLength"`
 }
 
@@ -49,7 +51,7 @@ type Server struct {
 	// Persistent state on all servers
 	currentTerm  int32       // latest term server has seen
 	votedFor     string      // candidateId that received vote in current term
-	logEntry     []*LogEntry // log entries
+	logEntry     []*dto.LogEntry // log entries
 	commitLength int32       // index of highest log entry known to be committed
 	// Volatile state on all servers
 	currentRole   Role
@@ -135,14 +137,14 @@ func (s *Server) PersistState() {
 	slog.Info("State saved to file", "term", s.currentTerm, "votedFor", s.votedFor, "commitLength", s.commitLength)
 }
 
-func LoadPersistedState(config Config) (currentTerm int32, votedFor string, logEntry []*LogEntry, commitLength int32) {
+func LoadPersistedState(config Config) (currentTerm int32, votedFor string, logEntry []*dto.LogEntry, commitLength int32) {
 	fileName := fmt.Sprintf("%s.json", config.SelfID)
 	filePath := fmt.Sprintf("%s/%s", config.PersistentFilePath, fileName)
 
 	file, err := os.Open(filePath)
 	if err != nil {
 		// this is the first time the server is starting
-		logEntry = make([]*LogEntry, 0)
+		logEntry = make([]*dto.LogEntry, 0)
 		return 0, "", logEntry, 0
 	}
 	defer file.Close()
@@ -155,7 +157,7 @@ func LoadPersistedState(config Config) (currentTerm int32, votedFor string, logE
 	}
 
 	if state.LogEntry == nil {
-		state.LogEntry = make([]*LogEntry, 0)
+		state.LogEntry = make([]*dto.LogEntry, 0)
 	}
 
 	return state.CurrentTerm, state.VotedFor, state.LogEntry, state.CommitLength
@@ -251,7 +253,7 @@ func (s *Server) runCandidate() {
 			continue
 		}
 
-		go s.sendRequestVoteReqRpc(peer.Addr, &RequestVoteArgs{
+		go s.sendRequestVoteReqRpc(peer.Addr, &dto.RequestVoteArgs{
 			NodeId:       s.config.SelfID,
 			Term:         s.currentTerm,
 			CandidateId:  s.config.SelfID,
@@ -308,7 +310,8 @@ func (s *Server) becomeLeader() {
 	s.electionTimeout.Stop()
 	s.currentLeader = s.config.SelfID
 
-	s.eventLoop.leaderElectedCh <- Event[bool]{Data: true}
+  truePtr := true
+	s.eventLoop.leaderElectedCh <- Event[bool]{Data: &truePtr}
 
 	for _, peer := range s.config.Servers {
 		if peer.ID == s.config.SelfID {
@@ -328,7 +331,7 @@ func (s *Server) becomeLeader() {
 			prevLogIndex = int32(len(s.logEntry)) - 1
 		}
 
-		go s.sendAppendEntriesReqRpc(peer.Addr, &AppendEntriesArgs{
+		go s.sendAppendEntriesReqRpc(peer.Addr, &dto.AppendEntriesArgs{
 			Term:         s.currentTerm,
 			LeaderId:     s.config.SelfID,
 			PrevLogIndex: prevLogIndex,
@@ -339,7 +342,7 @@ func (s *Server) becomeLeader() {
 	}
 }
 
-func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
+func (s *Server) OnRequestVoteReq(requestVoteArgs *dto.RequestVoteArgs) {
 	// Received vote request from candidate
 	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateId)
 	cTerm := requestVoteArgs.Term
@@ -349,7 +352,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 
 	if cTerm > s.currentTerm {
 		s.becomeFollower(cTerm, "")
-		go s.sendRequestVoteRespRpc(cID, &RequestVoteReply{
+		go s.sendRequestVoteRespRpc(cID, &dto.RequestVoteReply{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
@@ -367,7 +370,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= int32(len(s.logEntry)))
 
 	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
-		go s.sendRequestVoteRespRpc(cID, &RequestVoteReply{
+		go s.sendRequestVoteRespRpc(cID, &dto.RequestVoteReply{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
@@ -375,7 +378,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 
 		s.votedFor = cID
 	} else {
-		go s.sendRequestVoteRespRpc(cID, &RequestVoteReply{
+		go s.sendRequestVoteRespRpc(cID, &dto.RequestVoteReply{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: false,
@@ -383,7 +386,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs RequestVoteArgs) {
 	}
 }
 
-func (s *Server) OnRequestVoteResp(requestVoteReply RequestVoteReply) {
+func (s *Server) OnRequestVoteResp(requestVoteReply *dto.RequestVoteReply) {
 	if requestVoteReply.Term > s.currentTerm {
 		s.becomeFollower(requestVoteReply.Term, "")
 		return
@@ -441,7 +444,7 @@ func (s *Server) runLeader() {
 			prevLogIndex = int32(len(s.logEntry) - 1)
 		}
 
-		go s.sendAppendEntriesReqRpc(peer.Addr, &AppendEntriesArgs{
+		go s.sendAppendEntriesReqRpc(peer.Addr, &dto.AppendEntriesArgs{
 			Term:         s.currentTerm,
 			PrevLogIndex: prevLogIndex,
 			PrevLogTerm:  prevLogTerm,

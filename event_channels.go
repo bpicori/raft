@@ -1,5 +1,9 @@
 package raft
 
+import (
+  "bpicori/raft/dto"
+)
+
 type EventType int
 
 const (
@@ -13,27 +17,27 @@ const (
 
 type Event[T any] struct {
 	Type EventType
-	Data T
+	Data *T
 }
 
 type EventChannels struct {
-	requestVoteReqCh   chan Event[RequestVoteArgs]
-	requestVoteRespCh  chan Event[RequestVoteReply]
-	appendEntriesReqCh chan Event[AppendEntriesArgs]
-	appendEntriesResCh chan Event[AppendEntriesReply]
-	heartbeatReqCh     chan Event[AppendEntriesArgs]
-	heartbeatRespCh    chan Event[AppendEntriesReply]
+	requestVoteReqCh   chan Event[dto.RequestVoteArgs]
+	requestVoteRespCh  chan Event[dto.RequestVoteReply]
+	appendEntriesReqCh chan Event[dto.AppendEntriesArgs]
+	appendEntriesResCh chan Event[dto.AppendEntriesReply]
+	heartbeatReqCh     chan Event[dto.AppendEntriesArgs]
+	heartbeatRespCh    chan Event[dto.AppendEntriesReply]
 	leaderElectedCh    chan Event[bool]
 }
 
 func NewEventLoop() *EventChannels {
 	return &EventChannels{
-		requestVoteReqCh:   make(chan Event[RequestVoteArgs]),
-		requestVoteRespCh:  make(chan Event[RequestVoteReply]),
-		appendEntriesReqCh: make(chan Event[AppendEntriesArgs]),
-		appendEntriesResCh: make(chan Event[AppendEntriesReply]),
-		heartbeatReqCh:     make(chan Event[AppendEntriesArgs]),
-		heartbeatRespCh:    make(chan Event[AppendEntriesReply]),
+		requestVoteReqCh:   make(chan Event[dto.RequestVoteArgs]),
+		requestVoteRespCh:  make(chan Event[dto.RequestVoteReply]),
+		appendEntriesReqCh: make(chan Event[dto.AppendEntriesArgs]),
+		appendEntriesResCh: make(chan Event[dto.AppendEntriesReply]),
+		heartbeatReqCh:     make(chan Event[dto.AppendEntriesArgs]),
+		heartbeatRespCh:    make(chan Event[dto.AppendEntriesReply]),
 		leaderElectedCh:    make(chan Event[bool]),
 	}
 }
