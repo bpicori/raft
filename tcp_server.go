@@ -7,73 +7,70 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-  "bpicori/raft/dto"
+	"bpicori/raft/dto"
 )
 
 func handleConnection(conn net.Conn, server *Server) {
 	defer conn.Close()
 
-	for {
-		// Buffer to read incoming data
-		buffer := make([]byte, 4096)
-		n, err := conn.Read(buffer)
-		if err != nil {
-			log.Printf("Error reading from connection: %v", err)
-			return
+	// Buffer to read incoming data
+	buffer := make([]byte, 4096)
+	n, err := conn.Read(buffer)
+	if err != nil {
+		log.Printf("Error reading from connection: %v", err)
+		return
+	}
+
+	// Unmarshal the protobuf message
+	var rpc dto.RaftRPC // Use the correct type from the generated package
+	if err := proto.Unmarshal(buffer[:n], &rpc); err != nil {
+		log.Printf("Error unmarshaling protobuf message: %v", err)
+		return
+	}
+
+	switch rpc.Type {
+	case "RequestVoteReq":
+		if args := rpc.GetRequestVoteArgs(); args != nil {
+
+			server.eventLoop.requestVoteReqCh <- Event[dto.RequestVoteArgs]{
+				Type: RequestVoteReq,
+				Data: args,
+			}
 		}
+	case "RequestVoteResp":
+		if args := rpc.GetRequestVoteReply(); args != nil {
 
-		// Unmarshal the protobuf message
-		var rpc dto.RaftRPC // Use the correct type from the generated package
-		if err := proto.Unmarshal(buffer[:n], &rpc); err != nil {
-			log.Printf("Error unmarshaling protobuf message: %v", err)
-			return
+			server.eventLoop.requestVoteRespCh <- Event[dto.RequestVoteReply]{
+				Type: RequestVoteResp,
+				Data: args,
+			}
 		}
+	case "AppendEntriesResp":
+		if args := rpc.GetAppendEntriesReply(); args != nil {
 
-		switch rpc.Type {
-		case "RequestVoteReq":
-			if args := rpc.GetRequestVoteArgs(); args != nil {
+			server.eventLoop.appendEntriesResCh <- Event[dto.AppendEntriesReply]{
+				Type: AppendEntriesResp,
+				Data: args,
+			}
+		}
+	case "AppendEntriesReq":
+		if args := rpc.GetAppendEntriesArgs(); args != nil {
 
-				server.eventLoop.requestVoteReqCh <- Event[dto.RequestVoteArgs]{
-					Type: RequestVoteReq,
+			if len(args.Entries) > 0 {
+				server.eventLoop.appendEntriesReqCh <- Event[dto.AppendEntriesArgs]{
+					Type: AppendEntriesReq,
+					Data: args,
+				}
+			} else {
+				server.eventLoop.heartbeatReqCh <- Event[dto.AppendEntriesArgs]{
+					Type: HeartbeatReq,
 					Data: args,
 				}
 			}
-		case "RequestVoteResp":
-			if args := rpc.GetRequestVoteReply(); args != nil {
-
-				server.eventLoop.requestVoteRespCh <- Event[dto.RequestVoteReply]{
-					Type: RequestVoteResp,
-					Data: args,
-				}
-			}
-		case "AppendEntriesResp":
-			if args := rpc.GetAppendEntriesReply(); args != nil {
-
-				server.eventLoop.appendEntriesResCh <- Event[dto.AppendEntriesReply]{
-					Type: AppendEntriesResp,
-					Data: args,
-				}
-			}
-		case "AppendEntriesReq":
-			if args := rpc.GetAppendEntriesArgs(); args != nil {
-
-				if len(args.Entries) > 0 {
-					server.eventLoop.appendEntriesReqCh <- Event[dto.AppendEntriesArgs]{
-						Type: AppendEntriesReq,
-						Data: args,
-					}
-				} else {
-					server.eventLoop.heartbeatReqCh <- Event[dto.AppendEntriesArgs]{
-						Type: HeartbeatReq,
-						Data: args,
-					}
-				}
-			}
-		case "CurrentLeaderReq":
-			if args := rpc.GetCurrentLeaderReq(); args != nil {
-				slog.Debug("[TCP_SERVER] Received CurrentLeaderReq RPC", "args", args)
-			}
-
+		}
+	case "CurrentLeaderReq":
+		if args := rpc.GetCurrentLeaderReq(); args != nil {
+			slog.Debug("[TCP_SERVER] Received CurrentLeaderReq RPC", "args", args)
 		}
 	}
 }

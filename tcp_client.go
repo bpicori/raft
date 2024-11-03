@@ -28,7 +28,7 @@ func sendProtobufMessage(conn net.Conn, message proto.Message) error {
 }
 
 func (s *Server) sendRequestVoteReqRpc(addr string, args *dto.RequestVoteArgs) error {
-	conn, err := s.connectionPool.GetConnection(addr)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Info("[TCP_CLIENT][sendRequestVoteReqRpc] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
@@ -52,7 +52,7 @@ func (s *Server) sendRequestVoteReqRpc(addr string, args *dto.RequestVoteArgs) e
 }
 
 func (s *Server) sendRequestVoteRespRpc(addr string, reply *dto.RequestVoteReply) error {
-	conn, err := s.connectionPool.GetConnection(addr)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Debug("[TCP_CLIENT][sendRequestVoteRespRpc] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
@@ -76,7 +76,7 @@ func (s *Server) sendRequestVoteRespRpc(addr string, reply *dto.RequestVoteReply
 }
 
 func (s *Server) sendAppendEntriesReqRpc(addr string, args *dto.AppendEntriesArgs) error {
-	conn, err := s.connectionPool.GetConnection(addr)
+  conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
@@ -100,7 +100,7 @@ func (s *Server) sendAppendEntriesReqRpc(addr string, args *dto.AppendEntriesArg
 }
 
 func (s *Server) sendAppendEntriesRespRpc(addr string, reply *dto.AppendEntriesReply) error {
-	conn, err := s.connectionPool.GetConnection(addr)
+  conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
@@ -121,4 +121,14 @@ func (s *Server) sendAppendEntriesRespRpc(addr string, reply *dto.AppendEntriesR
 	}
 
 	return nil
+}
+
+func createConnection(addr string) (net.Conn, error) {
+	// Create a new connection
+	newConn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to peer: %v", err)
+	}
+
+	return newConn, nil
 }

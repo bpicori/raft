@@ -63,7 +63,6 @@ type Server struct {
 	config Config
 	// event loop
 	eventLoop      *EventChannels
-	connectionPool *ConnectionPool
 	// Channels for communication
 	electionTimeout *time.Timer
 	heartbeatTimer  *time.Timer
@@ -83,12 +82,10 @@ func NewServer() *Server {
 	ctx, cancel := context.WithCancel(context.Background())
 	currentTerm, votedFor, logEntry, commitLength := LoadPersistedState(config)
 	eventLoop := NewEventLoop()
-	connectionPool := NewConnectionPool()
 
 	s := &Server{
 		config:          config,
 		eventLoop:       eventLoop,
-		connectionPool:  connectionPool,
 		currentTerm:     currentTerm,  // should be fetched from persistent storage
 		votedFor:        votedFor,     // should be fetched from persistent storage
 		logEntry:        logEntry,     // should be fetched from persistent storage
@@ -116,7 +113,6 @@ func (s *Server) Start() error {
 func (s *Server) Stop() {
 	s.cancel()
 	s.PersistState()
-	// s.connectionPool.Close()
 	s.eventLoop.Close()
 	s.wg.Wait()
 }
