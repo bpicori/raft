@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/config"
+	"bpicori/raft/pkgs/dto"
 )
 
 type Role int
@@ -22,10 +22,10 @@ const (
 )
 
 type ServerState struct {
-	CurrentTerm  int32       `json:"currentTerm"`
-	VotedFor     string      `json:"votedFor"`
+	CurrentTerm  int32           `json:"currentTerm"`
+	VotedFor     string          `json:"votedFor"`
 	LogEntry     []*dto.LogEntry `json:"logEntry"`
-	CommitLength int32       `json:"commitLength"`
+	CommitLength int32           `json:"commitLength"`
 }
 
 func (s *ServerState) SaveToFile(serverId string, path string) error {
@@ -50,10 +50,10 @@ type Server struct {
 	// mu sync.Mutex
 	mu sync.RWMutex
 	// Persistent state on all servers
-	currentTerm  int32       // latest term server has seen
-	votedFor     string      // candidateId that received vote in current term
+	currentTerm  int32           // latest term server has seen
+	votedFor     string          // candidateId that received vote in current term
 	logEntry     []*dto.LogEntry // log entries
-	commitLength int32       // index of highest log entry known to be committed
+	commitLength int32           // index of highest log entry known to be committed
 	// Volatile state on all servers
 	currentRole   Role
 	currentLeader string
@@ -63,7 +63,7 @@ type Server struct {
 	// cluster configuration
 	config config.Config
 	// event loop
-	eventLoop      *EventChannels
+	eventLoop *EventChannels
 	// Channels for communication
 	electionTimeout *time.Timer
 	heartbeatTimer  *time.Timer
@@ -307,7 +307,7 @@ func (s *Server) becomeLeader() {
 	s.electionTimeout.Stop()
 	s.currentLeader = s.config.SelfID
 
-  truePtr := true
+	truePtr := true
 	s.eventLoop.leaderElectedCh <- Event[bool]{Data: &truePtr}
 
 	for _, peer := range s.config.Servers {
@@ -447,6 +447,7 @@ func (s *Server) runLeader() {
 			PrevLogTerm:  prevLogTerm,
 			Entries:      s.logEntry,
 			LeaderCommit: s.commitLength,
+			LeaderId:     s.config.SelfID,
 		})
 	}
 

@@ -2,6 +2,7 @@ package core
 
 import (
 	"bpicori/raft/pkgs/dto"
+	"fmt"
 	"log"
 	"log/slog"
 	"net"
@@ -67,6 +68,25 @@ func handleConnection(conn net.Conn, server *Server) {
 				}
 			}
 		}
+	case "ClusterState":
+		clusterState := &dto.ClusterState{
+			Leader: server.currentLeader,
+		}
+
+		data, err := proto.Marshal(clusterState)
+		if err != nil {
+			slog.Error("Error marshaling cluster state", "error", err)
+			return
+		}
+    slog.Info("Received ClusterState RPC", "leader", clusterState.Leader)
+    fmt.Println(data)
+
+		_, err = conn.Write(append(data, '\n'))
+		if err != nil {
+			slog.Error("Error sending cluster state", "error", err)
+			return
+		}
+
 	}
 }
 

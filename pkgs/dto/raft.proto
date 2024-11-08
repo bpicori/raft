@@ -2,8 +2,7 @@ syntax = "proto3";
 
 package dto;
 
-option go_package = "./pgks/dto";
-
+option go_package = "./pkgs/dto";
 
 // Define RPC messages
 message RaftRPC {
@@ -13,6 +12,7 @@ message RaftRPC {
     RequestVoteReply requestVoteReply = 5;
     AppendEntriesArgs appendEntriesArgs = 6;
     AppendEntriesReply appendEntriesReply = 7;
+    ClusterState responseClusterState = 9;
   }
 }
 
@@ -49,3 +49,5 @@ message AppendEntriesReply {
   int32 term = 1;
   bool success = 2;
 }
+
+message ClusterState { string leader = 1; }
