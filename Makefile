@@ -4,7 +4,7 @@ SERVERS = "localhost:8080,localhost:8081,localhost:8082"
 PERSISTENT_PATH = ./ignore
 DEBUG = DEBUG=false
 GO = go run
-SRC = cmd/main.go
+SRC = cmd/server/main.go
 TMUX_NEW_WINDOW = tmux new-window -n "Raft"
 TMUX_SPLIT_WINDOW = tmux split-window
 HEARTBEAT = 1000
