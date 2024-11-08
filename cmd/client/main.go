@@ -1,16 +1,21 @@
 package main
 
 import (
+	"bpicori/raft/pkgs/config"
 	"bpicori/raft/pkgs/logger"
-	"fmt"
+	"log/slog"
+	"os"
 )
 
-
-
 func init() {
-  logger.LogSetup()
+	logger.LogSetup()
 }
 
-func main(){
-  fmt.Println("Hello, World!")
+func main() {
+	_, err := config.LoadConfig(true)
+	if err != nil {
+		slog.Error("Error loading config", "error", err)
+		os.Exit(1)
+	}
+
 }

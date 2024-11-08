@@ -75,7 +75,7 @@ func (s *Server) sendRequestVoteRespRpc(addr string, reply *dto.RequestVoteReply
 }
 
 func (s *Server) sendAppendEntriesReqRpc(addr string, args *dto.AppendEntriesArgs) error {
-  conn, err := net.Dial("tcp", addr)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
@@ -99,7 +99,7 @@ func (s *Server) sendAppendEntriesReqRpc(addr string, args *dto.AppendEntriesArg
 }
 
 func (s *Server) sendAppendEntriesRespRpc(addr string, reply *dto.AppendEntriesReply) error {
-  conn, err := net.Dial("tcp", addr)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)

@@ -75,7 +75,7 @@ type Server struct {
 
 // NewServer creates a new server with a random election timeout.
 func NewServer() *Server {
-	config, err := config.LoadConfig()
+	config, err := config.LoadConfig(false)
 	if err != nil {
 		panic(fmt.Sprintf("Error loading config %v", err))
 	}

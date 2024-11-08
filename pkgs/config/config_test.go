@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 			os.Setenv("CURRENT_SERVER", tt.currentServer)
 
 			// Run LoadConfig
-			config, err := LoadConfig()
+			config, err := LoadConfig(false)
 
 			// Check for expected error
 			if tt.expectError {
