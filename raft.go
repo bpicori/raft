@@ -9,7 +9,8 @@ import (
 	"sync"
 	"time"
 
-  "bpicori/raft/dto"
+	"bpicori/raft/dto"
+	"bpicori/raft/pkgs/config"
 )
 
 type Role int
@@ -60,7 +61,7 @@ type Server struct {
 	sentLength    map[string]int
 	ackLength     map[string]int
 	// cluster configuration
-	config Config
+	config config.Config
 	// event loop
 	eventLoop      *EventChannels
 	// Channels for communication
@@ -74,7 +75,7 @@ type Server struct {
 
 // NewServer creates a new server with a random election timeout.
 func NewServer() *Server {
-	config, err := LoadConfig()
+	config, err := config.LoadConfig()
 	if err != nil {
 		panic(fmt.Sprintf("Error loading config %v", err))
 	}
@@ -133,7 +134,7 @@ func (s *Server) PersistState() {
 	slog.Info("State saved to file", "term", s.currentTerm, "votedFor", s.votedFor, "commitLength", s.commitLength)
 }
 
-func LoadPersistedState(config Config) (currentTerm int32, votedFor string, logEntry []*dto.LogEntry, commitLength int32) {
+func LoadPersistedState(config config.Config) (currentTerm int32, votedFor string, logEntry []*dto.LogEntry, commitLength int32) {
 	fileName := fmt.Sprintf("%s.json", config.SelfID)
 	filePath := fmt.Sprintf("%s/%s", config.PersistentFilePath, fileName)
 

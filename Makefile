@@ -5,6 +5,7 @@ PERSISTENT_PATH = ./ignore
 DEBUG = DEBUG=false
 GO = go run
 SRC = cmd/server/main.go
+SRC_CLIENT = cmd/client/main.go
 TMUX_NEW_WINDOW = tmux new-window -n "Raft"
 TMUX_SPLIT_WINDOW = tmux split-window
 HEARTBEAT = 1000
@@ -31,7 +32,8 @@ build:
 	@echo "Building the project..."
 	mkdir -p bin
 	make proto-build
-	go build -o bin/raft cmd/main.go
+	go build -o bin/raft cmd/server/main.go
+	go build -o bin/client cmd/client/main.go
 	@echo "Project built."
 
 run:
