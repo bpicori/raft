@@ -68,10 +68,6 @@ func handleConnection(conn net.Conn, server *Server) {
 				}
 			}
 		}
-	case "CurrentLeaderReq":
-		if args := rpc.GetCurrentLeaderReq(); args != nil {
-			slog.Debug("[TCP_SERVER] Received CurrentLeaderReq RPC", "args", args)
-		}
 	}
 }
 

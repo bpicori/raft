@@ -9,18 +9,12 @@ option go_package = "./dto";
 message RaftRPC {
   string type = 1;
   oneof args {
-    CurrentLeaderReq currentLeaderReq = 2;
-    CurrentLeaderResp currentLeaderResp = 3;
     RequestVoteArgs requestVoteArgs = 4;
     RequestVoteReply requestVoteReply = 5;
     AppendEntriesArgs appendEntriesArgs = 6;
     AppendEntriesReply appendEntriesReply = 7;
   }
 }
-
-message CurrentLeaderReq {}
-
-message CurrentLeaderResp { string leader = 1; }
 
 message RequestVoteArgs {
   string nodeId = 1;

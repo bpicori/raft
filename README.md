@@ -7,5 +7,6 @@
 
 ### LIST of TODOs
 
-- Change the Encode/Decode from json to something more efficient
+- Implement AppendEntries 
+- Store LogEntries, sqlite maybe?
 

@@ -2,7 +2,7 @@ PHONY: install-tools install run srv1 srv2 srv3 clean
 
 SERVERS = "localhost:8080,localhost:8081,localhost:8082"
 PERSISTENT_PATH = ./ignore
-DEBUG = DEBUG=true
+DEBUG = DEBUG=false
 GO = go run
 SRC = cmd/main.go
 TMUX_NEW_WINDOW = tmux new-window -n "Raft"
