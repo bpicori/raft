@@ -1,13 +1,12 @@
-package raft
+package core
 
 import (
+	"bpicori/raft/pkgs/dto"
 	"log"
 	"log/slog"
 	"net"
 
 	"google.golang.org/protobuf/proto"
-
-	"bpicori/raft/dto"
 )
 
 func handleConnection(conn net.Conn, server *Server) {

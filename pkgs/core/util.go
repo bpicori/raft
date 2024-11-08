@@ -1,4 +1,4 @@
-package raft
+package core
 import (
 	"log"
 	"math/rand"

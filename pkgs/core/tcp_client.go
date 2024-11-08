@@ -1,13 +1,12 @@
-package raft
+package core
 
 import (
+	"bpicori/raft/pkgs/dto"
 	"fmt"
 	"log/slog"
 	"net"
 
 	"google.golang.org/protobuf/proto"
-
-	"bpicori/raft/dto"
 )
 
 // Helper function to send a protobuf message

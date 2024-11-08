@@ -25,7 +25,7 @@ install:
 
 proto-build:
 	@echo "Compiling protobuf files..."
-	protoc --go_out=. dto/raft.proto
+	protoc --go_out=. pkgs/dto/raft.proto
 	@echo "Protobuf compilation complete."
 
 build:

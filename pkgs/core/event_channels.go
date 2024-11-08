@@ -1,8 +1,7 @@
-package raft
+package core
 
-import (
-  "bpicori/raft/dto"
-)
+import "bpicori/raft/pkgs/dto"
+
 
 type EventType int
 

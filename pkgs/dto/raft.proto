@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package dto;
 
-option go_package = "./dto";
+option go_package = "./pgks/dto";
 
 
 // Define RPC messages

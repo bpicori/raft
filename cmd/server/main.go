@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bpicori/raft"
+	"bpicori/raft/pkgs/core"
 	"bpicori/raft/pkgs/logger"
 	"log/slog"
 	"os"
@@ -15,7 +15,7 @@ func init() {
 
 func main() {
 
-	server := raft.NewServer()
+	server := core.NewServer()
 
 	if err := server.Start(); err != nil {
 		slog.Error("Failed to start server", "error", err)

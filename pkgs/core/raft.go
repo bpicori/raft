@@ -1,4 +1,4 @@
-package raft
+package core
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"bpicori/raft/dto"
+	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/config"
 )
 
