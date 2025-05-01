@@ -13,7 +13,6 @@ import (
 func handleConnection(conn net.Conn, server *Server) {
 	defer conn.Close()
 
-	// Buffer to read incoming data
 	buffer := make([]byte, 4096)
 	n, err := conn.Read(buffer)
 	if err != nil {
@@ -21,8 +20,7 @@ func handleConnection(conn net.Conn, server *Server) {
 		return
 	}
 
-	// Unmarshal the protobuf message
-	var rpc dto.RaftRPC // Use the correct type from the generated package
+	var rpc dto.RaftRPC
 	if err := proto.Unmarshal(buffer[:n], &rpc); err != nil {
 		log.Printf("Error unmarshaling protobuf message: %v", err)
 		return
