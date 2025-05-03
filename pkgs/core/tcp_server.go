@@ -2,7 +2,6 @@ package core
 
 import (
 	"bpicori/raft/pkgs/dto"
-	"log"
 	"log/slog"
 	"net"
 
@@ -15,44 +14,52 @@ func handleConnection(conn net.Conn, server *Server) {
 	buffer := make([]byte, 4096)
 	n, err := conn.Read(buffer)
 	if err != nil {
-		log.Printf("Error reading from connection: %v", err)
+		slog.Error("Error reading from connection", "remote_addr", conn.RemoteAddr(), "error", err)
 		return
 	}
 
 	var rpc dto.RaftRPC
 	if err := proto.Unmarshal(buffer[:n], &rpc); err != nil {
-		log.Printf("Error unmarshaling protobuf message: %v", err)
+		slog.Error("Error unmarshaling protobuf message", "remote_addr", conn.RemoteAddr(), "error", err)
 		return
 	}
 
-	switch rpc.Type {
-	case "RequestVoteReq":
-		if args := rpc.GetRequestVoteArgs(); args != nil {
+	rpcType, err := mapStringToRPCType(rpc.Type)
+	if err != nil {
+		slog.Error("Received unknown RPC type", "type", rpc.Type, "remote_addr", conn.RemoteAddr(), "error", err)
+		return
+	}
 
+	switch rpcType {
+	case RequestVoteReqType:
+		if args := rpc.GetRequestVoteArgs(); args != nil {
 			server.eventLoop.requestVoteReqCh <- Event[dto.RequestVoteArgs]{
 				Type: RequestVoteReq,
 				Data: args,
 			}
+		} else {
+			slog.Warn("Received RequestVoteReq with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case "RequestVoteResp":
+	case RequestVoteRespType:
 		if args := rpc.GetRequestVoteReply(); args != nil {
-
 			server.eventLoop.requestVoteRespCh <- Event[dto.RequestVoteReply]{
 				Type: RequestVoteResp,
 				Data: args,
 			}
+		} else {
+			slog.Warn("Received RequestVoteResp with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case "AppendEntriesResp":
+	case AppendEntriesRespType:
 		if args := rpc.GetAppendEntriesReply(); args != nil {
-
 			server.eventLoop.appendEntriesResCh <- Event[dto.AppendEntriesReply]{
 				Type: AppendEntriesResp,
 				Data: args,
 			}
+		} else {
+			slog.Warn("Received AppendEntriesResp with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case "AppendEntriesReq":
+	case AppendEntriesReqType:
 		if args := rpc.GetAppendEntriesArgs(); args != nil {
-
 			if len(args.Entries) > 0 {
 				server.eventLoop.appendEntriesReqCh <- Event[dto.AppendEntriesArgs]{
 					Type: AppendEntriesReq,
@@ -64,25 +71,27 @@ func handleConnection(conn net.Conn, server *Server) {
 					Data: args,
 				}
 			}
+		} else {
+			slog.Warn("Received AppendEntriesReq/Heartbeat with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case "ClusterState":
+	case ClusterStateType:
 		clusterState := &dto.ClusterState{
 			Leader: server.currentLeader,
 		}
 
 		data, err := proto.Marshal(clusterState)
 		if err != nil {
-			slog.Error("Error marshaling cluster state", "error", err)
+			slog.Error("Error marshaling cluster state for response", "error", err, "remote_addr", conn.RemoteAddr())
 			return
 		}
-		slog.Info("Received ClusterState RPC", "leader", clusterState.Leader)
+		slog.Info("Responding to ClusterState RPC", "leader", clusterState.Leader, "remote_addr", conn.RemoteAddr())
 
 		_, err = conn.Write(append(data, '\n'))
 		if err != nil {
-			slog.Error("Error sending cluster state", "error", err)
-			return
+			slog.Error("Error sending cluster state response", "error", err, "remote_addr", conn.RemoteAddr())
 		}
-
+	default:
+		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())
 	}
 }
 

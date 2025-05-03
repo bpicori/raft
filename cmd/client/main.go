@@ -2,6 +2,7 @@ package main
 
 import (
 	"bpicori/raft/pkgs/config"
+	"bpicori/raft/pkgs/core"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/logger"
 	"log/slog"
@@ -35,7 +36,7 @@ func main() {
 
 	// send ClusterState RPC
 	clusterStateReq := &dto.RaftRPC{
-		Type: "ClusterState",
+		Type: core.ClusterStateType.String(),
 	}
 
 	data, err := proto.Marshal(clusterStateReq)

@@ -36,7 +36,7 @@ func (s *Server) sendRequestVoteReqRpc(addr string, args *dto.RequestVoteArgs) e
 
 	// Create the RPC request
 	rpcRequest := &dto.RaftRPC{
-		Type: "RequestVoteReq",
+		Type: RequestVoteReqType.String(),
 		Args: &dto.RaftRPC_RequestVoteArgs{RequestVoteArgs: args},
 	}
 
@@ -60,7 +60,7 @@ func (s *Server) sendRequestVoteRespRpc(addr string, reply *dto.RequestVoteReply
 
 	// Create the RPC request
 	rpcRequest := &dto.RaftRPC{
-		Type: "RequestVoteResp",
+		Type: RequestVoteRespType.String(),
 		Args: &dto.RaftRPC_RequestVoteReply{RequestVoteReply: reply},
 	}
 
@@ -84,7 +84,7 @@ func (s *Server) sendAppendEntriesReqRpc(addr string, args *dto.AppendEntriesArg
 
 	// Create the RPC request
 	rpcRequest := &dto.RaftRPC{
-		Type: "AppendEntriesReq",
+		Type: AppendEntriesReqType.String(),
 		Args: &dto.RaftRPC_AppendEntriesArgs{AppendEntriesArgs: args},
 	}
 
@@ -97,7 +97,3 @@ func (s *Server) sendAppendEntriesReqRpc(addr string, args *dto.AppendEntriesArg
 
 	return nil
 }
-
-
-
-
