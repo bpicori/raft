@@ -52,7 +52,7 @@ srv3:
 	$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8082 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)
 
 client:
-	$(DEBUG) $(GO) $(SRC_CLIENT) -servers=$(SERVERS)
+	$(DEBUG) $(GO) $(SRC_CLIENT) -command=$(word 2,$(MAKECMDGOALS)) -servers=$(SERVERS)
 
 clean:
 	rm -rf $(PERSISTENT_PATH)/*

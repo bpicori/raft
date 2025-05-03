@@ -5,10 +5,13 @@ import (
 	"bpicori/raft/pkgs/core"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/logger"
+	"flag"
+	"fmt"
 	"log/slog"
 	"math/rand"
 	"net"
 	"os"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -18,13 +21,47 @@ func init() {
 }
 
 func main() {
-	config, err := config.LoadConfig(true)
-	if err != nil {
-		slog.Error("Error loading config", "error", err)
+	command := flag.String("command", "", "The command to execute (leader)")
+	servers := flag.String("servers", "", "Comma-separated list of servers in format host:port")
+	flag.Parse()
+
+	if *command == "" || *servers == "" {
+		flag.Usage()
 		os.Exit(1)
 	}
 
-	randomServer := pickRandomServer(config.Servers)
+	// Parse servers directly from command line
+	serverList := strings.Split(*servers, ",")
+	if len(serverList) == 0 {
+		slog.Error("No servers provided")
+		os.Exit(1)
+	}
+
+	serverConfigs := make(map[string]config.ServerConfig)
+	for _, addr := range serverList {
+		id := addr
+		serverConfigs[id] = config.ServerConfig{
+			ID:   id,
+			Addr: addr,
+		}
+	}
+
+	cfg := &config.Config{
+		Servers: serverConfigs,
+	}
+
+	switch *command {
+	case "leader":
+		getLeader(cfg)
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", *command)
+		flag.Usage()
+		os.Exit(1)
+	}
+}
+
+func getLeader(cfg *config.Config) {
+	randomServer := pickRandomServer(cfg.Servers)
 
 	conn, err := net.Dial("tcp", randomServer.Addr)
 	if err != nil {
@@ -63,7 +100,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = proto.Unmarshal(data[:n-1], clusterStateResp)
+	err = proto.Unmarshal(data[:n], clusterStateResp)
 	if err != nil {
 		slog.Error("Error unmarshaling data", "error", err)
 		os.Exit(1)
