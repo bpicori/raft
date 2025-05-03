@@ -1,0 +1,23 @@
+---
+description: 
+globs: *.go
+alwaysApply: false
+---
+* Code Style Guidelines
+
+- Write code without comments. Make the code self-explanatory and explicit through clear naming and structure.
+- Use descriptive variable and function names that explain their purpose
+- Keep functions small and focused on a single responsibility
+- Use explicit type declarations rather than type inference when it improves clarity
+- Organize code with logical structure and consistent spacing
+- Prefer standard library solutions over custom implementations when appropriate
+- Use meaningful return values and error handling
+- Maintain consistent naming conventions across the codebase
+- Limit function parameters to reduce complexity
+- Use proper error handling patterns instead of relying on comments to explain error cases
+- Structure code to follow natural reading patterns (top-to-bottom logic flow)
+- Prefer composition over inheritance
+- Keep package names simple and descriptive
+- Group related functionality together
+- Use constants for magic numbers and repeated values
+- Avoid nested conditionals when possible
