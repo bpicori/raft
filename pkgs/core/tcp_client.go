@@ -98,36 +98,6 @@ func (s *Server) sendAppendEntriesReqRpc(addr string, args *dto.AppendEntriesArg
 	return nil
 }
 
-func (s *Server) sendAppendEntriesRespRpc(addr string, reply *dto.AppendEntriesReply) error {
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
-		return fmt.Errorf("error getting connection: %v", err)
-	}
-	defer conn.Close()
 
-	// Create the RPC request
-	rpcRequest := &dto.RaftRPC{
-		Type: "AppendEntriesResp",
-		Args: &dto.RaftRPC_AppendEntriesReply{AppendEntriesReply: reply},
-	}
 
-	slog.Debug("[TCP_CLIENT] Sending AppendEntriesResp RPC", "addr", addr, "reply", reply)
 
-	// Encode and send the request
-	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
-		return fmt.Errorf("error sending AppendEntriesResp RPC: %v", err)
-	}
-
-	return nil
-}
-
-func createConnection(addr string) (net.Conn, error) {
-	// Create a new connection
-	newConn, err := net.Dial("tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("error connecting to peer: %v", err)
-	}
-
-	return newConn, nil
-}

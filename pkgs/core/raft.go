@@ -269,7 +269,7 @@ func (s *Server) runCandidate() {
 			// Election timeout, start new election
 			slog.Info("[CANDIDATE] Election timeout, starting new election")
 			s.startElection()
-			return // close this goroutine, will start new election in a new goroutine
+			return 
 
 		case requestVoteReq := <-s.eventLoop.requestVoteReqCh:
 			slog.Info("[CANDIDATE] Received RequestVoteReq",

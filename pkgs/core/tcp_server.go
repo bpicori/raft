@@ -2,7 +2,6 @@ package core
 
 import (
 	"bpicori/raft/pkgs/dto"
-	"fmt"
 	"log"
 	"log/slog"
 	"net"
@@ -76,8 +75,7 @@ func handleConnection(conn net.Conn, server *Server) {
 			slog.Error("Error marshaling cluster state", "error", err)
 			return
 		}
-    slog.Info("Received ClusterState RPC", "leader", clusterState.Leader)
-    fmt.Println(data)
+		slog.Info("Received ClusterState RPC", "leader", clusterState.Leader)
 
 		_, err = conn.Write(append(data, '\n'))
 		if err != nil {
