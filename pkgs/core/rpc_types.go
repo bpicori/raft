@@ -7,8 +7,8 @@ type RaftRPCType int
 
 const (
 	UnknownRPCType RaftRPCType = iota
-	RequestVoteReqType
-	RequestVoteRespType
+	VoteRequest
+	VoteResponse
 	AppendEntriesReqType
 	AppendEntriesRespType
 	ClusterStateType
@@ -17,10 +17,10 @@ const (
 // String method for RaftRPCType for logging/debugging
 func (rt RaftRPCType) String() string {
 	switch rt {
-	case RequestVoteReqType:
-		return "RequestVoteReq"
-	case RequestVoteRespType:
-		return "RequestVoteResp"
+	case VoteRequest:
+		return "VoteRequest"
+	case VoteResponse:
+		return "VoteResponse"
 	case AppendEntriesReqType:
 		return "AppendEntriesReq"
 	case AppendEntriesRespType:
@@ -35,10 +35,10 @@ func (rt RaftRPCType) String() string {
 // mapStringToRPCType converts the protobuf string type to our internal enum.
 func mapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 	switch rpcTypeStr {
-	case "RequestVoteReq":
-		return RequestVoteReqType, nil
-	case "RequestVoteResp":
-		return RequestVoteRespType, nil
+	case "VoteRequest":
+		return VoteRequest, nil
+	case "VoteResponse":
+		return VoteResponse, nil
 	case "AppendEntriesReq":
 		return AppendEntriesReqType, nil
 	case "AppendEntriesResp":

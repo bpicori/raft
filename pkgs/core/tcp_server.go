@@ -31,18 +31,18 @@ func handleConnection(conn net.Conn, server *Server) {
 	}
 
 	switch rpcType {
-	case RequestVoteReqType:
+	case VoteRequest:
 		if args := rpc.GetRequestVoteArgs(); args != nil {
-			server.eventLoop.requestVoteReqCh <- Event[dto.RequestVoteArgs]{
+			server.eventLoop.voteRequestChan <- Event[dto.RequestVoteArgs]{
 				Type: RequestVoteReq,
 				Data: args,
 			}
 		} else {
 			slog.Warn("Received RequestVoteReq with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case RequestVoteRespType:
+	case VoteResponse:
 		if args := rpc.GetRequestVoteReply(); args != nil {
-			server.eventLoop.requestVoteRespCh <- Event[dto.RequestVoteReply]{
+			server.eventLoop.voteResponseChan <- Event[dto.RequestVoteReply]{
 				Type: RequestVoteResp,
 				Data: args,
 			}

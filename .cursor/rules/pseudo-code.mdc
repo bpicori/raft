@@ -80,9 +80,9 @@ end on
 
 periodically at node nodeId do
   if currentRole = leader then
-  for each follower ∈ nodes \ {nodeId} do
-  ReplicateLog(nodeId, follower )
-  end for
+    for each follower ∈ nodes \ {nodeId} do
+      ReplicateLog(nodeId, follower )
+    end for
   end if
 end do
 
@@ -114,7 +114,7 @@ on receiving (LogRequest, leaderId, term, prefixLen, prefixTerm, leaderCommit, s
     currentRole := follower; currentLeader := leaderId
   end if
   logOk := (log.length ≥ prefixLen) ∧
-  (prefixLen = 0 ∨ log[prefixLen - 1].term = prefixTerm)
+  (prefixLen = 0 V log[prefixLen - 1].term = prefixTerm)
   if term = currentTerm ∧ logOk then
     AppendEntries(prefixLen, leaderCommit, suffix )
     ack := prefixLen + suffix .length

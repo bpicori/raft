@@ -59,7 +59,7 @@ type Server struct {
 	currentLeader string
 	votesReceived sync.Map
 	sentLength    map[string]int
-	ackLength     map[string]int
+	ackedLength   map[string]int
 	// cluster configuration
 	config config.Config
 	// event loop
@@ -95,7 +95,7 @@ func NewServer() *Server {
 		currentLeader:   "",
 		votesReceived:   sync.Map{},
 		sentLength:      make(map[string]int),
-		ackLength:       make(map[string]int),
+		ackedLength:     make(map[string]int),
 		electionTimeout: time.NewTimer(randomTimeout(config.TimeoutMin, config.TimeoutMax)),
 		ctx:             ctx,
 		cancel:          cancel,
@@ -190,16 +190,16 @@ func (s *Server) runFollower() {
 		case <-s.ctx.Done():
 			return
 
-		case requestVoteReq := <-s.eventLoop.requestVoteReqCh:
+		case requestVoteReq := <-s.eventLoop.voteRequestChan:
 			slog.Info(
 				"[FOLLOWER] Received RequestVoteReq",
 				"candidate", requestVoteReq.Data.CandidateId,
 				"term", requestVoteReq.Data.Term,
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
-			s.OnRequestVoteReq(requestVoteReq.Data)
+			s.OnVoteRequest(requestVoteReq.Data)
 
-		case requestVoteRes := <-s.eventLoop.requestVoteRespCh:
+		case requestVoteRes := <-s.eventLoop.voteResponseChan:
 			slog.Debug("[FOLLOWER] Received vote response from peer, discarding",
 				"peer", requestVoteRes.Data.NodeId,
 				"granted", requestVoteRes.Data.VoteGranted,
@@ -250,7 +250,7 @@ func (s *Server) runCandidate() {
 			continue
 		}
 
-		go s.sendRequestVoteReqRpc(peer.Addr, &dto.RequestVoteArgs{
+		go s.sendVoteRequest(peer.Addr, &dto.RequestVoteArgs{
 			NodeId:       s.config.SelfID,
 			Term:         s.currentTerm,
 			CandidateId:  s.config.SelfID,
@@ -269,22 +269,22 @@ func (s *Server) runCandidate() {
 			// Election timeout, start new election
 			slog.Info("[CANDIDATE] Election timeout, starting new election")
 			s.startElection()
-			return 
+			return
 
-		case requestVoteReq := <-s.eventLoop.requestVoteReqCh:
+		case requestVoteReq := <-s.eventLoop.voteRequestChan:
 			slog.Info("[CANDIDATE] Received RequestVoteReq",
 				"candidate", requestVoteReq.Data.CandidateId,
 				"term", requestVoteReq.Data.Term,
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
-			go s.OnRequestVoteReq(requestVoteReq.Data)
+			go s.OnVoteRequest(requestVoteReq.Data)
 
-		case requestVoteResp := <-s.eventLoop.requestVoteRespCh:
+		case requestVoteResp := <-s.eventLoop.voteResponseChan:
 			slog.Info("[CANDIDATE] Received vote response from",
 				"peer", requestVoteResp.Data.NodeId,
 				"granted", requestVoteResp.Data.VoteGranted,
 				"term", requestVoteResp.Data.Term)
-			go s.OnRequestVoteResp(requestVoteResp.Data)
+			go s.OnVoteResponse(requestVoteResp.Data)
 
 		case appendEntriesRequest := <-s.eventLoop.heartbeatReqCh:
 			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", appendEntriesRequest.Data.LeaderId)
@@ -316,7 +316,7 @@ func (s *Server) becomeLeader() {
 		}
 
 		s.sentLength[peer.ID] = len(s.logEntry)
-		s.ackLength[peer.ID] = 0
+		s.ackedLength[peer.ID] = 0
 
 		prevLogTerm := int32(0)
 		if len(s.logEntry) > 0 {
@@ -339,7 +339,7 @@ func (s *Server) becomeLeader() {
 	}
 }
 
-func (s *Server) OnRequestVoteReq(requestVoteArgs *dto.RequestVoteArgs) {
+func (s *Server) OnVoteRequest(requestVoteArgs *dto.RequestVoteArgs) {
 	// Received vote request from candidate
 	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateId)
 	cTerm := requestVoteArgs.Term
@@ -349,7 +349,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs *dto.RequestVoteArgs) {
 
 	if cTerm > s.currentTerm {
 		s.becomeFollower(cTerm, "")
-		go s.sendRequestVoteRespRpc(cID, &dto.RequestVoteReply{
+		go s.sendVoteResponse(cID, &dto.RequestVoteReply{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
@@ -367,7 +367,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs *dto.RequestVoteArgs) {
 	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= int32(len(s.logEntry)))
 
 	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
-		go s.sendRequestVoteRespRpc(cID, &dto.RequestVoteReply{
+		go s.sendVoteResponse(cID, &dto.RequestVoteReply{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
@@ -375,7 +375,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs *dto.RequestVoteArgs) {
 
 		s.votedFor = cID
 	} else {
-		go s.sendRequestVoteRespRpc(cID, &dto.RequestVoteReply{
+		go s.sendVoteResponse(cID, &dto.RequestVoteReply{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: false,
@@ -383,7 +383,7 @@ func (s *Server) OnRequestVoteReq(requestVoteArgs *dto.RequestVoteArgs) {
 	}
 }
 
-func (s *Server) OnRequestVoteResp(requestVoteReply *dto.RequestVoteReply) {
+func (s *Server) OnVoteResponse(requestVoteReply *dto.RequestVoteReply) {
 	if requestVoteReply.Term > s.currentTerm {
 		s.becomeFollower(requestVoteReply.Term, "")
 		return
@@ -429,7 +429,7 @@ func (s *Server) runLeader() {
 		}
 
 		s.sentLength[peer.ID] = len(s.logEntry)
-		s.ackLength[peer.ID] = 0
+		s.ackedLength[peer.ID] = 0
 
 		prevLogTerm := int32(0)
 		if len(s.logEntry) > 0 {
@@ -459,7 +459,7 @@ func (s *Server) runLeader() {
 			return
 		case <-s.heartbeatTimer.C:
 			return
-		case requestVoteReq := <-s.eventLoop.requestVoteReqCh:
+		case requestVoteReq := <-s.eventLoop.voteRequestChan:
 			slog.Info("[LEADER] Received RequestVoteReq", "candidate", requestVoteReq.Data.CandidateId)
 			if requestVoteReq.Data.Term > s.currentTerm {
 				s.becomeFollower(requestVoteReq.Data.Term, "")
