@@ -28,49 +28,34 @@ type ServerState struct {
 	CommitLength int32           `json:"commitLength"`
 }
 
-func (s *ServerState) SaveToFile(serverId string, path string) error {
-	fileName := fmt.Sprintf("%s.json", serverId)
-	filePath := fmt.Sprintf("%s/%s", path, fileName)
-
-	slog.Info("Saving state to file", "path", filePath)
-
-	// Check if file already exists and overwrite
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	return encoder.Encode(s)
-}
-
 type Server struct {
-	// mu sync.Mutex
-	mu sync.RWMutex
-	// Persistent state on all servers
+	mu sync.RWMutex // lock when changing server state
+
+	/* Fields that need to be persisted */
 	currentTerm  int32           // latest term server has seen
-	votedFor     string          // candidateId that received vote in current term
+	votedFor     string          // in election state, the candidateId that this server voted for
 	logEntry     []*dto.LogEntry // log entries
 	commitLength int32           // index of highest log entry known to be committed
-	// Volatile state on all servers
-	currentRole   Role
-	currentLeader string
-	votesReceived sync.Map
-	sentLength    map[string]int
-	ackedLength   map[string]int
-	// cluster configuration
-	config config.Config
-	// event loop
-	eventLoop *EventChannels
-	// Channels for communication
-	electionTimeout *time.Timer
-	heartbeatTimer  *time.Timer
-	// Server lifecycle
+	/* End of persisted fields */
+
+	/* Volatile state on all servers */
+	currentRole   Role           // current role of the server
+	currentLeader string         // the current leader
+	votesReceived sync.Map       // map of votes received from other servers
+	sentLength    map[string]int // length of log entries sent to other servers
+	ackedLength   map[string]int // length of log entries acknowledged by other servers
+	/* End of volatile fields */
+
+	config          config.Config  // cluster configuration
+	eventLoop       *EventChannels // event loop
+	electionTimeout *time.Timer    // timer for election timeout
+	heartbeatTimer  *time.Timer    // timer for heartbeat
+
+	/* Server lifecycle */
 	wg     sync.WaitGroup
 	ctx    context.Context
 	cancel context.CancelFunc
+	/* End of server lifecycle */
 }
 
 // NewServer creates a new server with a random election timeout.
@@ -107,7 +92,6 @@ func (s *Server) Start() error {
 	s.wg.Add(2)
 	go s.RunTcp()
 	go s.RunStateMachine()
-	// go s.RunHTTPServer()
 	return nil
 }
 
@@ -132,6 +116,24 @@ func (s *Server) PersistState() {
 	}
 
 	slog.Info("State saved to file", "term", s.currentTerm, "votedFor", s.votedFor, "commitLength", s.commitLength)
+}
+
+func (s *ServerState) SaveToFile(serverId string, path string) error {
+	fileName := fmt.Sprintf("%s.json", serverId)
+	filePath := fmt.Sprintf("%s/%s", path, fileName)
+
+	slog.Info("Saving state to file", "path", filePath)
+
+	// Check if file already exists and overwrite
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(s)
 }
 
 func LoadPersistedState(config config.Config) (currentTerm int32, votedFor string, logEntry []*dto.LogEntry, commitLength int32) {
@@ -328,7 +330,7 @@ func (s *Server) becomeLeader() {
 			prevLogIndex = int32(len(s.logEntry)) - 1
 		}
 
-		go s.sendAppendEntriesReqRpc(peer.Addr, &dto.AppendEntriesArgs{
+		go s.sendLogRequest(peer.Addr, &dto.AppendEntriesArgs{
 			Term:         s.currentTerm,
 			LeaderId:     s.config.SelfID,
 			PrevLogIndex: prevLogIndex,
@@ -441,7 +443,7 @@ func (s *Server) runLeader() {
 			prevLogIndex = int32(len(s.logEntry) - 1)
 		}
 
-		go s.sendAppendEntriesReqRpc(peer.Addr, &dto.AppendEntriesArgs{
+		go s.sendLogRequest(peer.Addr, &dto.AppendEntriesArgs{
 			Term:         s.currentTerm,
 			PrevLogIndex: prevLogIndex,
 			PrevLogTerm:  prevLogTerm,
@@ -473,4 +475,27 @@ func (s *Server) runLeader() {
 			}
 		}
 	}
+}
+
+// TODO: use this function to replicate log to all followers
+func (s *Server) replicateLog(leaderId string, followerId string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	prefixLength := s.sentLength[followerId]
+	suffix := s.logEntry[prefixLength:]
+
+	prefixTerm := int32(0)
+	if prefixLength > 0 {
+		prefixTerm = s.logEntry[prefixLength-1].Term
+	}
+
+	go s.sendLogRequest(followerId, &dto.AppendEntriesArgs{
+		Term:         s.currentTerm,
+		PrevLogIndex: int32(prefixLength - 1),
+		PrevLogTerm:  prefixTerm,
+		Entries:      suffix,
+		LeaderCommit: s.commitLength,
+		LeaderId:     leaderId,
+	})
 }
