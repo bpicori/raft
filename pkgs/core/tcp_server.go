@@ -49,30 +49,23 @@ func handleConnection(conn net.Conn, server *Server) {
 		} else {
 			slog.Warn("Received RequestVoteResp with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case AppendEntriesRespType:
-		if args := rpc.GetAppendEntriesReply(); args != nil {
-			server.eventLoop.appendEntriesResCh <- Event[dto.AppendEntriesReply]{
-				Type: AppendEntriesRespType,
+	case LogRequest:
+		if args := rpc.GetLogRequest(); args != nil {
+			server.eventLoop.logRequestChan <- Event[dto.LogRequest]{
+				Type: LogRequest,
+				Data: args,
+			}
+		} else {
+			slog.Warn("Received AppendEntriesReq/Heartbeat with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case LogResponse:
+		if args := rpc.GetLogResponse(); args != nil {
+			server.eventLoop.logResponseChan <- Event[dto.LogResponse]{
+				Type: LogResponse,
 				Data: args,
 			}
 		} else {
 			slog.Warn("Received AppendEntriesResp with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
-		}
-	case AppendEntriesReqType:
-		if args := rpc.GetAppendEntriesArgs(); args != nil {
-			if len(args.Entries) > 0 {
-				server.eventLoop.appendEntriesReqCh <- Event[dto.AppendEntriesArgs]{
-					Type: AppendEntriesReqType,
-					Data: args,
-				}
-			} else {
-				server.eventLoop.heartbeatReqCh <- Event[dto.AppendEntriesArgs]{
-					Type: AppendEntriesReqType,
-					Data: args,
-				}
-			}
-		} else {
-			slog.Warn("Received AppendEntriesReq/Heartbeat with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case ClusterStateType:
 		clusterState := &dto.ClusterState{
