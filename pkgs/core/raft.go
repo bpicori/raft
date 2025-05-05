@@ -262,7 +262,9 @@ func (s *Server) runCandidate() {
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
 			s.OnVoteRequest(requestVoteReq.Data)
-			return
+			if s.currentRole != Candidate {
+				return
+			}
 
 		case requestVoteResp := <-s.eventLoop.voteResponseChan:
 			slog.Info("[CANDIDATE] Received vote response from",
@@ -270,11 +272,15 @@ func (s *Server) runCandidate() {
 				"granted", requestVoteResp.Data.VoteGranted,
 				"term", requestVoteResp.Data.Term)
 			s.OnVoteResponse(requestVoteResp.Data)
-			return
+			if s.currentRole != Candidate {
+				return
+			}
 		case logRequest := <-s.eventLoop.logRequestChan:
 			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.Data.LeaderId)
 			s.OnLogRequest(logRequest.Data)
-			return
+			if s.currentRole != Candidate {
+				return
+			}
 
 		}
 	}
