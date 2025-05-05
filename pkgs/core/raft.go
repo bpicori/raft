@@ -196,7 +196,6 @@ func (s *Server) runFollower() {
 				"success", logResponse.Data.Success)
 			s.OnLogResponse(logResponse.Data)
 			return
-
 		case <-s.electionTimeout.C:
 			slog.Info("[FOLLOWER] Election timeout from Follower state, starting new election")
 			s.startElection()
@@ -206,16 +205,11 @@ func (s *Server) runFollower() {
 }
 
 func (s *Server) startElection() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	s.currentRole = Candidate
 	s.currentTerm += 1
 	s.votedFor = s.config.SelfID
 	s.votesReceivedMap.Clear()
 	s.votesReceivedMap.Store(s.config.SelfID, true)
-
-	slog.Info("[CANDIDATE] Starting election", "term", s.currentTerm)
 }
 
 func (s *Server) runCandidate() {
@@ -249,7 +243,6 @@ func (s *Server) runCandidate() {
 		case <-s.ctx.Done():
 			return
 		case <-s.electionTimeout.C:
-			// Election timeout, start new election
 			slog.Info("[CANDIDATE] Election timeout, starting new election")
 			s.startElection()
 			return
@@ -261,6 +254,7 @@ func (s *Server) runCandidate() {
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
 			s.OnVoteRequest(requestVoteReq.Data)
+			return
 
 		case requestVoteResp := <-s.eventLoop.voteResponseChan:
 			slog.Info("[CANDIDATE] Received vote response from",
@@ -268,34 +262,13 @@ func (s *Server) runCandidate() {
 				"granted", requestVoteResp.Data.VoteGranted,
 				"term", requestVoteResp.Data.Term)
 			s.OnVoteResponse(requestVoteResp.Data)
-
+			return
 		case logRequest := <-s.eventLoop.logRequestChan:
 			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.Data.LeaderId)
-			go s.OnLogRequest(logRequest.Data)
-
-		case <-s.eventLoop.leaderElectedCh:
-			slog.Info("[CANDIDATE] Received leader elected event")
+			s.OnLogRequest(logRequest.Data)
 			return
+
 		}
-	}
-}
-
-func (s *Server) becomeLeader() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.currentRole = Leader
-	s.electionTimeout.Stop()
-	s.currentLeader = s.config.SelfID
-
-	truePtr := true
-	s.eventLoop.leaderElectedCh <- Event[bool]{Data: &truePtr}
-
-	for _, follower := range s.otherServers() {
-		s.sentLength[follower.ID] = int32(len(s.logEntry))
-		s.ackedLength[follower.ID] = 0
-
-		go s.replicateLog(s.config.SelfID, follower.ID)
 	}
 }
 
@@ -348,10 +321,17 @@ func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
 			votesReceived++
 			return true
 		})
-
 		majority := len(s.config.Servers)/2 + 1
 		if votesReceived >= majority {
-			s.becomeLeader()
+			s.currentRole = Leader
+			s.currentLeader = s.config.SelfID
+			s.electionTimeout.Stop()
+
+			for _, follower := range s.otherServers() {
+				s.sentLength[follower.ID] = int32(len(s.logEntry))
+				s.ackedLength[follower.ID] = 0
+				go s.replicateLog(s.config.SelfID, follower.ID)
+			}
 		}
 	} else if voterTerm > s.currentTerm {
 		s.currentTerm = voterTerm
@@ -383,6 +363,22 @@ func (s *Server) runLeader() {
 		case <-s.ctx.Done():
 			return
 		case <-s.heartbeatTimer.C:
+			return
+		case voteRequest := <-s.eventLoop.voteRequestChan:
+			slog.Info("[LEADER] Received vote request from", "candidate", voteRequest.Data.CandidateId)
+			s.OnVoteRequest(voteRequest.Data)
+			return
+		case voteResponse := <-s.eventLoop.voteResponseChan:
+			slog.Info("[LEADER] Received vote response from", "peer", voteResponse.Data.NodeId)
+			s.OnVoteResponse(voteResponse.Data)
+			return
+		case logRequest := <-s.eventLoop.logRequestChan:
+			slog.Info("[LEADER] Received log request from", "leader", logRequest.Data.LeaderId)
+			s.OnLogRequest(logRequest.Data)
+			return
+		case logResponse := <-s.eventLoop.logResponseChan:
+			slog.Info("[LEADER] Received log response from", "peer", logResponse.Data.FollowerId)
+			s.OnLogResponse(logResponse.Data)
 			return
 		}
 	}

@@ -38,7 +38,7 @@ func handleConnection(conn net.Conn, server *Server) {
 				Data: args,
 			}
 		} else {
-			slog.Warn("Received RequestVoteReq with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+			slog.Warn("Received VoteRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case VoteResponse:
 		if args := rpc.GetVoteResponse(); args != nil {
@@ -47,7 +47,7 @@ func handleConnection(conn net.Conn, server *Server) {
 				Data: args,
 			}
 		} else {
-			slog.Warn("Received RequestVoteResp with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+			slog.Warn("Received VoteResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case LogRequest:
 		if args := rpc.GetLogRequest(); args != nil {
@@ -56,7 +56,7 @@ func handleConnection(conn net.Conn, server *Server) {
 				Data: args,
 			}
 		} else {
-			slog.Warn("Received AppendEntriesReq/Heartbeat with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+			slog.Warn("Received LogRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case LogResponse:
 		if args := rpc.GetLogResponse(); args != nil {
@@ -65,7 +65,7 @@ func handleConnection(conn net.Conn, server *Server) {
 				Data: args,
 			}
 		} else {
-			slog.Warn("Received AppendEntriesResp with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+			slog.Warn("Received LogResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case ClusterStateType:
 		clusterState := &dto.ClusterState{
