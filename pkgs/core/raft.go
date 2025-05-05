@@ -396,7 +396,6 @@ func (s *Server) runLeader() {
 	}
 }
 
-
 func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	leaderId := logRequest.LeaderId
 	term := logRequest.Term
@@ -485,6 +484,7 @@ func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []
 	suffixLength := int32(len(suffix))
 	logLength := int32(len(s.logEntry))
 
+	// discard conflicting log entries
 	if suffixLength > 0 && logLength > prefixLength {
 		index := math.Min(float64(logLength), float64(prefixLength+suffixLength)) - 1
 		logAtIndex := s.logEntry[int(index)] // last log entry in the prefix
@@ -495,7 +495,8 @@ func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []
 		}
 	}
 
-	if prefixLength+suffixLength > logLength {
+	// append new log entries if suffix is not empty
+	if (prefixLength + suffixLength) > logLength {
 		s.logEntry = append(s.logEntry, suffix...)
 	}
 

@@ -518,7 +518,13 @@ func (x *LogResponse) GetSuccess() bool {
 
 type ClusterState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Leader        string                 `protobuf:"bytes,1,opt,name=leader,proto3" json:"leader,omitempty"`
+	NodeId        string                 `protobuf:"bytes,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
+	CurrentTerm   int32                  `protobuf:"varint,2,opt,name=currentTerm,proto3" json:"currentTerm,omitempty"`
+	VotedFor      string                 `protobuf:"bytes,3,opt,name=votedFor,proto3" json:"votedFor,omitempty"`
+	CurrentRole   int32                  `protobuf:"varint,4,opt,name=currentRole,proto3" json:"currentRole,omitempty"`
+	CurrentLeader string                 `protobuf:"bytes,5,opt,name=currentLeader,proto3" json:"currentLeader,omitempty"`
+	CommitLength  int32                  `protobuf:"varint,6,opt,name=commitLength,proto3" json:"commitLength,omitempty"`
+	LogEntries    []*LogEntry            `protobuf:"bytes,7,rep,name=logEntries,proto3" json:"logEntries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -553,11 +559,53 @@ func (*ClusterState) Descriptor() ([]byte, []int) {
 	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ClusterState) GetLeader() string {
+func (x *ClusterState) GetNodeId() string {
 	if x != nil {
-		return x.Leader
+		return x.NodeId
 	}
 	return ""
+}
+
+func (x *ClusterState) GetCurrentTerm() int32 {
+	if x != nil {
+		return x.CurrentTerm
+	}
+	return 0
+}
+
+func (x *ClusterState) GetVotedFor() string {
+	if x != nil {
+		return x.VotedFor
+	}
+	return ""
+}
+
+func (x *ClusterState) GetCurrentRole() int32 {
+	if x != nil {
+		return x.CurrentRole
+	}
+	return 0
+}
+
+func (x *ClusterState) GetCurrentLeader() string {
+	if x != nil {
+		return x.CurrentLeader
+	}
+	return ""
+}
+
+func (x *ClusterState) GetCommitLength() int32 {
+	if x != nil {
+		return x.CommitLength
+	}
+	return 0
+}
+
+func (x *ClusterState) GetLogEntries() []*LogEntry {
+	if x != nil {
+		return x.LogEntries
+	}
+	return nil
 }
 
 type AddCommand struct {
@@ -652,9 +700,17 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"followerId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x05R\x04term\x12\x10\n" +
 	"\x03ack\x18\x03 \x01(\x05R\x03ack\x12\x18\n" +
-	"\asuccess\x18\x04 \x01(\bR\asuccess\"&\n" +
+	"\asuccess\x18\x04 \x01(\bR\asuccess\"\xff\x01\n" +
 	"\fClusterState\x12\x16\n" +
-	"\x06leader\x18\x01 \x01(\tR\x06leader\"&\n" +
+	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12 \n" +
+	"\vcurrentTerm\x18\x02 \x01(\x05R\vcurrentTerm\x12\x1a\n" +
+	"\bvotedFor\x18\x03 \x01(\tR\bvotedFor\x12 \n" +
+	"\vcurrentRole\x18\x04 \x01(\x05R\vcurrentRole\x12$\n" +
+	"\rcurrentLeader\x18\x05 \x01(\tR\rcurrentLeader\x12\"\n" +
+	"\fcommitLength\x18\x06 \x01(\x05R\fcommitLength\x12-\n" +
+	"\n" +
+	"logEntries\x18\a \x03(\v2\r.dto.LogEntryR\n" +
+	"logEntries\"&\n" +
 	"\n" +
 	"AddCommand\x12\x18\n" +
 	"\acommand\x18\x01 \x01(\tR\acommandB\fZ\n" +
@@ -691,11 +747,12 @@ var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	6, // 4: dto.RaftRPC.responseClusterState:type_name -> dto.ClusterState
 	7, // 5: dto.RaftRPC.addCommand:type_name -> dto.AddCommand
 	3, // 6: dto.LogRequest.suffix:type_name -> dto.LogEntry
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	3, // 7: dto.ClusterState.logEntries:type_name -> dto.LogEntry
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_pkgs_dto_raft_proto_init() }

@@ -5,7 +5,7 @@ PERSISTENT_PATH = ./ignore
 DEBUG = DEBUG=true
 GO = go run
 SRC = cmd/server/main.go
-SRC_CLIENT = cmd/client/main.go
+SRC_CLIENT = cmd/client/*.go
 TMUX_NEW_WINDOW = tmux new-window -n "Raft"
 TMUX_SPLIT_WINDOW = tmux split-window
 HEARTBEAT = 1000

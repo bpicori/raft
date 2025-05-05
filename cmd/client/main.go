@@ -5,10 +5,10 @@ import (
 	"bpicori/raft/pkgs/core"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/logger"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
-	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -21,6 +21,19 @@ func init() {
 }
 
 func main() {
+	command, cfg := parseConfigFromFlags()
+
+	switch command {
+	case "leader":
+		getLeader(cfg)
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
+		flag.Usage()
+		os.Exit(1)
+	}
+}
+
+func parseConfigFromFlags() (string, *config.Config) {
 	command := flag.String("command", "", "The command to execute (leader)")
 	servers := flag.String("servers", "", "Comma-separated list of servers in format host:port")
 	flag.Parse()
@@ -50,73 +63,73 @@ func main() {
 		Servers: serverConfigs,
 	}
 
-	switch *command {
-	case "leader":
-		getLeader(cfg)
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", *command)
-		flag.Usage()
-		os.Exit(1)
-	}
+	return *command, cfg
 }
 
 func getLeader(cfg *config.Config) {
-	randomServer := pickRandomServer(cfg.Servers)
+	results := make([]*dto.ClusterState, 0)
 
-	conn, err := net.Dial("tcp", randomServer.Addr)
+	for _, server := range cfg.Servers {
+		clusterStateReq := &dto.RaftRPC{
+			Type: core.ClusterStateType.String(),
+		}
+		clusterStateResp := &dto.ClusterState{}
+
+		err := sendReceiveRPC(server.Addr, clusterStateReq, clusterStateResp)
+		if err != nil {
+			slog.Error("Error in ClusterState RPC", "server", server.Addr, "error", err)
+			os.Exit(1)
+		}
+
+		results = append(results, clusterStateResp)
+	}
+
+	// print results
+	for _, result := range results {
+		fmt.Println(result)
+	}
+}
+
+func openConnection(addr string) net.Conn {
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Error("Error getting connection", "error", err)
 		os.Exit(1)
 	}
 
+	return conn
+}
+
+func sendReceiveRPC(addr string, req proto.Message, resp proto.Message) error {
+	conn := openConnection(addr)
 	defer conn.Close()
 
-	// send ClusterState RPC
-	clusterStateReq := &dto.RaftRPC{
-		Type: core.ClusterStateType.String(),
-	}
-
-	data, err := proto.Marshal(clusterStateReq)
+	data, err := proto.Marshal(req)
 	if err != nil {
-		slog.Error("Error marshaling cluster state", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	_, err = conn.Write(data)
 	if err != nil {
-		slog.Error("Error sending cluster state", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to send request: %w", err)
 	}
 
-	slog.Info("Sent ClusterState RPC", "server", randomServer.Addr)
+	slog.Debug("Sent RPC request", "remote_addr", conn.RemoteAddr().String(), "type", fmt.Sprintf("%T", req))
 
-	// receive ClusterState RaftRPC
-	clusterStateResp := &dto.ClusterState{}
-
-	data = make([]byte, 1024)
-	n, err := conn.Read(data)
+	buffer := make([]byte, 4096) // Consider making buffer size configurable or dynamic
+	n, err := conn.Read(buffer)
 	if err != nil {
-		slog.Error("Error reading data", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to read response: %w", err)
+	}
+	if n == 0 {
+		return errors.New("received empty response")
 	}
 
-	err = proto.Unmarshal(data[:n], clusterStateResp)
+	err = proto.Unmarshal(buffer[:n], resp)
 	if err != nil {
-		slog.Error("Error unmarshaling data", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	slog.Info("Received ClusterState RPC", "leader", clusterStateResp.Leader)
-}
-
-func pickRandomServer(servers map[string]config.ServerConfig) config.ServerConfig {
-	keys := make([]string, 0, len(servers))
-	for key := range servers {
-		keys = append(keys, key)
-	}
-
-	randomIndex := rand.Intn(len(keys))
-	randomKey := keys[randomIndex]
-
-	return servers[randomKey]
+	slog.Debug("Received RPC response", "remote_addr", conn.RemoteAddr().String(), "type", fmt.Sprintf("%T", resp))
+	return nil
 }
