@@ -78,7 +78,7 @@ func handleConnection(conn net.Conn, server *Server) {
 			return
 		}
 
-		_, err = conn.Write(append(data, '\n'))
+		_, err = conn.Write(data)
 		if err != nil {
 			slog.Error("Error sending cluster state response", "error", err, "remote_addr", conn.RemoteAddr())
 		}
