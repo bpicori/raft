@@ -401,7 +401,7 @@ func (s *Server) replicateLog(leaderId string, followerId string) {
 		Term:         s.currentTerm,
 		PrefixLength: int32(prefixLength),
 		PrefixTerm:   prefixTerm,
-		Suffix:       int32(len(suffix)),
+		Suffix:       suffix,
 		LeaderCommit: s.commitLength,
 	})
 }
@@ -425,11 +425,11 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 		s.currentLeader = leaderId
 	}
 
-	logOk := int(prefixLength) >= len(s.logEntry) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
+	logOk := len(s.logEntry) >= int(prefixLength) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
 
 	if term == s.currentTerm && logOk {
 		go s.AppendEntries(prefixLength, leaderCommit, suffix)
-		ack := prefixLength + suffix
+		ack := prefixLength + int32(len(suffix))
 		go s.sendLogResponse(leaderId, &dto.LogResponse{
 			FollowerId: s.config.SelfID,
 			Term:       s.currentTerm,
@@ -469,7 +469,7 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 	}
 }
 
-func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix int32) {
+func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
 	// TODO: implement
 }
 

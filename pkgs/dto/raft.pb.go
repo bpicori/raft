@@ -355,7 +355,7 @@ type LogRequest struct {
 	PrefixLength  int32                  `protobuf:"varint,3,opt,name=prefixLength,proto3" json:"prefixLength,omitempty"`
 	PrefixTerm    int32                  `protobuf:"varint,4,opt,name=prefixTerm,proto3" json:"prefixTerm,omitempty"`
 	LeaderCommit  int32                  `protobuf:"varint,5,opt,name=leaderCommit,proto3" json:"leaderCommit,omitempty"`
-	Suffix        int32                  `protobuf:"varint,6,opt,name=suffix,proto3" json:"suffix,omitempty"`
+	Suffix        []*LogEntry            `protobuf:"bytes,6,rep,name=suffix,proto3" json:"suffix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -425,11 +425,11 @@ func (x *LogRequest) GetLeaderCommit() int32 {
 	return 0
 }
 
-func (x *LogRequest) GetSuffix() int32 {
+func (x *LogRequest) GetSuffix() []*LogEntry {
 	if x != nil {
 		return x.Suffix
 	}
-	return 0
+	return nil
 }
 
 type LogResponse struct {
@@ -571,7 +571,7 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\vvoteGranted\x18\x03 \x01(\bR\vvoteGranted\"8\n" +
 	"\bLogEntry\x12\x12\n" +
 	"\x04term\x18\x01 \x01(\x05R\x04term\x12\x18\n" +
-	"\acommand\x18\x02 \x01(\tR\acommand\"\xbc\x01\n" +
+	"\acommand\x18\x02 \x01(\tR\acommand\"\xcb\x01\n" +
 	"\n" +
 	"LogRequest\x12\x1a\n" +
 	"\bleaderId\x18\x01 \x01(\tR\bleaderId\x12\x12\n" +
@@ -580,8 +580,8 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\n" +
 	"prefixTerm\x18\x04 \x01(\x05R\n" +
 	"prefixTerm\x12\"\n" +
-	"\fleaderCommit\x18\x05 \x01(\x05R\fleaderCommit\x12\x16\n" +
-	"\x06suffix\x18\x06 \x01(\x05R\x06suffix\"m\n" +
+	"\fleaderCommit\x18\x05 \x01(\x05R\fleaderCommit\x12%\n" +
+	"\x06suffix\x18\x06 \x03(\v2\r.dto.LogEntryR\x06suffix\"m\n" +
 	"\vLogResponse\x12\x1e\n" +
 	"\n" +
 	"followerId\x18\x01 \x01(\tR\n" +
@@ -621,11 +621,12 @@ var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	4, // 2: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
 	5, // 3: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
 	6, // 4: dto.RaftRPC.responseClusterState:type_name -> dto.ClusterState
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // 5: dto.LogRequest.suffix:type_name -> dto.LogEntry
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_pkgs_dto_raft_proto_init() }

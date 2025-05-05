@@ -41,7 +41,7 @@ message LogRequest {
   int32 prefixLength = 3;
   int32 prefixTerm = 4;
   int32 leaderCommit = 5;
-  int32 suffix = 6;
+  repeated LogEntry suffix = 6;
 }
 
 message LogResponse {
