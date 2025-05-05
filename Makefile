@@ -13,6 +13,7 @@ TIMEOUT_MIN = 3000
 TIMEOUT_MAX = 5000
 PROTO_SRC = raft.proto
 PROTO_OUT = .
+CMD_ARGS = $(filter-out $@,$(MAKECMDGOALS))
 
 install-tools:
 	@echo "Installing protoc-gen-go..."
@@ -60,7 +61,7 @@ srv5:
 	$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8084 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)
 
 client:
-	$(DEBUG) $(GO) $(SRC_CLIENT) -command=$(word 2,$(MAKECMDGOALS)) -servers=$(SERVERS)
+	$(DEBUG) $(GO) $(SRC_CLIENT) -servers=$(SERVERS) -command="$(CMD_ARGS)"
 
 clean:
 	rm -rf $(PERSISTENT_PATH)/*
