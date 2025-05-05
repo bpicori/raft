@@ -26,7 +26,7 @@ func sendProtobufMessage(conn net.Conn, message proto.Message) error {
 	return nil
 }
 
-func (s *Server) sendVoteRequest(addr string, args *dto.RequestVoteArgs) error {
+func (s *Server) sendVoteRequest(addr string, args *dto.VoteRequest) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Info("[TCP_CLIENT][sendRequestVoteReqRpc] Error getting connection", "addr", addr, "error", err)
@@ -37,7 +37,7 @@ func (s *Server) sendVoteRequest(addr string, args *dto.RequestVoteArgs) error {
 	// Create the RPC request
 	rpcRequest := &dto.RaftRPC{
 		Type: VoteRequest.String(),
-		Args: &dto.RaftRPC_RequestVoteArgs{RequestVoteArgs: args},
+		Args: &dto.RaftRPC_VoteRequest{VoteRequest: args},
 	}
 
 	slog.Debug("[TCP_CLIENT][sendRequestVoteReqRpc] Sending RPC", "addr", addr, "args", args)
@@ -50,7 +50,7 @@ func (s *Server) sendVoteRequest(addr string, args *dto.RequestVoteArgs) error {
 	return nil
 }
 
-func (s *Server) sendVoteResponse(addr string, reply *dto.RequestVoteReply) error {
+func (s *Server) sendVoteResponse(addr string, reply *dto.VoteResponse) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Debug("[TCP_CLIENT][sendRequestVoteRespRpc] Error getting connection", "addr", addr, "error", err)
@@ -61,7 +61,7 @@ func (s *Server) sendVoteResponse(addr string, reply *dto.RequestVoteReply) erro
 	// Create the RPC request
 	rpcRequest := &dto.RaftRPC{
 		Type: VoteResponse.String(),
-		Args: &dto.RaftRPC_RequestVoteReply{RequestVoteReply: reply},
+		Args: &dto.RaftRPC_VoteResponse{VoteResponse: reply},
 	}
 
 	slog.Debug("[TCP_CLIENT][sendRequestVoteRespRpc] Sending RPC", "addr", addr, "reply", reply)

@@ -32,18 +32,18 @@ func handleConnection(conn net.Conn, server *Server) {
 
 	switch rpcType {
 	case VoteRequest:
-		if args := rpc.GetRequestVoteArgs(); args != nil {
-			server.eventLoop.voteRequestChan <- Event[dto.RequestVoteArgs]{
-				Type: RequestVoteReq,
+		if args := rpc.GetVoteRequest(); args != nil {
+			server.eventLoop.voteRequestChan <- Event[dto.VoteRequest]{
+				Type: VoteRequest,
 				Data: args,
 			}
 		} else {
 			slog.Warn("Received RequestVoteReq with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case VoteResponse:
-		if args := rpc.GetRequestVoteReply(); args != nil {
-			server.eventLoop.voteResponseChan <- Event[dto.RequestVoteReply]{
-				Type: RequestVoteResp,
+		if args := rpc.GetVoteResponse(); args != nil {
+			server.eventLoop.voteResponseChan <- Event[dto.VoteResponse]{
+				Type: VoteResponse,
 				Data: args,
 			}
 		} else {
@@ -52,7 +52,7 @@ func handleConnection(conn net.Conn, server *Server) {
 	case AppendEntriesRespType:
 		if args := rpc.GetAppendEntriesReply(); args != nil {
 			server.eventLoop.appendEntriesResCh <- Event[dto.AppendEntriesReply]{
-				Type: AppendEntriesResp,
+				Type: AppendEntriesRespType,
 				Data: args,
 			}
 		} else {
@@ -62,12 +62,12 @@ func handleConnection(conn net.Conn, server *Server) {
 		if args := rpc.GetAppendEntriesArgs(); args != nil {
 			if len(args.Entries) > 0 {
 				server.eventLoop.appendEntriesReqCh <- Event[dto.AppendEntriesArgs]{
-					Type: AppendEntriesReq,
+					Type: AppendEntriesReqType,
 					Data: args,
 				}
 			} else {
 				server.eventLoop.heartbeatReqCh <- Event[dto.AppendEntriesArgs]{
-					Type: HeartbeatReq,
+					Type: AppendEntriesReqType,
 					Data: args,
 				}
 			}

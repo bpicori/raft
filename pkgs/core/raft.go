@@ -221,12 +221,12 @@ func (s *Server) runCandidate() {
 		"majority", majority)
 
 	for _, follower := range s.otherServers() {
-		go s.sendVoteRequest(follower.Addr, &dto.RequestVoteArgs{
-			NodeId:       s.config.SelfID,
-			Term:         s.currentTerm,
-			CandidateId:  s.config.SelfID,
-			LastLogIndex: int32(len(s.logEntry)),
-			LastLogTerm:  lastTerm,
+		go s.sendVoteRequest(follower.Addr, &dto.VoteRequest{
+			NodeId:        s.config.SelfID,
+			Term:          s.currentTerm,
+			CandidateId:   s.config.SelfID,
+			LastLogIndex:  int32(len(s.logEntry)),
+			LastLogTerm:   lastTerm,
 		})
 	}
 
@@ -289,7 +289,7 @@ func (s *Server) becomeLeader() {
 	}
 }
 
-func (s *Server) OnVoteRequest(requestVoteArgs *dto.RequestVoteArgs) {
+func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 	// Received vote request from candidate
 	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateId)
 	cTerm := requestVoteArgs.Term
@@ -299,7 +299,7 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.RequestVoteArgs) {
 
 	if cTerm > s.currentTerm {
 		s.becomeFollower(cTerm, "")
-		go s.sendVoteResponse(cID, &dto.RequestVoteReply{
+		go s.sendVoteResponse(cID, &dto.VoteResponse{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
@@ -317,7 +317,7 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.RequestVoteArgs) {
 	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= int32(len(s.logEntry)))
 
 	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
-		go s.sendVoteResponse(cID, &dto.RequestVoteReply{
+		go s.sendVoteResponse(cID, &dto.VoteResponse{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
@@ -325,7 +325,7 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.RequestVoteArgs) {
 
 		s.votedFor = cID
 	} else {
-		go s.sendVoteResponse(cID, &dto.RequestVoteReply{
+		go s.sendVoteResponse(cID, &dto.VoteResponse{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: false,
@@ -333,7 +333,7 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.RequestVoteArgs) {
 	}
 }
 
-func (s *Server) OnVoteResponse(requestVoteReply *dto.RequestVoteReply) {
+func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
 	if requestVoteReply.Term > s.currentTerm {
 		s.becomeFollower(requestVoteReply.Term, "")
 		return

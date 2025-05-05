@@ -2,25 +2,14 @@ package core
 
 import "bpicori/raft/pkgs/dto"
 
-type EventType int
-
-const (
-	RequestVoteReq EventType = iota
-	RequestVoteResp
-	AppendEntriesReq
-	AppendEntriesResp
-	HeartbeatReq
-	HeartbeatResp
-)
-
 type Event[T any] struct {
-	Type EventType
+	Type RaftRPCType
 	Data *T
 }
 
 type EventChannels struct {
-	voteRequestChan    chan Event[dto.RequestVoteArgs]
-	voteResponseChan   chan Event[dto.RequestVoteReply]
+	voteRequestChan    chan Event[dto.VoteRequest]
+	voteResponseChan   chan Event[dto.VoteResponse]
 	appendEntriesReqCh chan Event[dto.AppendEntriesArgs]
 	appendEntriesResCh chan Event[dto.AppendEntriesReply]
 	heartbeatReqCh     chan Event[dto.AppendEntriesArgs]
@@ -30,8 +19,8 @@ type EventChannels struct {
 
 func NewEventLoop() *EventChannels {
 	return &EventChannels{
-		voteRequestChan:    make(chan Event[dto.RequestVoteArgs]),
-		voteResponseChan:   make(chan Event[dto.RequestVoteReply]),
+		voteRequestChan:    make(chan Event[dto.VoteRequest]),
+		voteResponseChan:   make(chan Event[dto.VoteResponse]),
 		appendEntriesReqCh: make(chan Event[dto.AppendEntriesArgs]),
 		appendEntriesResCh: make(chan Event[dto.AppendEntriesReply]),
 		heartbeatReqCh:     make(chan Event[dto.AppendEntriesArgs]),

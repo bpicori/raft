@@ -27,8 +27,8 @@ type RaftRPC struct {
 	Type  string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	// Types that are valid to be assigned to Args:
 	//
-	//	*RaftRPC_RequestVoteArgs
-	//	*RaftRPC_RequestVoteReply
+	//	*RaftRPC_VoteRequest
+	//	*RaftRPC_VoteResponse
 	//	*RaftRPC_AppendEntriesArgs
 	//	*RaftRPC_AppendEntriesReply
 	//	*RaftRPC_ResponseClusterState
@@ -81,19 +81,19 @@ func (x *RaftRPC) GetArgs() isRaftRPC_Args {
 	return nil
 }
 
-func (x *RaftRPC) GetRequestVoteArgs() *RequestVoteArgs {
+func (x *RaftRPC) GetVoteRequest() *VoteRequest {
 	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_RequestVoteArgs); ok {
-			return x.RequestVoteArgs
+		if x, ok := x.Args.(*RaftRPC_VoteRequest); ok {
+			return x.VoteRequest
 		}
 	}
 	return nil
 }
 
-func (x *RaftRPC) GetRequestVoteReply() *RequestVoteReply {
+func (x *RaftRPC) GetVoteResponse() *VoteResponse {
 	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_RequestVoteReply); ok {
-			return x.RequestVoteReply
+		if x, ok := x.Args.(*RaftRPC_VoteResponse); ok {
+			return x.VoteResponse
 		}
 	}
 	return nil
@@ -130,12 +130,12 @@ type isRaftRPC_Args interface {
 	isRaftRPC_Args()
 }
 
-type RaftRPC_RequestVoteArgs struct {
-	RequestVoteArgs *RequestVoteArgs `protobuf:"bytes,4,opt,name=requestVoteArgs,proto3,oneof"`
+type RaftRPC_VoteRequest struct {
+	VoteRequest *VoteRequest `protobuf:"bytes,4,opt,name=voteRequest,proto3,oneof"`
 }
 
-type RaftRPC_RequestVoteReply struct {
-	RequestVoteReply *RequestVoteReply `protobuf:"bytes,5,opt,name=requestVoteReply,proto3,oneof"`
+type RaftRPC_VoteResponse struct {
+	VoteResponse *VoteResponse `protobuf:"bytes,5,opt,name=voteResponse,proto3,oneof"`
 }
 
 type RaftRPC_AppendEntriesArgs struct {
@@ -150,9 +150,9 @@ type RaftRPC_ResponseClusterState struct {
 	ResponseClusterState *ClusterState `protobuf:"bytes,9,opt,name=responseClusterState,proto3,oneof"`
 }
 
-func (*RaftRPC_RequestVoteArgs) isRaftRPC_Args() {}
+func (*RaftRPC_VoteRequest) isRaftRPC_Args() {}
 
-func (*RaftRPC_RequestVoteReply) isRaftRPC_Args() {}
+func (*RaftRPC_VoteResponse) isRaftRPC_Args() {}
 
 func (*RaftRPC_AppendEntriesArgs) isRaftRPC_Args() {}
 
@@ -160,7 +160,7 @@ func (*RaftRPC_AppendEntriesReply) isRaftRPC_Args() {}
 
 func (*RaftRPC_ResponseClusterState) isRaftRPC_Args() {}
 
-type RequestVoteArgs struct {
+type VoteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NodeId        string                 `protobuf:"bytes,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
 	Term          int32                  `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
@@ -171,20 +171,20 @@ type RequestVoteArgs struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RequestVoteArgs) Reset() {
-	*x = RequestVoteArgs{}
+func (x *VoteRequest) Reset() {
+	*x = VoteRequest{}
 	mi := &file_pkgs_dto_raft_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RequestVoteArgs) String() string {
+func (x *VoteRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RequestVoteArgs) ProtoMessage() {}
+func (*VoteRequest) ProtoMessage() {}
 
-func (x *RequestVoteArgs) ProtoReflect() protoreflect.Message {
+func (x *VoteRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_pkgs_dto_raft_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -196,47 +196,47 @@ func (x *RequestVoteArgs) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RequestVoteArgs.ProtoReflect.Descriptor instead.
-func (*RequestVoteArgs) Descriptor() ([]byte, []int) {
+// Deprecated: Use VoteRequest.ProtoReflect.Descriptor instead.
+func (*VoteRequest) Descriptor() ([]byte, []int) {
 	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *RequestVoteArgs) GetNodeId() string {
+func (x *VoteRequest) GetNodeId() string {
 	if x != nil {
 		return x.NodeId
 	}
 	return ""
 }
 
-func (x *RequestVoteArgs) GetTerm() int32 {
+func (x *VoteRequest) GetTerm() int32 {
 	if x != nil {
 		return x.Term
 	}
 	return 0
 }
 
-func (x *RequestVoteArgs) GetCandidateId() string {
+func (x *VoteRequest) GetCandidateId() string {
 	if x != nil {
 		return x.CandidateId
 	}
 	return ""
 }
 
-func (x *RequestVoteArgs) GetLastLogIndex() int32 {
+func (x *VoteRequest) GetLastLogIndex() int32 {
 	if x != nil {
 		return x.LastLogIndex
 	}
 	return 0
 }
 
-func (x *RequestVoteArgs) GetLastLogTerm() int32 {
+func (x *VoteRequest) GetLastLogTerm() int32 {
 	if x != nil {
 		return x.LastLogTerm
 	}
 	return 0
 }
 
-type RequestVoteReply struct {
+type VoteResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NodeId        string                 `protobuf:"bytes,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
 	Term          int32                  `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
@@ -245,20 +245,20 @@ type RequestVoteReply struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RequestVoteReply) Reset() {
-	*x = RequestVoteReply{}
+func (x *VoteResponse) Reset() {
+	*x = VoteResponse{}
 	mi := &file_pkgs_dto_raft_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RequestVoteReply) String() string {
+func (x *VoteResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RequestVoteReply) ProtoMessage() {}
+func (*VoteResponse) ProtoMessage() {}
 
-func (x *RequestVoteReply) ProtoReflect() protoreflect.Message {
+func (x *VoteResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_pkgs_dto_raft_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -270,26 +270,26 @@ func (x *RequestVoteReply) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RequestVoteReply.ProtoReflect.Descriptor instead.
-func (*RequestVoteReply) Descriptor() ([]byte, []int) {
+// Deprecated: Use VoteResponse.ProtoReflect.Descriptor instead.
+func (*VoteResponse) Descriptor() ([]byte, []int) {
 	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *RequestVoteReply) GetNodeId() string {
+func (x *VoteResponse) GetNodeId() string {
 	if x != nil {
 		return x.NodeId
 	}
 	return ""
 }
 
-func (x *RequestVoteReply) GetTerm() int32 {
+func (x *VoteResponse) GetTerm() int32 {
 	if x != nil {
 		return x.Term
 	}
 	return 0
 }
 
-func (x *RequestVoteReply) GetVoteGranted() bool {
+func (x *VoteResponse) GetVoteGranted() bool {
 	if x != nil {
 		return x.VoteGranted
 	}
@@ -540,22 +540,22 @@ var File_pkgs_dto_raft_proto protoreflect.FileDescriptor
 
 const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\n" +
-	"\x13pkgs/dto/raft.proto\x12\x03dto\"\x88\x03\n" +
+	"\x13pkgs/dto/raft.proto\x12\x03dto\"\xf0\x02\n" +
 	"\aRaftRPC\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x12@\n" +
-	"\x0frequestVoteArgs\x18\x04 \x01(\v2\x14.dto.RequestVoteArgsH\x00R\x0frequestVoteArgs\x12C\n" +
-	"\x10requestVoteReply\x18\x05 \x01(\v2\x15.dto.RequestVoteReplyH\x00R\x10requestVoteReply\x12F\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x124\n" +
+	"\vvoteRequest\x18\x04 \x01(\v2\x10.dto.VoteRequestH\x00R\vvoteRequest\x127\n" +
+	"\fvoteResponse\x18\x05 \x01(\v2\x11.dto.VoteResponseH\x00R\fvoteResponse\x12F\n" +
 	"\x11appendEntriesArgs\x18\x06 \x01(\v2\x16.dto.AppendEntriesArgsH\x00R\x11appendEntriesArgs\x12I\n" +
 	"\x12appendEntriesReply\x18\a \x01(\v2\x17.dto.AppendEntriesReplyH\x00R\x12appendEntriesReply\x12G\n" +
 	"\x14responseClusterState\x18\t \x01(\v2\x11.dto.ClusterStateH\x00R\x14responseClusterStateB\x06\n" +
-	"\x04args\"\xa5\x01\n" +
-	"\x0fRequestVoteArgs\x12\x16\n" +
+	"\x04args\"\xa1\x01\n" +
+	"\vVoteRequest\x12\x16\n" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x05R\x04term\x12 \n" +
 	"\vcandidateId\x18\x03 \x01(\tR\vcandidateId\x12\"\n" +
 	"\flastLogIndex\x18\x04 \x01(\x05R\flastLogIndex\x12 \n" +
-	"\vlastLogTerm\x18\x05 \x01(\x05R\vlastLogTerm\"`\n" +
-	"\x10RequestVoteReply\x12\x16\n" +
+	"\vlastLogTerm\x18\x05 \x01(\x05R\vlastLogTerm\"\\\n" +
+	"\fVoteResponse\x12\x16\n" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x05R\x04term\x12 \n" +
 	"\vvoteGranted\x18\x03 \x01(\bR\vvoteGranted\"8\n" +
@@ -592,16 +592,16 @@ func file_pkgs_dto_raft_proto_rawDescGZIP() []byte {
 var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_pkgs_dto_raft_proto_goTypes = []any{
 	(*RaftRPC)(nil),            // 0: dto.RaftRPC
-	(*RequestVoteArgs)(nil),    // 1: dto.RequestVoteArgs
-	(*RequestVoteReply)(nil),   // 2: dto.RequestVoteReply
+	(*VoteRequest)(nil),        // 1: dto.VoteRequest
+	(*VoteResponse)(nil),       // 2: dto.VoteResponse
 	(*LogEntry)(nil),           // 3: dto.LogEntry
 	(*AppendEntriesArgs)(nil),  // 4: dto.AppendEntriesArgs
 	(*AppendEntriesReply)(nil), // 5: dto.AppendEntriesReply
 	(*ClusterState)(nil),       // 6: dto.ClusterState
 }
 var file_pkgs_dto_raft_proto_depIdxs = []int32{
-	1, // 0: dto.RaftRPC.requestVoteArgs:type_name -> dto.RequestVoteArgs
-	2, // 1: dto.RaftRPC.requestVoteReply:type_name -> dto.RequestVoteReply
+	1, // 0: dto.RaftRPC.voteRequest:type_name -> dto.VoteRequest
+	2, // 1: dto.RaftRPC.voteResponse:type_name -> dto.VoteResponse
 	4, // 2: dto.RaftRPC.appendEntriesArgs:type_name -> dto.AppendEntriesArgs
 	5, // 3: dto.RaftRPC.appendEntriesReply:type_name -> dto.AppendEntriesReply
 	6, // 4: dto.RaftRPC.responseClusterState:type_name -> dto.ClusterState
@@ -619,8 +619,8 @@ func file_pkgs_dto_raft_proto_init() {
 		return
 	}
 	file_pkgs_dto_raft_proto_msgTypes[0].OneofWrappers = []any{
-		(*RaftRPC_RequestVoteArgs)(nil),
-		(*RaftRPC_RequestVoteReply)(nil),
+		(*RaftRPC_VoteRequest)(nil),
+		(*RaftRPC_VoteResponse)(nil),
 		(*RaftRPC_AppendEntriesArgs)(nil),
 		(*RaftRPC_AppendEntriesReply)(nil),
 		(*RaftRPC_ResponseClusterState)(nil),
