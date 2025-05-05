@@ -9,8 +9,8 @@ const (
 	UnknownRPCType RaftRPCType = iota
 	VoteRequest
 	VoteResponse
-	AppendEntriesReqType
-	AppendEntriesRespType
+	LogRequest
+	LogResponse
 	ClusterStateType
 )
 
@@ -21,10 +21,10 @@ func (rt RaftRPCType) String() string {
 		return "VoteRequest"
 	case VoteResponse:
 		return "VoteResponse"
-	case AppendEntriesReqType:
-		return "AppendEntriesReq"
-	case AppendEntriesRespType:
-		return "AppendEntriesResp"
+	case LogRequest:
+		return "LogRequest"
+	case LogResponse:
+		return "LogResponse"
 	case ClusterStateType:
 		return "ClusterState"
 	default:
@@ -39,10 +39,10 @@ func mapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return VoteRequest, nil
 	case "VoteResponse":
 		return VoteResponse, nil
-	case "AppendEntriesReq":
-		return AppendEntriesReqType, nil
-	case "AppendEntriesResp":
-		return AppendEntriesRespType, nil
+	case "LogRequest":
+		return LogRequest, nil
+	case "LogResponse":
+		return LogResponse, nil
 	case "ClusterState":
 		return ClusterStateType, nil
 	default:
