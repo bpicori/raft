@@ -10,8 +10,8 @@ message RaftRPC {
   oneof args {
     VoteRequest voteRequest = 4;
     VoteResponse voteResponse = 5;
-    AppendEntriesArgs appendEntriesArgs = 6;
-    AppendEntriesReply appendEntriesReply = 7;
+    LogRequest logRequest = 6;
+    LogResponse logResponse = 7;
     ClusterState responseClusterState = 9;
   }
 }
@@ -35,19 +35,20 @@ message LogEntry {
   string command = 2;
 }
 
-message AppendEntriesArgs {
-  string nodeId = 1;
+message LogRequest {
+  string leaderId = 1;
   int32 term = 2;
-  string leaderId = 3;
-  int32 prevLogIndex = 4;
-  int32 prevLogTerm = 5;
-  repeated LogEntry entries = 6;
-  int32 leaderCommit = 7;
+  int32 prefixLength = 3;
+  int32 prefixTerm = 4;
+  int32 leaderCommit = 5;
+  int32 suffix = 6;
 }
 
-message AppendEntriesReply {
-  int32 term = 1;
-  bool success = 2;
+message LogResponse {
+  string followerId = 1;
+  int32 term = 2;
+  int32 ack = 3;
+  bool success = 4;
 }
 
 message ClusterState { string leader = 1; }

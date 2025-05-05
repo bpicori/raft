@@ -1,0 +1,11 @@
+{
+    "version": "0.2",
+    "ignorePaths": [
+        "pkgs/dto/*.pb.go"
+    ],
+    "dictionaryDefinitions": [],
+    "dictionaries": [],
+    "words": [],
+    "ignoreWords": [],
+    "import": []
+}
