@@ -28,6 +28,23 @@ type ServerState struct {
 	CommitLength int32           `json:"commitLength"`
 }
 
+func (s *ServerState) SaveToFile(serverId string, path string) error {
+	fileName := fmt.Sprintf("%s.json", serverId)
+	filePath := fmt.Sprintf("%s/%s", path, fileName)
+
+	slog.Info("Saving state to file", "path", filePath)
+
+	// Check if file already exists and overwrite
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(s)
+}
+
 type Server struct {
 	mu sync.RWMutex // lock when changing server state
 
@@ -66,7 +83,7 @@ func NewServer() *Server {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	currentTerm, votedFor, logEntry, commitLength := LoadPersistedState(config)
+	currentTerm, votedFor, logEntry, commitLength := loadPersistedState(config)
 	eventLoop := NewEventLoop()
 
 	s := &Server{
@@ -116,50 +133,6 @@ func (s *Server) PersistState() {
 	}
 
 	slog.Info("State saved to file", "term", s.currentTerm, "votedFor", s.votedFor, "commitLength", s.commitLength)
-}
-
-func (s *ServerState) SaveToFile(serverId string, path string) error {
-	fileName := fmt.Sprintf("%s.json", serverId)
-	filePath := fmt.Sprintf("%s/%s", path, fileName)
-
-	slog.Info("Saving state to file", "path", filePath)
-
-	// Check if file already exists and overwrite
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	return encoder.Encode(s)
-}
-
-func LoadPersistedState(config config.Config) (currentTerm int32, votedFor string, logEntry []*dto.LogEntry, commitLength int32) {
-	fileName := fmt.Sprintf("%s.json", config.SelfID)
-	filePath := fmt.Sprintf("%s/%s", config.PersistentFilePath, fileName)
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		// this is the first time the server is starting
-		logEntry = make([]*dto.LogEntry, 0)
-		return 0, "", logEntry, 0
-	}
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-	var state ServerState
-	err = decoder.Decode(&state)
-	if err != nil {
-		return 0, "", nil, 0
-	}
-
-	if state.LogEntry == nil {
-		state.LogEntry = make([]*dto.LogEntry, 0)
-	}
-
-	return state.CurrentTerm, state.VotedFor, state.LogEntry, state.CommitLength
 }
 
 func (s *Server) RunStateMachine() {
@@ -247,12 +220,8 @@ func (s *Server) runCandidate() {
 		"votes", votes,
 		"majority", majority)
 
-	for _, peer := range s.config.Servers {
-		if peer.ID == s.config.SelfID {
-			continue
-		}
-
-		go s.sendVoteRequest(peer.Addr, &dto.RequestVoteArgs{
+	for _, follower := range s.otherServers() {
+		go s.sendVoteRequest(follower.Addr, &dto.RequestVoteArgs{
 			NodeId:       s.config.SelfID,
 			Term:         s.currentTerm,
 			CandidateId:  s.config.SelfID,
@@ -312,32 +281,11 @@ func (s *Server) becomeLeader() {
 	truePtr := true
 	s.eventLoop.leaderElectedCh <- Event[bool]{Data: &truePtr}
 
-	for _, peer := range s.config.Servers {
-		if peer.ID == s.config.SelfID {
-			continue
-		}
+	for _, follower := range s.otherServers() {
+		s.sentLength[follower.ID] = len(s.logEntry)
+		s.ackedLength[follower.ID] = 0
 
-		s.sentLength[peer.ID] = len(s.logEntry)
-		s.ackedLength[peer.ID] = 0
-
-		prevLogTerm := int32(0)
-		if len(s.logEntry) > 0 {
-			prevLogTerm = s.logEntry[len(s.logEntry)-1].Term
-		}
-
-		prevLogIndex := int32(0)
-		if len(s.logEntry) > 0 {
-			prevLogIndex = int32(len(s.logEntry)) - 1
-		}
-
-		go s.sendLogRequest(peer.Addr, &dto.AppendEntriesArgs{
-			Term:         s.currentTerm,
-			LeaderId:     s.config.SelfID,
-			PrevLogIndex: prevLogIndex,
-			PrevLogTerm:  prevLogTerm,
-			Entries:      s.logEntry,
-			LeaderCommit: s.commitLength,
-		})
+		go s.replicateLog(s.config.SelfID, follower.ID)
 	}
 }
 
@@ -423,13 +371,19 @@ func (s *Server) becomeFollower(term int32, leader string) {
 	s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 }
 
+func (s *Server) otherServers() []config.ServerConfig {
+	others := make([]config.ServerConfig, 0, len(s.config.Servers)-1)
+	for _, server := range s.config.Servers {
+		if server.ID != s.config.SelfID {
+			others = append(others, server)
+		}
+	}
+	return others
+}
+
 func (s *Server) runLeader() {
 
-	for _, follower := range s.config.Servers {
-		if follower.ID == s.config.SelfID { // skip self
-			continue
-		}
-
+	for _, follower := range s.otherServers() {
 		go s.replicateLog(s.config.SelfID, follower.ID)
 	}
 
