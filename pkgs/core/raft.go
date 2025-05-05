@@ -20,7 +20,6 @@ const (
 	Leader
 )
 
-
 type Server struct {
 	mu sync.RWMutex // lock when changing server state
 
@@ -320,7 +319,7 @@ func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
 			for _, follower := range s.otherServers() {
 				s.sentLength[follower.ID] = int32(len(s.logEntry))
 				s.ackedLength[follower.ID] = 0
-				go s.replicateLog(s.config.SelfID, follower.ID)
+				go s.ReplicateLog(s.config.SelfID, follower.ID)
 			}
 		}
 	} else if voterTerm > s.currentTerm {
@@ -343,7 +342,7 @@ func (s *Server) otherServers() []config.ServerConfig {
 
 func (s *Server) runLeader() {
 	for _, follower := range s.otherServers() {
-		go s.replicateLog(s.config.SelfID, follower.ID)
+		go s.ReplicateLog(s.config.SelfID, follower.ID)
 	}
 
 	s.heartbeatTimer = time.NewTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
@@ -355,7 +354,7 @@ func (s *Server) runLeader() {
 		case <-s.heartbeatTimer.C:
 			slog.Debug("[LEADER] Heartbeat timer triggered. Sending updates to followers.")
 			for _, follower := range s.otherServers() {
-				go s.replicateLog(s.config.SelfID, follower.ID)
+				go s.ReplicateLog(s.config.SelfID, follower.ID)
 			}
 			s.heartbeatTimer.Reset(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		case voteRequest := <-s.eventLoop.voteRequestChan:
@@ -390,34 +389,13 @@ func (s *Server) runLeader() {
 			})
 			s.ackedLength[s.config.SelfID] = int32(len(s.logEntry))
 			for _, follower := range s.otherServers() {
-				go s.replicateLog(s.config.SelfID, follower.ID)
+				go s.ReplicateLog(s.config.SelfID, follower.ID)
 			}
 			s.heartbeatTimer.Reset(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		}
 	}
 }
 
-func (s *Server) replicateLog(leaderId string, followerId string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	prefixLength := s.sentLength[followerId]
-	suffix := s.logEntry[prefixLength:]
-
-	prefixTerm := int32(0)
-	if prefixLength > 0 {
-		prefixTerm = s.logEntry[prefixLength-1].Term
-	}
-
-	go s.sendLogRequest(followerId, &dto.LogRequest{
-		LeaderId:     leaderId,
-		Term:         s.currentTerm,
-		PrefixLength: int32(prefixLength),
-		PrefixTerm:   prefixTerm,
-		Suffix:       suffix,
-		LeaderCommit: s.commitLength,
-	})
-}
 
 func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	leaderId := logRequest.LeaderId
@@ -473,7 +451,7 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 			s.CommitLogEntries()
 		} else if s.sentLength[followerId] > 0 {
 			s.sentLength[followerId] -= 1
-			s.replicateLog(s.config.SelfID, followerId)
+			s.ReplicateLog(s.config.SelfID, followerId)
 		}
 	} else if term > s.currentTerm {
 		s.currentTerm = term
@@ -481,6 +459,26 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 		s.votedFor = ""
 		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
+}
+
+func (s *Server) ReplicateLog(leaderId string, followerId string) {
+
+	prefixLength := s.sentLength[followerId]
+	suffix := s.logEntry[prefixLength:]
+
+	prefixTerm := int32(0)
+	if prefixLength > 0 {
+		prefixTerm = s.logEntry[prefixLength-1].Term
+	}
+
+	go s.sendLogRequest(followerId, &dto.LogRequest{
+		LeaderId:     leaderId,
+		Term:         s.currentTerm,
+		PrefixLength: int32(prefixLength),
+		PrefixTerm:   prefixTerm,
+		Suffix:       suffix,
+		LeaderCommit: s.commitLength,
+	})
 }
 
 func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
