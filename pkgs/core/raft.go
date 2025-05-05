@@ -363,23 +363,35 @@ func (s *Server) runLeader() {
 		case <-s.ctx.Done():
 			return
 		case <-s.heartbeatTimer.C:
-			return
+			slog.Debug("[LEADER] Heartbeat timer triggered. Sending updates to followers.")
+			for _, follower := range s.otherServers() {
+				go s.replicateLog(s.config.SelfID, follower.ID)
+			}
+			s.heartbeatTimer.Reset(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		case voteRequest := <-s.eventLoop.voteRequestChan:
 			slog.Info("[LEADER] Received vote request from", "candidate", voteRequest.Data.CandidateId)
 			s.OnVoteRequest(voteRequest.Data)
-			return
+			if s.currentRole != Leader {
+				return
+			}
 		case voteResponse := <-s.eventLoop.voteResponseChan:
 			slog.Info("[LEADER] Received vote response from", "peer", voteResponse.Data.NodeId)
 			s.OnVoteResponse(voteResponse.Data)
-			return
+			if s.currentRole != Leader {
+				return
+			}
 		case logRequest := <-s.eventLoop.logRequestChan:
 			slog.Info("[LEADER] Received log request from", "leader", logRequest.Data.LeaderId)
 			s.OnLogRequest(logRequest.Data)
-			return
+			if s.currentRole != Leader {
+				return
+			}
 		case logResponse := <-s.eventLoop.logResponseChan:
 			slog.Info("[LEADER] Received log response from", "peer", logResponse.Data.FollowerId)
 			s.OnLogResponse(logResponse.Data)
-			return
+			if s.currentRole != Leader {
+				return
+			}
 		}
 	}
 }
@@ -428,7 +440,7 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	logOk := len(s.logEntry) >= int(prefixLength) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
 
 	if term == s.currentTerm && logOk {
-		go s.AppendEntries(prefixLength, leaderCommit, suffix)
+		s.AppendEntries(prefixLength, leaderCommit, suffix)
 		ack := prefixLength + int32(len(suffix))
 		go s.sendLogResponse(leaderId, &dto.LogResponse{
 			FollowerId: s.config.SelfID,
