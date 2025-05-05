@@ -34,7 +34,7 @@ on receiving (VoteRequest, cId, cTerm, cLogLength, cLogTerm) at node nodeId do
   end if
   lastTerm := 0
   if log.length > 0 then lastTerm := log[log.length - 1].term; end if
-  logOk := (cLogTerm > lastTerm) ∨
+  logOk := (cLogTerm > lastTerm) V
   (cLogTerm = lastTerm ∧ cLogLength ≥ log.length)
   if cTerm = currentTerm ∧ logOk ∧ votedFor ∈ {cId, null} then
     votedFor := cId
@@ -47,7 +47,7 @@ end on
 * Raft (3/9): collecting votes
 on receiving (VoteResponse, voterId, term, granted) at nodeId do
   if currentRole = candidate ∧ term = currentTerm ∧ granted then
-    votesReceived := votesReceived ∪ {voterId}
+    votesReceived := votesReceived U {voterId}
     if |votesReceived| ≥ d(|nodes| + 1)/2e then
       currentRole := leader; currentLeader := nodeId
       cancel election timer

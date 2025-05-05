@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"os"
 	"sync"
 	"time"
@@ -497,7 +498,26 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 }
 
 func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
-	// TODO: implement
+	suffixLength := int32(len(suffix))
+	logLength := int32(len(s.logEntry))
+
+	if suffixLength > 0 && logLength > prefixLength {
+		index := math.Min(float64(logLength), float64(prefixLength+suffixLength)) - 1
+		logAtIndex := s.logEntry[int(index)] // last log entry in the prefix
+		suffixTerm := suffix[int32(index)-prefixLength].Term
+
+		if logAtIndex.Term != suffixTerm {
+			s.logEntry = s.logEntry[:prefixLength]
+		}
+	}
+
+	if prefixLength + suffixLength > logLength {
+		s.logEntry = append(s.logEntry, suffix...)
+	}
+
+	if leaderCommit > s.commitLength {
+		s.commitLength = leaderCommit
+	}
 }
 
 func (s *Server) CommitLogEntries() {
