@@ -56,11 +56,11 @@ type Server struct {
 	/* End of persisted fields */
 
 	/* Volatile state on all servers */
-	currentRole   Role           // current role of the server
-	currentLeader string         // the current leader
-	votesReceived sync.Map       // map of votes received from other servers
-	sentLength    map[string]int // length of log entries sent to other servers
-	ackedLength   map[string]int // length of log entries acknowledged by other servers
+	currentRole      Role           // current role of the server
+	currentLeader    string         // the current leader
+	votesReceivedMap sync.Map       // map of votes received from other servers
+	sentLength       map[string]int // length of log entries sent to other servers
+	ackedLength      map[string]int // length of log entries acknowledged by other servers
 	/* End of volatile fields */
 
 	config          config.Config  // cluster configuration
@@ -87,20 +87,20 @@ func NewServer() *Server {
 	eventLoop := NewEventLoop()
 
 	s := &Server{
-		config:          config,
-		eventLoop:       eventLoop,
-		currentTerm:     currentTerm,  // should be fetched from persistent storage
-		votedFor:        votedFor,     // should be fetched from persistent storage
-		logEntry:        logEntry,     // should be fetched from persistent storage
-		commitLength:    commitLength, // should be fetched from persistent storage
-		currentRole:     Follower,
-		currentLeader:   "",
-		votesReceived:   sync.Map{},
-		sentLength:      make(map[string]int),
-		ackedLength:     make(map[string]int),
-		electionTimeout: time.NewTimer(randomTimeout(config.TimeoutMin, config.TimeoutMax)),
-		ctx:             ctx,
-		cancel:          cancel,
+		config:           config,
+		eventLoop:        eventLoop,
+		currentTerm:      currentTerm,  // should be fetched from persistent storage
+		votedFor:         votedFor,     // should be fetched from persistent storage
+		logEntry:         logEntry,     // should be fetched from persistent storage
+		commitLength:     commitLength, // should be fetched from persistent storage
+		currentRole:      Follower,
+		currentLeader:    "",
+		votesReceivedMap: sync.Map{},
+		sentLength:       make(map[string]int),
+		ackedLength:      make(map[string]int),
+		electionTimeout:  time.NewTimer(randomTimeout(config.TimeoutMin, config.TimeoutMax)),
+		ctx:              ctx,
+		cancel:           cancel,
 	}
 	return s
 }
@@ -181,8 +181,9 @@ func (s *Server) runFollower() {
 				"term", requestVoteRes.Data.Term)
 			return
 
-		case heartbeatReq := <-s.eventLoop.heartbeatReqCh:
+		case heartbeatReq := <-s.eventLoop.logRequestChan:
 			slog.Debug("[FOLLOWER] Received heartbeat, resetting election timeout")
+			// TODO: replace with OnLogRequest
 			s.becomeFollower(s.currentTerm, heartbeatReq.Data.LeaderId)
 			return
 
@@ -201,8 +202,8 @@ func (s *Server) startElection() {
 	s.currentRole = Candidate
 	s.currentTerm += 1
 	s.votedFor = s.config.SelfID
-	s.votesReceived.Clear()
-	s.votesReceived.Store(s.config.SelfID, true)
+	s.votesReceivedMap.Clear()
+	s.votesReceivedMap.Store(s.config.SelfID, true)
 
 	slog.Info("[CANDIDATE] Starting election", "term", s.currentTerm)
 }
@@ -222,11 +223,11 @@ func (s *Server) runCandidate() {
 
 	for _, follower := range s.otherServers() {
 		go s.sendVoteRequest(follower.Addr, &dto.VoteRequest{
-			NodeId:        s.config.SelfID,
-			Term:          s.currentTerm,
-			CandidateId:   s.config.SelfID,
-			LastLogIndex:  int32(len(s.logEntry)),
-			LastLogTerm:   lastTerm,
+			NodeId:       s.config.SelfID,
+			Term:         s.currentTerm,
+			CandidateId:  s.config.SelfID,
+			LastLogIndex: int32(len(s.logEntry)),
+			LastLogTerm:  lastTerm,
 		})
 	}
 
@@ -248,21 +249,19 @@ func (s *Server) runCandidate() {
 				"term", requestVoteReq.Data.Term,
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
-			go s.OnVoteRequest(requestVoteReq.Data)
+			s.OnVoteRequest(requestVoteReq.Data)
 
 		case requestVoteResp := <-s.eventLoop.voteResponseChan:
 			slog.Info("[CANDIDATE] Received vote response from",
 				"peer", requestVoteResp.Data.NodeId,
 				"granted", requestVoteResp.Data.VoteGranted,
 				"term", requestVoteResp.Data.Term)
-			go s.OnVoteResponse(requestVoteResp.Data)
+			s.OnVoteResponse(requestVoteResp.Data)
 
-		case appendEntriesRequest := <-s.eventLoop.heartbeatReqCh:
-			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", appendEntriesRequest.Data.LeaderId)
-			if appendEntriesRequest.Data.Term >= s.currentTerm {
-				s.becomeFollower(appendEntriesRequest.Data.Term, appendEntriesRequest.Data.LeaderId)
-				return // close this goroutine
-			}
+		case logRequest := <-s.eventLoop.logRequestChan:
+			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.Data.LeaderId)
+			go s.OnLogRequest(logRequest.Data)
+
 		case <-s.eventLoop.leaderElectedCh:
 			slog.Info("[CANDIDATE] Received leader elected event")
 			return
@@ -292,24 +291,17 @@ func (s *Server) becomeLeader() {
 func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 	// Received vote request from candidate
 	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateId)
-	cTerm := requestVoteArgs.Term
 	cID := requestVoteArgs.CandidateId
+	cTerm := requestVoteArgs.Term
 	cLastLogIndex := requestVoteArgs.LastLogIndex
 	cLastLogTerm := requestVoteArgs.LastLogTerm
 
 	if cTerm > s.currentTerm {
 		s.becomeFollower(cTerm, "")
-		go s.sendVoteResponse(cID, &dto.VoteResponse{
-			NodeId:      s.config.SelfID,
-			Term:        s.currentTerm,
-			VoteGranted: true,
-		})
-
-		return
 	}
 
-	// get the last term from the log
 	lastTerm := int32(0)
+
 	if len(s.logEntry) > 0 {
 		lastTerm = s.logEntry[len(s.logEntry)-1].Term
 	}
@@ -317,13 +309,12 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= int32(len(s.logEntry)))
 
 	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
+		s.votedFor = cID
 		go s.sendVoteResponse(cID, &dto.VoteResponse{
 			NodeId:      s.config.SelfID,
 			Term:        s.currentTerm,
 			VoteGranted: true,
 		})
-
-		s.votedFor = cID
 	} else {
 		go s.sendVoteResponse(cID, &dto.VoteResponse{
 			NodeId:      s.config.SelfID,
@@ -334,29 +325,24 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 }
 
 func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
-	if requestVoteReply.Term > s.currentTerm {
-		s.becomeFollower(requestVoteReply.Term, "")
-		return
-	}
+	voterId := requestVoteReply.NodeId
+	voterTerm := requestVoteReply.Term
+	voterVoteGranted := requestVoteReply.VoteGranted
 
-	if s.currentRole != Candidate {
-		return
-	}
+	if s.currentRole == Candidate && voterTerm == s.currentTerm && voterVoteGranted {
+		s.votesReceivedMap.Store(voterId, true)
+		votesReceived := 0
+		s.votesReceivedMap.Range(func(_, _ interface{}) bool {
+			votesReceived++
+			return true
+		})
 
-	if requestVoteReply.VoteGranted {
-		s.votesReceived.Store(requestVoteReply.NodeId, true)
-	}
-
-	votes := 0
-	s.votesReceived.Range(func(_, _ interface{}) bool {
-		votes++
-		return true
-	})
-
-	majority := len(s.config.Servers)/2 + 1
-	if votes >= majority {
-		slog.Info("Received majority votes, becoming leader")
-		s.becomeLeader()
+		majority := len(s.config.Servers)/2 + 1
+		if votesReceived >= majority {
+			s.becomeLeader()
+		}
+	} else if voterTerm > s.currentTerm {
+		s.becomeFollower(voterTerm, "")
 	}
 }
 
@@ -382,7 +368,6 @@ func (s *Server) otherServers() []config.ServerConfig {
 }
 
 func (s *Server) runLeader() {
-
 	for _, follower := range s.otherServers() {
 		go s.replicateLog(s.config.SelfID, follower.ID)
 	}
@@ -401,10 +386,10 @@ func (s *Server) runLeader() {
 				s.becomeFollower(requestVoteReq.Data.Term, "")
 				return
 			}
-		case heartbeatReq := <-s.eventLoop.heartbeatReqCh:
-			slog.Info("[LEADER] Received heartbeat from another leader", "another_leader", heartbeatReq.Data.LeaderId)
-			if heartbeatReq.Data.Term > s.currentTerm {
-				s.becomeFollower(heartbeatReq.Data.Term, heartbeatReq.Data.LeaderId)
+		case logRequest := <-s.eventLoop.logRequestChan:
+			slog.Info("[LEADER] Received logRequest from another leader", "another_leader", logRequest.Data.LeaderId)
+			if logRequest.Data.Term > s.currentTerm {
+				s.becomeFollower(logRequest.Data.Term, logRequest.Data.LeaderId)
 				return
 			}
 		}
@@ -423,12 +408,50 @@ func (s *Server) replicateLog(leaderId string, followerId string) {
 		prefixTerm = s.logEntry[prefixLength-1].Term
 	}
 
-	go s.sendLogRequest(followerId, &dto.AppendEntriesArgs{
-		Term:         s.currentTerm,
-		PrevLogIndex: int32(prefixLength - 1),
-		PrevLogTerm:  prefixTerm,
-		Entries:      suffix,
-		LeaderCommit: s.commitLength,
+	go s.sendLogRequest(followerId, &dto.LogRequest{
 		LeaderId:     leaderId,
+		Term:         s.currentTerm,
+		PrefixLength: int32(prefixLength),
+		PrefixTerm:   prefixTerm,
+		Suffix:       int32(len(suffix)),
+		LeaderCommit: s.commitLength,
 	})
+}
+
+func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
+	leaderId := logRequest.LeaderId
+	term := logRequest.Term
+	prefixLength := logRequest.PrefixLength
+	prefixTerm := logRequest.PrefixTerm
+	suffix := logRequest.Suffix
+	leaderCommit := logRequest.LeaderCommit
+
+	if term > s.currentTerm {
+		s.becomeFollower(term, leaderId)
+		return
+	}
+
+	logOk := int(prefixLength) >= len(s.logEntry) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
+
+	if term == s.currentTerm && logOk {
+		go s.AppendEntries(prefixLength, leaderCommit, suffix)
+		ack := prefixLength + suffix
+		go s.sendLogResponse(leaderId, &dto.LogResponse{
+			FollowerId: s.config.SelfID,
+			Term:       s.currentTerm,
+			Ack:        ack,
+			Success:    true,
+		})
+	} else {
+		go s.sendLogResponse(leaderId, &dto.LogResponse{
+			FollowerId: s.config.SelfID,
+			Term:       s.currentTerm,
+			Ack:        0,
+			Success:    false,
+		})
+	}
+}
+
+func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix int32) {
+	// TODO: implement
 }
