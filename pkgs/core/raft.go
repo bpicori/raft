@@ -56,11 +56,11 @@ type Server struct {
 	/* End of persisted fields */
 
 	/* Volatile state on all servers */
-	currentRole      Role           // current role of the server
-	currentLeader    string         // the current leader
-	votesReceivedMap sync.Map       // map of votes received from other servers
-	sentLength       map[string]int // length of log entries sent to other servers
-	ackedLength      map[string]int // length of log entries acknowledged by other servers
+	currentRole      Role             // current role of the server
+	currentLeader    string           // the current leader
+	votesReceivedMap sync.Map         // map of votes received from other servers
+	sentLength       map[string]int32 // length of log entries sent to other servers
+	ackedLength      map[string]int32 // length of log entries acknowledged by other servers
 	/* End of volatile fields */
 
 	config          config.Config  // cluster configuration
@@ -96,8 +96,8 @@ func NewServer() *Server {
 		currentRole:      Follower,
 		currentLeader:    "",
 		votesReceivedMap: sync.Map{},
-		sentLength:       make(map[string]int),
-		ackedLength:      make(map[string]int),
+		sentLength:       make(map[string]int32),
+		ackedLength:      make(map[string]int32),
 		electionTimeout:  time.NewTimer(randomTimeout(config.TimeoutMin, config.TimeoutMax)),
 		ctx:              ctx,
 		cancel:           cancel,
@@ -173,18 +173,28 @@ func (s *Server) runFollower() {
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
 			s.OnVoteRequest(requestVoteReq.Data)
+			return
 
 		case requestVoteRes := <-s.eventLoop.voteResponseChan:
 			slog.Debug("[FOLLOWER] Received vote response from peer, discarding",
 				"peer", requestVoteRes.Data.NodeId,
 				"granted", requestVoteRes.Data.VoteGranted,
 				"term", requestVoteRes.Data.Term)
+			s.OnVoteResponse(requestVoteRes.Data)
 			return
 
-		case heartbeatReq := <-s.eventLoop.logRequestChan:
-			slog.Debug("[FOLLOWER] Received heartbeat, resetting election timeout")
-			// TODO: replace with OnLogRequest
-			s.becomeFollower(s.currentTerm, heartbeatReq.Data.LeaderId)
+		case logRequest := <-s.eventLoop.logRequestChan:
+			slog.Debug("[FOLLOWER] Received {LogRequest}", "leader", logRequest.Data.LeaderId)
+			s.OnLogRequest(logRequest.Data)
+			return
+
+		case logResponse := <-s.eventLoop.logResponseChan:
+			slog.Debug("[FOLLOWER] Received log response from peer",
+				"peer", logResponse.Data.FollowerId,
+				"term", logResponse.Data.Term,
+				"ack", logResponse.Data.Ack,
+				"success", logResponse.Data.Success)
+			s.OnLogResponse(logResponse.Data)
 			return
 
 		case <-s.electionTimeout.C:
@@ -281,7 +291,7 @@ func (s *Server) becomeLeader() {
 	s.eventLoop.leaderElectedCh <- Event[bool]{Data: &truePtr}
 
 	for _, follower := range s.otherServers() {
-		s.sentLength[follower.ID] = len(s.logEntry)
+		s.sentLength[follower.ID] = int32(len(s.logEntry))
 		s.ackedLength[follower.ID] = 0
 
 		go s.replicateLog(s.config.SelfID, follower.ID)
@@ -452,6 +462,31 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	}
 }
 
+func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
+	followerId := logResponse.FollowerId
+	term := logResponse.Term
+	ack := logResponse.Ack
+	success := logResponse.Success
+
+	if s.currentTerm == term && s.currentRole == Leader {
+		if success && ack >= int32(s.ackedLength[followerId]) {
+			s.sentLength[followerId] = ack
+			s.ackedLength[followerId] = ack
+			s.CommitLogEntries()
+		} else if s.sentLength[followerId] > 0 {
+			s.sentLength[followerId] -= 1
+			s.replicateLog(s.config.SelfID, followerId)
+		}
+	} else if term > s.currentTerm {
+		s.becomeFollower(term, "")
+	}
+
+}
+
 func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix int32) {
+	// TODO: implement
+}
+
+func (s *Server) CommitLogEntries() {
 	// TODO: implement
 }
