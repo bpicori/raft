@@ -13,6 +13,7 @@ message RaftRPC {
     LogRequest logRequest = 6;
     LogResponse logResponse = 7;
     ClusterState responseClusterState = 9;
+    AddCommand addCommand = 10;
   }
 }
 
@@ -52,3 +53,7 @@ message LogResponse {
 }
 
 message ClusterState { string leader = 1; }
+
+message AddCommand {
+  string command = 1;
+}

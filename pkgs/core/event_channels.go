@@ -12,6 +12,7 @@ type EventChannels struct {
 	voteResponseChan chan Event[dto.VoteResponse]
 	logRequestChan   chan Event[dto.LogRequest]
 	logResponseChan  chan Event[dto.LogResponse]
+	addCommandChan   chan Event[dto.AddCommand]
 }
 
 func NewEventLoop() *EventChannels {
@@ -20,6 +21,7 @@ func NewEventLoop() *EventChannels {
 		voteResponseChan: make(chan Event[dto.VoteResponse]),
 		logRequestChan:   make(chan Event[dto.LogRequest]),
 		logResponseChan:  make(chan Event[dto.LogResponse]),
+		addCommandChan:   make(chan Event[dto.AddCommand]),
 	}
 }
 
@@ -28,4 +30,5 @@ func (el *EventChannels) Close() {
 	close(el.voteResponseChan)
 	close(el.logRequestChan)
 	close(el.logResponseChan)
+	close(el.addCommandChan)
 }

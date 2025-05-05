@@ -32,6 +32,7 @@ type RaftRPC struct {
 	//	*RaftRPC_LogRequest
 	//	*RaftRPC_LogResponse
 	//	*RaftRPC_ResponseClusterState
+	//	*RaftRPC_AddCommand
 	Args          isRaftRPC_Args `protobuf_oneof:"args"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -126,6 +127,15 @@ func (x *RaftRPC) GetResponseClusterState() *ClusterState {
 	return nil
 }
 
+func (x *RaftRPC) GetAddCommand() *AddCommand {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_AddCommand); ok {
+			return x.AddCommand
+		}
+	}
+	return nil
+}
+
 type isRaftRPC_Args interface {
 	isRaftRPC_Args()
 }
@@ -150,6 +160,10 @@ type RaftRPC_ResponseClusterState struct {
 	ResponseClusterState *ClusterState `protobuf:"bytes,9,opt,name=responseClusterState,proto3,oneof"`
 }
 
+type RaftRPC_AddCommand struct {
+	AddCommand *AddCommand `protobuf:"bytes,10,opt,name=addCommand,proto3,oneof"`
+}
+
 func (*RaftRPC_VoteRequest) isRaftRPC_Args() {}
 
 func (*RaftRPC_VoteResponse) isRaftRPC_Args() {}
@@ -159,6 +173,8 @@ func (*RaftRPC_LogRequest) isRaftRPC_Args() {}
 func (*RaftRPC_LogResponse) isRaftRPC_Args() {}
 
 func (*RaftRPC_ResponseClusterState) isRaftRPC_Args() {}
+
+func (*RaftRPC_AddCommand) isRaftRPC_Args() {}
 
 type VoteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -544,11 +560,55 @@ func (x *ClusterState) GetLeader() string {
 	return ""
 }
 
+type AddCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Command       string                 `protobuf:"bytes,1,opt,name=command,proto3" json:"command,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddCommand) Reset() {
+	*x = AddCommand{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddCommand) ProtoMessage() {}
+
+func (x *AddCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddCommand.ProtoReflect.Descriptor instead.
+func (*AddCommand) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *AddCommand) GetCommand() string {
+	if x != nil {
+		return x.Command
+	}
+	return ""
+}
+
 var File_pkgs_dto_raft_proto protoreflect.FileDescriptor
 
 const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\n" +
-	"\x13pkgs/dto/raft.proto\x12\x03dto\"\xc6\x02\n" +
+	"\x13pkgs/dto/raft.proto\x12\x03dto\"\xf9\x02\n" +
 	"\aRaftRPC\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x124\n" +
 	"\vvoteRequest\x18\x04 \x01(\v2\x10.dto.VoteRequestH\x00R\vvoteRequest\x127\n" +
@@ -557,7 +617,11 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"logRequest\x18\x06 \x01(\v2\x0f.dto.LogRequestH\x00R\n" +
 	"logRequest\x124\n" +
 	"\vlogResponse\x18\a \x01(\v2\x10.dto.LogResponseH\x00R\vlogResponse\x12G\n" +
-	"\x14responseClusterState\x18\t \x01(\v2\x11.dto.ClusterStateH\x00R\x14responseClusterStateB\x06\n" +
+	"\x14responseClusterState\x18\t \x01(\v2\x11.dto.ClusterStateH\x00R\x14responseClusterState\x121\n" +
+	"\n" +
+	"addCommand\x18\n" +
+	" \x01(\v2\x0f.dto.AddCommandH\x00R\n" +
+	"addCommandB\x06\n" +
 	"\x04args\"\xa1\x01\n" +
 	"\vVoteRequest\x12\x16\n" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12\x12\n" +
@@ -590,7 +654,10 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\x03ack\x18\x03 \x01(\x05R\x03ack\x12\x18\n" +
 	"\asuccess\x18\x04 \x01(\bR\asuccess\"&\n" +
 	"\fClusterState\x12\x16\n" +
-	"\x06leader\x18\x01 \x01(\tR\x06leaderB\fZ\n" +
+	"\x06leader\x18\x01 \x01(\tR\x06leader\"&\n" +
+	"\n" +
+	"AddCommand\x12\x18\n" +
+	"\acommand\x18\x01 \x01(\tR\acommandB\fZ\n" +
 	"./pkgs/dtob\x06proto3"
 
 var (
@@ -605,7 +672,7 @@ func file_pkgs_dto_raft_proto_rawDescGZIP() []byte {
 	return file_pkgs_dto_raft_proto_rawDescData
 }
 
-var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_pkgs_dto_raft_proto_goTypes = []any{
 	(*RaftRPC)(nil),      // 0: dto.RaftRPC
 	(*VoteRequest)(nil),  // 1: dto.VoteRequest
@@ -614,6 +681,7 @@ var file_pkgs_dto_raft_proto_goTypes = []any{
 	(*LogRequest)(nil),   // 4: dto.LogRequest
 	(*LogResponse)(nil),  // 5: dto.LogResponse
 	(*ClusterState)(nil), // 6: dto.ClusterState
+	(*AddCommand)(nil),   // 7: dto.AddCommand
 }
 var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	1, // 0: dto.RaftRPC.voteRequest:type_name -> dto.VoteRequest
@@ -621,12 +689,13 @@ var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	4, // 2: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
 	5, // 3: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
 	6, // 4: dto.RaftRPC.responseClusterState:type_name -> dto.ClusterState
-	3, // 5: dto.LogRequest.suffix:type_name -> dto.LogEntry
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	7, // 5: dto.RaftRPC.addCommand:type_name -> dto.AddCommand
+	3, // 6: dto.LogRequest.suffix:type_name -> dto.LogEntry
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_pkgs_dto_raft_proto_init() }
@@ -640,6 +709,7 @@ func file_pkgs_dto_raft_proto_init() {
 		(*RaftRPC_LogRequest)(nil),
 		(*RaftRPC_LogResponse)(nil),
 		(*RaftRPC_ResponseClusterState)(nil),
+		(*RaftRPC_AddCommand)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -647,7 +717,7 @@ func file_pkgs_dto_raft_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkgs_dto_raft_proto_rawDesc), len(file_pkgs_dto_raft_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

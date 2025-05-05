@@ -12,6 +12,7 @@ const (
 	LogRequest
 	LogResponse
 	ClusterStateType
+	AddCommand
 )
 
 // String method for RaftRPCType for logging/debugging
@@ -27,6 +28,8 @@ func (rt RaftRPCType) String() string {
 		return "LogResponse"
 	case ClusterStateType:
 		return "ClusterState"
+	case AddCommand:
+		return "AddCommand"
 	default:
 		return "Unknown"
 	}
@@ -45,6 +48,8 @@ func mapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return LogResponse, nil
 	case "ClusterState":
 		return ClusterStateType, nil
+	case "AddCommand":
+		return AddCommand, nil
 	default:
 		return UnknownRPCType, fmt.Errorf("unknown RPC type string: %s", rpcTypeStr)
 	}
