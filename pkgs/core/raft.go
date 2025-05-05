@@ -511,15 +511,33 @@ func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []
 		}
 	}
 
-	if prefixLength + suffixLength > logLength {
+	if prefixLength+suffixLength > logLength {
 		s.logEntry = append(s.logEntry, suffix...)
 	}
 
 	if leaderCommit > s.commitLength {
 		s.commitLength = leaderCommit
+		// TODO: deliver log entries to application
 	}
 }
 
 func (s *Server) CommitLogEntries() {
-	// TODO: implement
+
+	majority := len(s.config.Servers)/2 + 1
+
+	for s.commitLength < int32(len(s.logEntry)) {
+		acks := 0
+		for _, follower := range s.otherServers() {
+			if s.ackedLength[follower.ID] >= s.commitLength {
+				acks++
+			}
+		}
+
+		if acks >= majority {
+			// TODO: deliver log entries to application
+			s.commitLength = s.commitLength + 1
+		} else {
+			break
+		}
+	}
 }

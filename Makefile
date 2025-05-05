@@ -1,6 +1,6 @@
-PHONY: install-tools install run srv1 srv2 srv3 clean
+PHONY: install-tools install run srv1 srv2 srv3 srv4 srv5 clean
 
-SERVERS = "localhost:8080,localhost:8081,localhost:8082"
+SERVERS = "localhost:8080,localhost:8081,localhost:8082,localhost:8083,localhost:8084"
 PERSISTENT_PATH = ./ignore
 DEBUG = DEBUG=true
 GO = go run
@@ -40,7 +40,9 @@ run:
 	make proto-build
 	$(TMUX_NEW_WINDOW) "$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8080 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)" && \
 	$(TMUX_SPLIT_WINDOW) -v "$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8081 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)" && \
-	$(TMUX_SPLIT_WINDOW) -h "$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8082 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)"
+	$(TMUX_SPLIT_WINDOW) -h "$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8082 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)" && \
+	$(TMUX_SPLIT_WINDOW) -v "$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8083 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)" && \
+	$(TMUX_SPLIT_WINDOW) -h "$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8084 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)"
 
 srv1:
 	$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8080 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)
@@ -50,6 +52,12 @@ srv2:
 
 srv3:
 	$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8082 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)
+
+srv4:
+	$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8083 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)
+
+srv5:
+	$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8084 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)
 
 client:
 	$(DEBUG) $(GO) $(SRC_CLIENT) -command=$(word 2,$(MAKECMDGOALS)) -servers=$(SERVERS)

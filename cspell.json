@@ -5,7 +5,10 @@
     ],
     "dictionaryDefinitions": [],
     "dictionaries": [],
-    "words": [],
+    "words": [
+        "Acks",
+        "protoc"
+    ],
     "ignoreWords": [],
     "import": []
 }
