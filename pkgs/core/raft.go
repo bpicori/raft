@@ -425,32 +425,12 @@ func (s *Server) becomeFollower(term int32, leader string) {
 
 func (s *Server) runLeader() {
 
-	for _, peer := range s.config.Servers {
-		if peer.ID == s.config.SelfID {
+	for _, follower := range s.config.Servers {
+		if follower.ID == s.config.SelfID { // skip self
 			continue
 		}
 
-		s.sentLength[peer.ID] = len(s.logEntry)
-		s.ackedLength[peer.ID] = 0
-
-		prevLogTerm := int32(0)
-		if len(s.logEntry) > 0 {
-			prevLogTerm = s.logEntry[len(s.logEntry)-1].Term
-		}
-
-		prevLogIndex := int32(0)
-		if len(s.logEntry) > 0 {
-			prevLogIndex = int32(len(s.logEntry) - 1)
-		}
-
-		go s.sendLogRequest(peer.Addr, &dto.AppendEntriesArgs{
-			Term:         s.currentTerm,
-			PrevLogIndex: prevLogIndex,
-			PrevLogTerm:  prevLogTerm,
-			Entries:      s.logEntry,
-			LeaderCommit: s.commitLength,
-			LeaderId:     s.config.SelfID,
-		})
+		go s.replicateLog(s.config.SelfID, follower.ID)
 	}
 
 	s.heartbeatTimer = time.NewTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
@@ -477,7 +457,6 @@ func (s *Server) runLeader() {
 	}
 }
 
-// TODO: use this function to replicate log to all followers
 func (s *Server) replicateLog(leaderId string, followerId string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
