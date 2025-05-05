@@ -228,6 +228,7 @@ func (s *Server) runCandidate() {
 
 	slog.Info("[CANDIDATE] Running...",
 		"term", s.currentTerm,
+		"lastTerm", lastTerm,
 		"votes", votes,
 		"majority", majority)
 
@@ -299,7 +300,6 @@ func (s *Server) becomeLeader() {
 }
 
 func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
-	// Received vote request from candidate
 	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateId)
 	cID := requestVoteArgs.CandidateId
 	cTerm := requestVoteArgs.Term
@@ -307,7 +307,9 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 	cLastLogTerm := requestVoteArgs.LastLogTerm
 
 	if cTerm > s.currentTerm {
-		s.becomeFollower(cTerm, "")
+		s.currentTerm = cTerm
+		s.currentRole = Follower
+		s.votedFor = ""
 	}
 
 	lastTerm := int32(0)
@@ -352,19 +354,11 @@ func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
 			s.becomeLeader()
 		}
 	} else if voterTerm > s.currentTerm {
-		s.becomeFollower(voterTerm, "")
+		s.currentTerm = voterTerm
+		s.currentRole = Follower
+		s.votedFor = ""
+		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
-}
-
-func (s *Server) becomeFollower(term int32, leader string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.currentRole = Follower
-	s.currentTerm = term
-	s.currentLeader = leader
-	s.votedFor = ""
-	s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 }
 
 func (s *Server) otherServers() []config.ServerConfig {
@@ -390,18 +384,6 @@ func (s *Server) runLeader() {
 			return
 		case <-s.heartbeatTimer.C:
 			return
-		case requestVoteReq := <-s.eventLoop.voteRequestChan:
-			slog.Info("[LEADER] Received RequestVoteReq", "candidate", requestVoteReq.Data.CandidateId)
-			if requestVoteReq.Data.Term > s.currentTerm {
-				s.becomeFollower(requestVoteReq.Data.Term, "")
-				return
-			}
-		case logRequest := <-s.eventLoop.logRequestChan:
-			slog.Info("[LEADER] Received logRequest from another leader", "another_leader", logRequest.Data.LeaderId)
-			if logRequest.Data.Term > s.currentTerm {
-				s.becomeFollower(logRequest.Data.Term, logRequest.Data.LeaderId)
-				return
-			}
 		}
 	}
 }
@@ -437,8 +419,14 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	leaderCommit := logRequest.LeaderCommit
 
 	if term > s.currentTerm {
-		s.becomeFollower(term, leaderId)
-		return
+		s.currentTerm = term
+		s.votedFor = ""
+		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+	}
+
+	if term == s.currentTerm {
+		s.currentRole = Follower
+		s.currentLeader = leaderId
 	}
 
 	logOk := int(prefixLength) >= len(s.logEntry) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
@@ -478,9 +466,11 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 			s.replicateLog(s.config.SelfID, followerId)
 		}
 	} else if term > s.currentTerm {
-		s.becomeFollower(term, "")
+		s.currentTerm = term
+		s.currentRole = Follower
+		s.votedFor = ""
+		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
-
 }
 
 func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix int32) {
