@@ -173,7 +173,9 @@ func (s *Server) runFollower() {
 				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
 				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
 			s.OnVoteRequest(requestVoteReq.Data)
-			return
+			if s.currentRole != Follower {
+				return
+			}
 
 		case requestVoteRes := <-s.eventLoop.voteResponseChan:
 			slog.Debug("[FOLLOWER] Received vote response from peer, discarding",
@@ -181,12 +183,16 @@ func (s *Server) runFollower() {
 				"granted", requestVoteRes.Data.VoteGranted,
 				"term", requestVoteRes.Data.Term)
 			s.OnVoteResponse(requestVoteRes.Data)
-			return
+			if s.currentRole != Follower {
+				return
+			}
 
 		case logRequest := <-s.eventLoop.logRequestChan:
 			slog.Debug("[FOLLOWER] Received {LogRequest}", "leader", logRequest.Data.LeaderId)
 			s.OnLogRequest(logRequest.Data)
-			return
+			if s.currentRole != Follower {
+				return
+			}
 
 		case logResponse := <-s.eventLoop.logResponseChan:
 			slog.Debug("[FOLLOWER] Received log response from peer",
@@ -195,7 +201,9 @@ func (s *Server) runFollower() {
 				"ack", logResponse.Data.Ack,
 				"success", logResponse.Data.Success)
 			s.OnLogResponse(logResponse.Data)
-			return
+			if s.currentRole != Follower {
+				return
+			}
 		case <-s.electionTimeout.C:
 			slog.Info("[FOLLOWER] Election timeout from Follower state, starting new election")
 			s.startElection()
@@ -435,6 +443,7 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	if term == s.currentTerm {
 		s.currentRole = Follower
 		s.currentLeader = leaderId
+		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
 
 	logOk := len(s.logEntry) >= int(prefixLength) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
