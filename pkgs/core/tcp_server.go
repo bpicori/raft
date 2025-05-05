@@ -77,7 +77,6 @@ func handleConnection(conn net.Conn, server *Server) {
 			slog.Error("Error marshaling cluster state for response", "error", err, "remote_addr", conn.RemoteAddr())
 			return
 		}
-		slog.Info("Responding to ClusterState RPC", "leader", clusterState.Leader, "remote_addr", conn.RemoteAddr())
 
 		_, err = conn.Write(append(data, '\n'))
 		if err != nil {

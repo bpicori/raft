@@ -21,7 +21,6 @@ func (s *Server) sendVoteRequest(addr string, args *dto.VoteRequest) error {
 		Args: &dto.RaftRPC_VoteRequest{VoteRequest: args},
 	}
 
-	slog.Debug("[TCP_CLIENT][sendVoteRequest] Sending RPC", "addr", addr, "args", args)
 
 	// Encode and send the request
 	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
@@ -45,7 +44,6 @@ func (s *Server) sendVoteResponse(addr string, reply *dto.VoteResponse) error {
 		Args: &dto.RaftRPC_VoteResponse{VoteResponse: reply},
 	}
 
-	slog.Debug("[TCP_CLIENT][sendVoteResponse] Sending RPC", "addr", addr, "reply", reply)
 
 	// Encode and send the request
 	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
@@ -68,8 +66,6 @@ func (s *Server) sendLogRequest(addr string, args *dto.LogRequest) error {
 		Args: &dto.RaftRPC_LogRequest{LogRequest: args},
 	}
 
-	slog.Debug("[TCP_CLIENT] Sending LogRequest RPC", "addr", addr, "args", args)
-
 	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
 		return fmt.Errorf("error sending LogRequest RPC: %v", err)
 	}
@@ -89,8 +85,6 @@ func (s *Server) sendLogResponse(addr string, reply *dto.LogResponse) error {
 		Type: LogResponse.String(),
 		Args: &dto.RaftRPC_LogResponse{LogResponse: reply},
 	}
-
-	slog.Debug("[TCP_CLIENT] Sending LogResponse RPC", "addr", addr, "reply", reply)
 
 	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
 		return fmt.Errorf("error sending LogResponse RPC: %v", err)
