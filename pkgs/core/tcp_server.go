@@ -67,8 +67,8 @@ func handleConnection(conn net.Conn, server *Server) {
 		} else {
 			slog.Warn("Received LogResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case ClusterStateType:
-		clusterState := &dto.ClusterState{
+	case NodeStatus:
+		nodeStatus := &dto.NodeStatus{
 			NodeId:        server.config.SelfID,
 			CurrentTerm: server.currentTerm,
 			VotedFor:    server.votedFor,
@@ -78,9 +78,9 @@ func handleConnection(conn net.Conn, server *Server) {
 			LogEntries:    server.logEntry,
 		}
 
-		data, err := proto.Marshal(clusterState)
+		data, err := proto.Marshal(nodeStatus)
 		if err != nil {
-			slog.Error("Error marshaling cluster state for response", "error", err, "remote_addr", conn.RemoteAddr())
+			slog.Error("Error marshaling node status for response", "error", err, "remote_addr", conn.RemoteAddr())
 			return
 		}
 

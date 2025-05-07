@@ -11,7 +11,7 @@ const (
 	VoteResponse
 	LogRequest
 	LogResponse
-	ClusterStateType
+	NodeStatus
 	AddCommand
 )
 
@@ -26,8 +26,8 @@ func (rt RaftRPCType) String() string {
 		return "LogRequest"
 	case LogResponse:
 		return "LogResponse"
-	case ClusterStateType:
-		return "ClusterState"
+	case NodeStatus:
+		return "NodeStatus"
 	case AddCommand:
 		return "AddCommand"
 	default:
@@ -46,8 +46,8 @@ func mapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return LogRequest, nil
 	case "LogResponse":
 		return LogResponse, nil
-	case "ClusterState":
-		return ClusterStateType, nil
+	case "NodeStatus":
+		return NodeStatus, nil
 	case "AddCommand":
 		return AddCommand, nil
 	default:

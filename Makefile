@@ -61,7 +61,7 @@ srv5:
 	$(DEBUG) $(GO) $(SRC) -servers=$(SERVERS) -current=localhost:8084 -persistent-path=$(PERSISTENT_PATH) -timeout-min=$(TIMEOUT_MIN) -timeout-max=$(TIMEOUT_MAX) -heartbeat=$(HEARTBEAT)
 
 client:
-	$(DEBUG) $(GO) $(SRC_CLIENT) -servers=$(SERVERS) -command="$(CMD_ARGS)"
+	$(DEBUG) $(GO) $(SRC_CLIENT) -servers=$(SERVERS) $(CMD_ARGS)
 
 clean:
 	rm -rf $(PERSISTENT_PATH)/*

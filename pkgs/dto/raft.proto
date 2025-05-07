@@ -8,12 +8,12 @@ option go_package = "./pkgs/dto";
 message RaftRPC {
   string type = 1;
   oneof args {
-    VoteRequest voteRequest = 4;
-    VoteResponse voteResponse = 5;
-    LogRequest logRequest = 6;
-    LogResponse logResponse = 7;
-    ClusterState responseClusterState = 9;
-    AddCommand addCommand = 10;
+    VoteRequest voteRequest = 2;
+    VoteResponse voteResponse = 3;
+    LogRequest logRequest = 4;
+    LogResponse logResponse = 5;
+    NodeStatus nodeStatus = 6;
+    AddCommand addCommand = 7;
   }
 }
 
@@ -52,7 +52,7 @@ message LogResponse {
   bool success = 4;
 }
 
-message ClusterState { 
+message NodeStatus { 
   string nodeId = 1;
   int32 currentTerm = 2;
   string votedFor = 3;

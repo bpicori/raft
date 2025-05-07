@@ -31,7 +31,7 @@ type RaftRPC struct {
 	//	*RaftRPC_VoteResponse
 	//	*RaftRPC_LogRequest
 	//	*RaftRPC_LogResponse
-	//	*RaftRPC_ResponseClusterState
+	//	*RaftRPC_NodeStatus
 	//	*RaftRPC_AddCommand
 	Args          isRaftRPC_Args `protobuf_oneof:"args"`
 	unknownFields protoimpl.UnknownFields
@@ -118,10 +118,10 @@ func (x *RaftRPC) GetLogResponse() *LogResponse {
 	return nil
 }
 
-func (x *RaftRPC) GetResponseClusterState() *ClusterState {
+func (x *RaftRPC) GetNodeStatus() *NodeStatus {
 	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_ResponseClusterState); ok {
-			return x.ResponseClusterState
+		if x, ok := x.Args.(*RaftRPC_NodeStatus); ok {
+			return x.NodeStatus
 		}
 	}
 	return nil
@@ -141,27 +141,27 @@ type isRaftRPC_Args interface {
 }
 
 type RaftRPC_VoteRequest struct {
-	VoteRequest *VoteRequest `protobuf:"bytes,4,opt,name=voteRequest,proto3,oneof"`
+	VoteRequest *VoteRequest `protobuf:"bytes,2,opt,name=voteRequest,proto3,oneof"`
 }
 
 type RaftRPC_VoteResponse struct {
-	VoteResponse *VoteResponse `protobuf:"bytes,5,opt,name=voteResponse,proto3,oneof"`
+	VoteResponse *VoteResponse `protobuf:"bytes,3,opt,name=voteResponse,proto3,oneof"`
 }
 
 type RaftRPC_LogRequest struct {
-	LogRequest *LogRequest `protobuf:"bytes,6,opt,name=logRequest,proto3,oneof"`
+	LogRequest *LogRequest `protobuf:"bytes,4,opt,name=logRequest,proto3,oneof"`
 }
 
 type RaftRPC_LogResponse struct {
-	LogResponse *LogResponse `protobuf:"bytes,7,opt,name=logResponse,proto3,oneof"`
+	LogResponse *LogResponse `protobuf:"bytes,5,opt,name=logResponse,proto3,oneof"`
 }
 
-type RaftRPC_ResponseClusterState struct {
-	ResponseClusterState *ClusterState `protobuf:"bytes,9,opt,name=responseClusterState,proto3,oneof"`
+type RaftRPC_NodeStatus struct {
+	NodeStatus *NodeStatus `protobuf:"bytes,6,opt,name=nodeStatus,proto3,oneof"`
 }
 
 type RaftRPC_AddCommand struct {
-	AddCommand *AddCommand `protobuf:"bytes,10,opt,name=addCommand,proto3,oneof"`
+	AddCommand *AddCommand `protobuf:"bytes,7,opt,name=addCommand,proto3,oneof"`
 }
 
 func (*RaftRPC_VoteRequest) isRaftRPC_Args() {}
@@ -172,7 +172,7 @@ func (*RaftRPC_LogRequest) isRaftRPC_Args() {}
 
 func (*RaftRPC_LogResponse) isRaftRPC_Args() {}
 
-func (*RaftRPC_ResponseClusterState) isRaftRPC_Args() {}
+func (*RaftRPC_NodeStatus) isRaftRPC_Args() {}
 
 func (*RaftRPC_AddCommand) isRaftRPC_Args() {}
 
@@ -516,7 +516,7 @@ func (x *LogResponse) GetSuccess() bool {
 	return false
 }
 
-type ClusterState struct {
+type NodeStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NodeId        string                 `protobuf:"bytes,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
 	CurrentTerm   int32                  `protobuf:"varint,2,opt,name=currentTerm,proto3" json:"currentTerm,omitempty"`
@@ -529,20 +529,20 @@ type ClusterState struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ClusterState) Reset() {
-	*x = ClusterState{}
+func (x *NodeStatus) Reset() {
+	*x = NodeStatus{}
 	mi := &file_pkgs_dto_raft_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ClusterState) String() string {
+func (x *NodeStatus) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ClusterState) ProtoMessage() {}
+func (*NodeStatus) ProtoMessage() {}
 
-func (x *ClusterState) ProtoReflect() protoreflect.Message {
+func (x *NodeStatus) ProtoReflect() protoreflect.Message {
 	mi := &file_pkgs_dto_raft_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -554,54 +554,54 @@ func (x *ClusterState) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ClusterState.ProtoReflect.Descriptor instead.
-func (*ClusterState) Descriptor() ([]byte, []int) {
+// Deprecated: Use NodeStatus.ProtoReflect.Descriptor instead.
+func (*NodeStatus) Descriptor() ([]byte, []int) {
 	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ClusterState) GetNodeId() string {
+func (x *NodeStatus) GetNodeId() string {
 	if x != nil {
 		return x.NodeId
 	}
 	return ""
 }
 
-func (x *ClusterState) GetCurrentTerm() int32 {
+func (x *NodeStatus) GetCurrentTerm() int32 {
 	if x != nil {
 		return x.CurrentTerm
 	}
 	return 0
 }
 
-func (x *ClusterState) GetVotedFor() string {
+func (x *NodeStatus) GetVotedFor() string {
 	if x != nil {
 		return x.VotedFor
 	}
 	return ""
 }
 
-func (x *ClusterState) GetCurrentRole() int32 {
+func (x *NodeStatus) GetCurrentRole() int32 {
 	if x != nil {
 		return x.CurrentRole
 	}
 	return 0
 }
 
-func (x *ClusterState) GetCurrentLeader() string {
+func (x *NodeStatus) GetCurrentLeader() string {
 	if x != nil {
 		return x.CurrentLeader
 	}
 	return ""
 }
 
-func (x *ClusterState) GetCommitLength() int32 {
+func (x *NodeStatus) GetCommitLength() int32 {
 	if x != nil {
 		return x.CommitLength
 	}
 	return 0
 }
 
-func (x *ClusterState) GetLogEntries() []*LogEntry {
+func (x *NodeStatus) GetLogEntries() []*LogEntry {
 	if x != nil {
 		return x.LogEntries
 	}
@@ -656,19 +656,20 @@ var File_pkgs_dto_raft_proto protoreflect.FileDescriptor
 
 const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\n" +
-	"\x13pkgs/dto/raft.proto\x12\x03dto\"\xf9\x02\n" +
+	"\x13pkgs/dto/raft.proto\x12\x03dto\"\xe3\x02\n" +
 	"\aRaftRPC\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x124\n" +
-	"\vvoteRequest\x18\x04 \x01(\v2\x10.dto.VoteRequestH\x00R\vvoteRequest\x127\n" +
-	"\fvoteResponse\x18\x05 \x01(\v2\x11.dto.VoteResponseH\x00R\fvoteResponse\x121\n" +
+	"\vvoteRequest\x18\x02 \x01(\v2\x10.dto.VoteRequestH\x00R\vvoteRequest\x127\n" +
+	"\fvoteResponse\x18\x03 \x01(\v2\x11.dto.VoteResponseH\x00R\fvoteResponse\x121\n" +
 	"\n" +
-	"logRequest\x18\x06 \x01(\v2\x0f.dto.LogRequestH\x00R\n" +
+	"logRequest\x18\x04 \x01(\v2\x0f.dto.LogRequestH\x00R\n" +
 	"logRequest\x124\n" +
-	"\vlogResponse\x18\a \x01(\v2\x10.dto.LogResponseH\x00R\vlogResponse\x12G\n" +
-	"\x14responseClusterState\x18\t \x01(\v2\x11.dto.ClusterStateH\x00R\x14responseClusterState\x121\n" +
+	"\vlogResponse\x18\x05 \x01(\v2\x10.dto.LogResponseH\x00R\vlogResponse\x121\n" +
 	"\n" +
-	"addCommand\x18\n" +
-	" \x01(\v2\x0f.dto.AddCommandH\x00R\n" +
+	"nodeStatus\x18\x06 \x01(\v2\x0f.dto.NodeStatusH\x00R\n" +
+	"nodeStatus\x121\n" +
+	"\n" +
+	"addCommand\x18\a \x01(\v2\x0f.dto.AddCommandH\x00R\n" +
 	"addCommandB\x06\n" +
 	"\x04args\"\xa1\x01\n" +
 	"\vVoteRequest\x12\x16\n" +
@@ -700,8 +701,9 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"followerId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x05R\x04term\x12\x10\n" +
 	"\x03ack\x18\x03 \x01(\x05R\x03ack\x12\x18\n" +
-	"\asuccess\x18\x04 \x01(\bR\asuccess\"\xff\x01\n" +
-	"\fClusterState\x12\x16\n" +
+	"\asuccess\x18\x04 \x01(\bR\asuccess\"\xfd\x01\n" +
+	"\n" +
+	"NodeStatus\x12\x16\n" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12 \n" +
 	"\vcurrentTerm\x18\x02 \x01(\x05R\vcurrentTerm\x12\x1a\n" +
 	"\bvotedFor\x18\x03 \x01(\tR\bvotedFor\x12 \n" +
@@ -736,7 +738,7 @@ var file_pkgs_dto_raft_proto_goTypes = []any{
 	(*LogEntry)(nil),     // 3: dto.LogEntry
 	(*LogRequest)(nil),   // 4: dto.LogRequest
 	(*LogResponse)(nil),  // 5: dto.LogResponse
-	(*ClusterState)(nil), // 6: dto.ClusterState
+	(*NodeStatus)(nil),   // 6: dto.NodeStatus
 	(*AddCommand)(nil),   // 7: dto.AddCommand
 }
 var file_pkgs_dto_raft_proto_depIdxs = []int32{
@@ -744,10 +746,10 @@ var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	2, // 1: dto.RaftRPC.voteResponse:type_name -> dto.VoteResponse
 	4, // 2: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
 	5, // 3: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
-	6, // 4: dto.RaftRPC.responseClusterState:type_name -> dto.ClusterState
+	6, // 4: dto.RaftRPC.nodeStatus:type_name -> dto.NodeStatus
 	7, // 5: dto.RaftRPC.addCommand:type_name -> dto.AddCommand
 	3, // 6: dto.LogRequest.suffix:type_name -> dto.LogEntry
-	3, // 7: dto.ClusterState.logEntries:type_name -> dto.LogEntry
+	3, // 7: dto.NodeStatus.logEntries:type_name -> dto.LogEntry
 	8, // [8:8] is the sub-list for method output_type
 	8, // [8:8] is the sub-list for method input_type
 	8, // [8:8] is the sub-list for extension type_name
@@ -765,7 +767,7 @@ func file_pkgs_dto_raft_proto_init() {
 		(*RaftRPC_VoteResponse)(nil),
 		(*RaftRPC_LogRequest)(nil),
 		(*RaftRPC_LogResponse)(nil),
-		(*RaftRPC_ResponseClusterState)(nil),
+		(*RaftRPC_NodeStatus)(nil),
 		(*RaftRPC_AddCommand)(nil),
 	}
 	type x struct{}

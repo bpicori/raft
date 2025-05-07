@@ -5,15 +5,11 @@ import (
 	"bpicori/raft/pkgs/core"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/logger"
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
-	"net"
 	"os"
 	"strings"
-
-	"google.golang.org/protobuf/proto"
 )
 
 func init() {
@@ -21,30 +17,85 @@ func init() {
 }
 
 func main() {
-	command, cfg := parseConfigFromFlags()
+	flagValues := parseFlags()
+	operation, key, _ := parseCommand(flagValues)
+	cfg := buildServerConfig(flagValues.servers)
 
-	switch command {
-	case "leader":
-		getLeader(cfg)
+	switch operation {
+	case "status":
+		getClusterStatus(cfg)
+	case "add":
+		if key == "" {
+			fmt.Fprintf(os.Stderr, "Key is required for add operation\n")
+			flag.Usage()
+			os.Exit(1)
+		}
+		fmt.Println("add operation not implemented")
+	case "rm":
+		if key == "" {
+			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")
+			flag.Usage()
+			os.Exit(1)
+		}
+		fmt.Println("rm operation not implemented")
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
+		fmt.Fprintf(os.Stderr, "Unknown operation. Use -status, -add, or -rm\n")
 		flag.Usage()
 		os.Exit(1)
 	}
 }
 
-func parseConfigFromFlags() (string, *config.Config) {
-	command := flag.String("command", "", "The command to execute (leader)")
+type flagValues struct {
+	servers string
+	status  bool
+	add     string
+	rm      string
+}
+
+func parseFlags() flagValues {
 	servers := flag.String("servers", "", "Comma-separated list of servers in format host:port")
+	status := flag.Bool("status", false, "Get the cluster status")
+	add := flag.String("add", "", "Add a key to the storage (requires value argument)")
+	rm := flag.String("rm", "", "Remove a key from the storage")
+
 	flag.Parse()
 
-	if *command == "" || *servers == "" {
-		flag.Usage()
-		os.Exit(1)
+	if *servers == "" {
+		handleInvalidOperation("Servers list is required")
 	}
 
-	// Parse servers directly from command line
-	serverList := strings.Split(*servers, ",")
+	return flagValues{
+		servers: *servers,
+		status:  *status,
+		add:     *add,
+		rm:      *rm,
+	}
+}
+
+func parseCommand(flags flagValues) (operation, key, value string) {
+	if flags.status {
+		operation = "status"
+	} else if flags.add != "" {
+		operation = "add"
+		key = flags.add
+		args := flag.Args()
+		if len(args) > 0 {
+			value = args[0]
+		} else {
+			handleInvalidOperation("Value is required for add operation")
+		}
+	} else if flags.rm != "" {
+		operation = "rm"
+		key = flags.rm
+	} else {
+		handleInvalidOperation("Must specify one operation: -status, -add, or -rm")
+	}
+
+	return
+}
+
+func buildServerConfig(serversStr string) *config.Config {
+	serverList := strings.Split(serversStr, ",")
 	if len(serverList) == 0 {
 		slog.Error("No servers provided")
 		os.Exit(1)
@@ -59,77 +110,57 @@ func parseConfigFromFlags() (string, *config.Config) {
 		}
 	}
 
-	cfg := &config.Config{
+	return &config.Config{
 		Servers: serverConfigs,
 	}
-
-	return *command, cfg
 }
 
-func getLeader(cfg *config.Config) {
-	results := make([]*dto.ClusterState, 0)
+func getClusterStatus(cfg *config.Config) {
+	results := make([]*dto.NodeStatus, 0)
 
 	for _, server := range cfg.Servers {
-		clusterStateReq := &dto.RaftRPC{
-			Type: core.ClusterStateType.String(),
+		nodeStatusReq := &dto.RaftRPC{
+			Type: core.NodeStatus.String(),
 		}
-		clusterStateResp := &dto.ClusterState{}
+		nodeStatusResp := &dto.NodeStatus{}
 
-		err := sendReceiveRPC(server.Addr, clusterStateReq, clusterStateResp)
+		err := sendReceiveRPC(server.Addr, nodeStatusReq, nodeStatusResp)
 		if err != nil {
-			slog.Error("Error in ClusterState RPC", "server", server.Addr, "error", err)
-			os.Exit(1)
+			slog.Error("Error in NodeStatus RPC", "server", server.Addr, "error", err)
+			continue
 		}
 
-		results = append(results, clusterStateResp)
+		results = append(results, nodeStatusResp)
 	}
 
-	// print results
 	for _, result := range results {
 		fmt.Println(result)
 	}
 }
 
-func openConnection(addr string) net.Conn {
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		slog.Error("Error getting connection", "error", err)
-		os.Exit(1)
-	}
 
-	return conn
+func findLeader(cfg *config.Config) string {
+	for _, server := range cfg.Servers {
+		nodeStatusReq := &dto.RaftRPC{
+			Type: core.NodeStatus.String(),
+		}
+		nodeStatusResp := &dto.NodeStatus{}
+
+		err := sendReceiveRPC(server.Addr, nodeStatusReq, nodeStatusResp)
+		if err != nil {
+			slog.Error("Error in NodeStatus RPC", "server", server.Addr, "error", err)
+			continue
+		}
+
+		if nodeStatusResp.CurrentLeader != "" {
+			return nodeStatusResp.CurrentLeader
+		}
+	}
+	return ""
 }
 
-func sendReceiveRPC(addr string, req proto.Message, resp proto.Message) error {
-	conn := openConnection(addr)
-	defer conn.Close()
-
-	data, err := proto.Marshal(req)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	_, err = conn.Write(data)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-
-	slog.Debug("Sent RPC request", "remote_addr", conn.RemoteAddr().String(), "type", fmt.Sprintf("%T", req))
-
-	buffer := make([]byte, 4096) // Consider making buffer size configurable or dynamic
-	n, err := conn.Read(buffer)
-	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
-	}
-	if n == 0 {
-		return errors.New("received empty response")
-	}
-
-	err = proto.Unmarshal(buffer[:n], resp)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	slog.Debug("Received RPC response", "remote_addr", conn.RemoteAddr().String(), "type", fmt.Sprintf("%T", resp))
-	return nil
+func handleInvalidOperation(message string) {
+	fmt.Fprintf(os.Stderr, message+"\n")
+	flag.Usage()
+	os.Exit(1)
 }
