@@ -13,7 +13,8 @@ message RaftRPC {
     LogRequest logRequest = 4;
     LogResponse logResponse = 5;
     NodeStatus nodeStatus = 6;
-    AddCommand addCommand = 7;
+    SetCommand setCommand = 7;
+    OkResponse okResponse = 8;
   }
 }
 
@@ -31,9 +32,15 @@ message VoteResponse {
   bool voteGranted = 3;
 }
 
+message Command {
+  string operation = 1;
+  string key = 2;
+  string value = 3;
+}
+
 message LogEntry {
   int32 term = 1;
-  string command = 2;
+  Command command = 2;
 }
 
 message LogRequest {
@@ -62,6 +69,11 @@ message NodeStatus {
   repeated LogEntry logEntries = 7;
 }
 
-message AddCommand {
-  string command = 1;
+message SetCommand {
+  string key = 1;
+  string value = 2;
+}
+
+message OkResponse {
+  bool ok = 1;
 }

@@ -358,34 +358,38 @@ func (s *Server) runLeader() {
 			}
 			s.heartbeatTimer.Reset(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		case voteRequest := <-s.eventLoop.voteRequestChan:
-			slog.Info("[LEADER] Received {VoteRequest} from", "candidate", voteRequest.Data.CandidateId)
+			slog.Debug("[LEADER] Received {VoteRequest} from", "candidate", voteRequest.Data.CandidateId)
 			s.OnVoteRequest(voteRequest.Data)
 			if s.currentRole != Leader {
 				return
 			}
 		case voteResponse := <-s.eventLoop.voteResponseChan:
-			slog.Info("[LEADER] Received {VoteResponse} from", "peer", voteResponse.Data.NodeId)
+			slog.Debug("[LEADER] Received {VoteResponse} from", "peer", voteResponse.Data.NodeId)
 			s.OnVoteResponse(voteResponse.Data)
 			if s.currentRole != Leader {
 				return
 			}
 		case logRequest := <-s.eventLoop.logRequestChan:
-			slog.Info("[LEADER] Received {LogRequest} from", "leader", logRequest.Data.LeaderId)
+			slog.Debug("[LEADER] Received {LogRequest} from", "leader", logRequest.Data.LeaderId)
 			s.OnLogRequest(logRequest.Data)
 			if s.currentRole != Leader {
 				return
 			}
 		case logResponse := <-s.eventLoop.logResponseChan:
-			slog.Info("[LEADER] Received {LogResponse} from", "peer", logResponse.Data.FollowerId)
+			slog.Debug("[LEADER] Received {LogResponse} from", "peer", logResponse.Data.FollowerId)
 			s.OnLogResponse(logResponse.Data)
 			if s.currentRole != Leader {
 				return
 			}
-		case addCommand := <-s.eventLoop.addCommandChan:
-			slog.Info("[LEADER] Received {AddCommand}", "command", addCommand.Data.Command)
+		case setCommand := <-s.eventLoop.setCommandChan:
+			slog.Info("[LEADER] Received {SetCommand}", "key", setCommand.Data.Key, "value", setCommand.Data.Value)
 			s.logEntry = append(s.logEntry, &dto.LogEntry{
 				Term:    s.currentTerm,
-				Command: addCommand.Data.Command,
+				Command: &dto.Command{
+					Operation: "set",
+					Key:       setCommand.Data.Key,
+					Value:     setCommand.Data.Value,
+				},
 			})
 			s.ackedLength[s.config.SelfID] = int32(len(s.logEntry))
 			for _, follower := range s.otherServers() {

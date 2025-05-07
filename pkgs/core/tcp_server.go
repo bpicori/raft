@@ -20,7 +20,7 @@ func handleConnection(conn net.Conn, server *Server) {
 
 	var rpc dto.RaftRPC
 	if err := proto.Unmarshal(buffer[:n], &rpc); err != nil {
-		slog.Error("Error unmarshaling protobuf message", "remote_addr", conn.RemoteAddr(), "error", err)
+		slog.Error("Error unmarshaling protobuf message", "remote_addr", conn.RemoteAddr(), "error", err, "buffer", buffer[:n])
 		return
 	}
 
@@ -70,11 +70,11 @@ func handleConnection(conn net.Conn, server *Server) {
 	case NodeStatus:
 		nodeStatus := &dto.NodeStatus{
 			NodeId:        server.config.SelfID,
-			CurrentTerm: server.currentTerm,
-			VotedFor:    server.votedFor,
-			CurrentRole: mapRoleToString(server.currentRole),
+			CurrentTerm:   server.currentTerm,
+			VotedFor:      server.votedFor,
+			CurrentRole:   mapRoleToString(server.currentRole),
 			CurrentLeader: server.currentLeader,
-			CommitLength: server.commitLength,
+			CommitLength:  server.commitLength,
 			LogEntries:    server.logEntry,
 		}
 
@@ -87,6 +87,41 @@ func handleConnection(conn net.Conn, server *Server) {
 		_, err = conn.Write(data)
 		if err != nil {
 			slog.Error("Error sending cluster state response", "error", err, "remote_addr", conn.RemoteAddr())
+		}
+	case SetCommand:
+		if args := rpc.GetSetCommand(); args != nil {
+			if server.currentRole != Leader {
+				slog.Warn("Received SetCommand from non-leader", "remote_addr", conn.RemoteAddr())
+				return
+			}
+			server.eventLoop.setCommandChan <- Event[dto.SetCommand]{
+				Type: SetCommand,
+				Data: args,
+			}
+
+			// return ok response
+			okResponse := &dto.RaftRPC{
+				Type: OkResponse.String(),
+				Args: &dto.RaftRPC_OkResponse{
+					OkResponse: &dto.OkResponse{
+						Ok: true,
+					},
+				},
+			}
+
+			data, err := proto.Marshal(okResponse)
+			if err != nil {
+				slog.Error("Error marshaling ok response", "error", err, "remote_addr", conn.RemoteAddr())
+				return
+			}
+
+			_, err = conn.Write(data)
+			if err != nil {
+				slog.Error("Error sending ok response", "error", err, "remote_addr", conn.RemoteAddr())
+				return
+			}
+		} else {
+			slog.Warn("Received SetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	default:
 		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())

@@ -12,7 +12,8 @@ const (
 	LogRequest
 	LogResponse
 	NodeStatus
-	AddCommand
+	SetCommand
+	OkResponse
 )
 
 // String method for RaftRPCType for logging/debugging
@@ -28,8 +29,10 @@ func (rt RaftRPCType) String() string {
 		return "LogResponse"
 	case NodeStatus:
 		return "NodeStatus"
-	case AddCommand:
-		return "AddCommand"
+	case SetCommand:
+		return "SetCommand"
+	case OkResponse:
+		return "OkResponse"
 	default:
 		return "Unknown"
 	}
@@ -48,8 +51,10 @@ func mapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return LogResponse, nil
 	case "NodeStatus":
 		return NodeStatus, nil
-	case "AddCommand":
-		return AddCommand, nil
+	case "SetCommand":
+		return SetCommand, nil
+	case "OkResponse":
+		return OkResponse, nil
 	default:
 		return UnknownRPCType, fmt.Errorf("unknown RPC type string: %s", rpcTypeStr)
 	}

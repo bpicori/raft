@@ -27,15 +27,16 @@ func main() {
 	switch operation {
 	case "status":
 		GetClusterStatus(cfg)
-	case "add":
+	case "set":
 		if len(args) < 2 {
-			fmt.Fprintf(os.Stderr, "Key and value are required for add operation\n")
+			fmt.Fprintf(os.Stderr, "Key and value are required for set operation\n")
 			showUsage()
 			os.Exit(1)
 		}
 		key := args[0]
 		value := args[1]
-		fmt.Printf("Adding key '%s' with value '%s' (not implemented)\n", key, value)
+
+		SetCommand(cfg, key, value)
 	case "rm":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")
