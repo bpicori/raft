@@ -10,6 +10,8 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 func init() {
@@ -128,9 +130,7 @@ func getClusterStatus(cfg *config.Config) {
 		results = append(results, nodeStatusResp)
 	}
 
-	for _, result := range results {
-		fmt.Println(result)
-	}
+	printTable(results)
 }
 
 func findLeader(cfg *config.Config) string {
@@ -151,4 +151,31 @@ func findLeader(cfg *config.Config) string {
 		}
 	}
 	return ""
+}
+
+func printTable(results []*dto.NodeStatus) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+
+	// Simple, elegant style
+	t.SetStyle(table.StyleRounded)
+
+	// Add table header
+	t.AppendHeader(table.Row{"Node ID", "Term", "Voted For", "Role", "Leader"})
+
+	// Add data rows
+	for _, result := range results {
+		t.AppendRow(table.Row{
+			result.NodeId,
+			result.CurrentTerm,
+			result.VotedFor,
+			result.CurrentRole,
+			result.CurrentLeader,
+		})
+	}
+
+	// Render the table
+	fmt.Println()
+	t.Render()
+	fmt.Println()
 }
