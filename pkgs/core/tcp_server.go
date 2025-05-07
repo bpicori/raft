@@ -72,7 +72,7 @@ func handleConnection(conn net.Conn, server *Server) {
 			NodeId:        server.config.SelfID,
 			CurrentTerm: server.currentTerm,
 			VotedFor:    server.votedFor,
-			CurrentRole: int32(server.currentRole),
+			CurrentRole: mapRoleToString(server.currentRole),
 			CurrentLeader: server.currentLeader,
 			CommitLength: server.commitLength,
 			LogEntries:    server.logEntry,

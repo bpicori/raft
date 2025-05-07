@@ -17,81 +17,76 @@ func init() {
 }
 
 func main() {
-	flagValues := parseFlags()
-	operation, key, _ := parseCommand(flagValues)
+	flagValues, operation, args := parseFlags()
 	cfg := buildServerConfig(flagValues.servers)
 
 	switch operation {
 	case "status":
 		getClusterStatus(cfg)
 	case "add":
-		if key == "" {
-			fmt.Fprintf(os.Stderr, "Key is required for add operation\n")
-			flag.Usage()
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and value are required for add operation\n")
+			showUsage()
 			os.Exit(1)
 		}
-		fmt.Println("add operation not implemented")
+		key := args[0]
+		value := args[1]
+		fmt.Printf("Adding key '%s' with value '%s' (not implemented)\n", key, value)
 	case "rm":
-		if key == "" {
+		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")
-			flag.Usage()
+			showUsage()
 			os.Exit(1)
 		}
-		fmt.Println("rm operation not implemented")
+		key := args[0]
+		fmt.Printf("Removing key '%s' (not implemented)\n", key)
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown operation. Use -status, -add, or -rm\n")
-		flag.Usage()
+		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
+		showUsage()
 		os.Exit(1)
 	}
 }
 
 type flagValues struct {
 	servers string
-	status  bool
-	add     string
-	rm      string
 }
 
-func parseFlags() flagValues {
+func showUsage() {
+	fmt.Fprintf(os.Stderr, "Usage: %s -servers=host1:port1,host2:port2,... <operation> [arguments...]\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Operations:\n")
+	fmt.Fprintf(os.Stderr, "  status            - Get the cluster status\n")
+	fmt.Fprintf(os.Stderr, "  add <key> <value> - Add a key to the storage\n")
+	fmt.Fprintf(os.Stderr, "  rm <key>          - Remove a key from the storage\n")
+	flag.PrintDefaults()
+}
+
+func parseFlags() (flagValues, string, []string) {
 	servers := flag.String("servers", "", "Comma-separated list of servers in format host:port")
-	status := flag.Bool("status", false, "Get the cluster status")
-	add := flag.String("add", "", "Add a key to the storage (requires value argument)")
-	rm := flag.String("rm", "", "Remove a key from the storage")
+
+	// Define custom usage function
+	flag.Usage = showUsage
 
 	flag.Parse()
 
 	if *servers == "" {
-		handleInvalidOperation("Servers list is required")
+		fmt.Fprintf(os.Stderr, "Servers list is required\n")
+		showUsage()
+		os.Exit(1)
 	}
+
+	args := flag.Args()
+	if len(args) < 1 {
+		fmt.Fprintf(os.Stderr, "Operation required: status, add, or rm\n")
+		showUsage()
+		os.Exit(1)
+	}
+
+	operation := args[0]
+	operationArgs := args[1:]
 
 	return flagValues{
 		servers: *servers,
-		status:  *status,
-		add:     *add,
-		rm:      *rm,
-	}
-}
-
-func parseCommand(flags flagValues) (operation, key, value string) {
-	if flags.status {
-		operation = "status"
-	} else if flags.add != "" {
-		operation = "add"
-		key = flags.add
-		args := flag.Args()
-		if len(args) > 0 {
-			value = args[0]
-		} else {
-			handleInvalidOperation("Value is required for add operation")
-		}
-	} else if flags.rm != "" {
-		operation = "rm"
-		key = flags.rm
-	} else {
-		handleInvalidOperation("Must specify one operation: -status, -add, or -rm")
-	}
-
-	return
+	}, operation, operationArgs
 }
 
 func buildServerConfig(serversStr string) *config.Config {
@@ -138,7 +133,6 @@ func getClusterStatus(cfg *config.Config) {
 	}
 }
 
-
 func findLeader(cfg *config.Config) string {
 	for _, server := range cfg.Servers {
 		nodeStatusReq := &dto.RaftRPC{
@@ -157,10 +151,4 @@ func findLeader(cfg *config.Config) string {
 		}
 	}
 	return ""
-}
-
-func handleInvalidOperation(message string) {
-	fmt.Fprintf(os.Stderr, message+"\n")
-	flag.Usage()
-	os.Exit(1)
 }

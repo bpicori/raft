@@ -56,7 +56,7 @@ message NodeStatus {
   string nodeId = 1;
   int32 currentTerm = 2;
   string votedFor = 3;
-  int32 currentRole = 4;
+  string currentRole = 4;
   string currentLeader = 5;
   int32 commitLength = 6;
   repeated LogEntry logEntries = 7;

@@ -521,7 +521,7 @@ type NodeStatus struct {
 	NodeId        string                 `protobuf:"bytes,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
 	CurrentTerm   int32                  `protobuf:"varint,2,opt,name=currentTerm,proto3" json:"currentTerm,omitempty"`
 	VotedFor      string                 `protobuf:"bytes,3,opt,name=votedFor,proto3" json:"votedFor,omitempty"`
-	CurrentRole   int32                  `protobuf:"varint,4,opt,name=currentRole,proto3" json:"currentRole,omitempty"`
+	CurrentRole   string                 `protobuf:"bytes,4,opt,name=currentRole,proto3" json:"currentRole,omitempty"`
 	CurrentLeader string                 `protobuf:"bytes,5,opt,name=currentLeader,proto3" json:"currentLeader,omitempty"`
 	CommitLength  int32                  `protobuf:"varint,6,opt,name=commitLength,proto3" json:"commitLength,omitempty"`
 	LogEntries    []*LogEntry            `protobuf:"bytes,7,rep,name=logEntries,proto3" json:"logEntries,omitempty"`
@@ -580,11 +580,11 @@ func (x *NodeStatus) GetVotedFor() string {
 	return ""
 }
 
-func (x *NodeStatus) GetCurrentRole() int32 {
+func (x *NodeStatus) GetCurrentRole() string {
 	if x != nil {
 		return x.CurrentRole
 	}
-	return 0
+	return ""
 }
 
 func (x *NodeStatus) GetCurrentLeader() string {
@@ -707,7 +707,7 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12 \n" +
 	"\vcurrentTerm\x18\x02 \x01(\x05R\vcurrentTerm\x12\x1a\n" +
 	"\bvotedFor\x18\x03 \x01(\tR\bvotedFor\x12 \n" +
-	"\vcurrentRole\x18\x04 \x01(\x05R\vcurrentRole\x12$\n" +
+	"\vcurrentRole\x18\x04 \x01(\tR\vcurrentRole\x12$\n" +
 	"\rcurrentLeader\x18\x05 \x01(\tR\rcurrentLeader\x12\"\n" +
 	"\fcommitLength\x18\x06 \x01(\x05R\fcommitLength\x12-\n" +
 	"\n" +

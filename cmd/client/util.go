@@ -33,7 +33,6 @@ func sendReceiveRPC(addr string, req proto.Message, resp proto.Message) error {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
-	slog.Debug("Sent RPC request", "remote_addr", conn.RemoteAddr().String(), "type", fmt.Sprintf("%T", req))
 
 	buffer := make([]byte, 4096) // Consider making buffer size configurable or dynamic
 	n, err := conn.Read(buffer)
@@ -49,6 +48,5 @@ func sendReceiveRPC(addr string, req proto.Message, resp proto.Message) error {
 		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	slog.Debug("Received RPC response", "remote_addr", conn.RemoteAddr().String(), "type", fmt.Sprintf("%T", resp))
 	return nil
 }

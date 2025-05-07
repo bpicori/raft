@@ -1,4 +1,4 @@
-PHONY: install-tools install run srv1 srv2 srv3 srv4 srv5 clean
+PHONY: install-tools install run srv1 srv2 srv3 srv4 srv5 clean client
 
 SERVERS = "localhost:8080,localhost:8081,localhost:8082,localhost:8083,localhost:8084"
 PERSISTENT_PATH = ./ignore
@@ -65,3 +65,7 @@ client:
 
 clean:
 	rm -rf $(PERSISTENT_PATH)/*
+
+# This allows passing arguments to the make command without errors
+%:
+	@:
