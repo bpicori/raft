@@ -10,9 +10,11 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-
-	"github.com/jedib0t/go-pretty/v6/table"
 )
+
+type flagValues struct {
+	servers string
+}
 
 func init() {
 	logger.LogSetup()
@@ -24,7 +26,7 @@ func main() {
 
 	switch operation {
 	case "status":
-		getClusterStatus(cfg)
+		GetClusterStatus(cfg)
 	case "add":
 		if len(args) < 2 {
 			fmt.Fprintf(os.Stderr, "Key and value are required for add operation\n")
@@ -47,10 +49,6 @@ func main() {
 		showUsage()
 		os.Exit(1)
 	}
-}
-
-type flagValues struct {
-	servers string
 }
 
 func showUsage() {
@@ -112,27 +110,6 @@ func buildServerConfig(serversStr string) *config.Config {
 	}
 }
 
-func getClusterStatus(cfg *config.Config) {
-	results := make([]*dto.NodeStatus, 0)
-
-	for _, server := range cfg.Servers {
-		nodeStatusReq := &dto.RaftRPC{
-			Type: core.NodeStatus.String(),
-		}
-		nodeStatusResp := &dto.NodeStatus{}
-
-		err := sendReceiveRPC(server.Addr, nodeStatusReq, nodeStatusResp)
-		if err != nil {
-			slog.Error("Error in NodeStatus RPC", "server", server.Addr, "error", err)
-			continue
-		}
-
-		results = append(results, nodeStatusResp)
-	}
-
-	printTable(results)
-}
-
 func findLeader(cfg *config.Config) string {
 	for _, server := range cfg.Servers {
 		nodeStatusReq := &dto.RaftRPC{
@@ -151,31 +128,4 @@ func findLeader(cfg *config.Config) string {
 		}
 	}
 	return ""
-}
-
-func printTable(results []*dto.NodeStatus) {
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-
-	// Simple, elegant style
-	t.SetStyle(table.StyleRounded)
-
-	// Add table header
-	t.AppendHeader(table.Row{"Node ID", "Term", "Voted For", "Role", "Leader"})
-
-	// Add data rows
-	for _, result := range results {
-		t.AppendRow(table.Row{
-			result.NodeId,
-			result.CurrentTerm,
-			result.VotedFor,
-			result.CurrentRole,
-			result.CurrentLeader,
-		})
-	}
-
-	// Render the table
-	fmt.Println()
-	t.Render()
-	fmt.Println()
 }
