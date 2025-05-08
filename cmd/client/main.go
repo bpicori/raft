@@ -2,9 +2,8 @@ package main
 
 import (
 	"bpicori/raft/pkgs/config"
-	"bpicori/raft/pkgs/core"
-	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/logger"
+	"bufio"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -24,6 +23,52 @@ func main() {
 	flagValues, operation, args := parseFlags()
 	cfg := buildServerConfig(flagValues.servers)
 
+	if operation == "" {
+		runInteractiveMode(cfg)
+		return
+	}
+
+	executeCommand(cfg, operation, args)
+}
+
+func runInteractiveMode(cfg *config.Config) {
+	fmt.Println("--------------------------------")
+	fmt.Println("Raft CLI")
+	fmt.Println("--------------------------------")
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Print("> ")
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
+			continue
+		}
+
+		input = strings.TrimSpace(input)
+		if input == "exit" || input == "quit" {
+			fmt.Println("Goodbye!")
+			return
+		}
+
+		if input == "help" {
+			printHelp()
+			continue
+		}
+
+		args := strings.Fields(input)
+		if len(args) == 0 {
+			continue
+		}
+
+		operation := args[0]
+		operationArgs := args[1:]
+
+		handleCommandExecution(cfg, operation, operationArgs)
+	}
+}
+
+func executeCommand(cfg *config.Config, operation string, args []string) {
 	switch operation {
 	case "status":
 		GetClusterStatus(cfg)
@@ -52,13 +97,36 @@ func main() {
 	}
 }
 
-func showUsage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s -servers=host1:port1,host2:port2,... <operation> [arguments...]\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "Operations:\n")
-	fmt.Fprintf(os.Stderr, "  status            - Get the cluster status\n")
-	fmt.Fprintf(os.Stderr, "  add <key> <value> - Add a key to the storage\n")
-	fmt.Fprintf(os.Stderr, "  rm <key>          - Remove a key from the storage\n")
-	flag.PrintDefaults()
+func handleCommandExecution(cfg *config.Config, operation string, args []string) {
+	// handle panics
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(os.Stderr, "Command execution error: %v\n", r)
+		}
+	}()
+
+	// Don't exit the program on errors in interactive mode
+	switch operation {
+	case "status":
+		GetClusterStatus(cfg)
+	case "set":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and value are required for set operation\n")
+			return
+		}
+		key := args[0]
+		value := args[1]
+		SetCommand(cfg, key, value)
+	case "rm":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")
+			return
+		}
+		key := args[0]
+		fmt.Printf("Removing key '%s' (not implemented)\n", key)
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown operation: %s (type 'help' for available commands)\n", operation)
+	}
 }
 
 func parseFlags() (flagValues, string, []string) {
@@ -76,10 +144,10 @@ func parseFlags() (flagValues, string, []string) {
 	}
 
 	args := flag.Args()
-	if len(args) < 1 {
-		fmt.Fprintf(os.Stderr, "Operation required: status, add, or rm\n")
-		showUsage()
-		os.Exit(1)
+	if len(args) == 0 {
+		return flagValues{
+			servers: *servers,
+		}, "", nil
 	}
 
 	operation := args[0]
@@ -109,24 +177,4 @@ func buildServerConfig(serversStr string) *config.Config {
 	return &config.Config{
 		Servers: serverConfigs,
 	}
-}
-
-func findLeader(cfg *config.Config) string {
-	for _, server := range cfg.Servers {
-		nodeStatusReq := &dto.RaftRPC{
-			Type: core.NodeStatus.String(),
-		}
-		nodeStatusResp := &dto.NodeStatus{}
-
-		err := sendReceiveRPC(server.Addr, nodeStatusReq, nodeStatusResp)
-		if err != nil {
-			slog.Error("Error in NodeStatus RPC", "server", server.Addr, "error", err)
-			continue
-		}
-
-		if nodeStatusResp.CurrentLeader != "" {
-			return nodeStatusResp.CurrentLeader
-		}
-	}
-	return ""
 }
