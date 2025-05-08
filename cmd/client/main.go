@@ -124,6 +124,10 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		}
 		key := args[0]
 		fmt.Printf("Removing key '%s' (not implemented)\n", key)
+	case "clear", "cls":
+		clearScreen()
+	case "help":
+		printHelp()
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s (type 'help' for available commands)\n", operation)
 	}

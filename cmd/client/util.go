@@ -51,11 +51,16 @@ func sendReceiveRPC(addr string, req proto.Message, resp proto.Message) error {
 	return nil
 }
 
+func clearScreen() {
+	fmt.Print("\033[H\033[2J")
+}
+
 func printHelp() {
 	fmt.Println("\nAvailable commands:")
 	fmt.Println("  status            - Get the cluster status")
 	fmt.Println("  set <key> <value> - Add a key to the storage")
 	fmt.Println("  rm <key>          - Remove a key from the storage")
+	fmt.Println("  clear/cls         - Clear the screen")
 	fmt.Println("  help              - Show this help message")
 	fmt.Println("  exit/quit         - Exit the CLI")
 	fmt.Println()
