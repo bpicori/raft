@@ -35,7 +35,7 @@ func handleConnection(conn net.Conn, server *Server) {
 	switch rpcType {
 	case consts.VoteRequest:
 		if args := rpc.GetVoteRequest(); args != nil {
-			server.eventLoop.voteRequestChan <- Event[dto.VoteRequest]{
+			server.eventLoop.VoteRequestChan <- Event[dto.VoteRequest]{
 				Type: consts.VoteRequest,
 				Data: args,
 			}
@@ -44,7 +44,7 @@ func handleConnection(conn net.Conn, server *Server) {
 		}
 	case consts.VoteResponse:
 		if args := rpc.GetVoteResponse(); args != nil {
-			server.eventLoop.voteResponseChan <- Event[dto.VoteResponse]{
+			server.eventLoop.VoteResponseChan <- Event[dto.VoteResponse]{
 				Type: consts.VoteResponse,
 				Data: args,
 			}
@@ -53,7 +53,7 @@ func handleConnection(conn net.Conn, server *Server) {
 		}
 	case consts.LogRequest:
 		if args := rpc.GetLogRequest(); args != nil {
-			server.eventLoop.logRequestChan <- Event[dto.LogRequest]{
+			server.eventLoop.LogRequestChan <- Event[dto.LogRequest]{
 				Type: consts.LogRequest,
 				Data: args,
 			}
@@ -62,7 +62,7 @@ func handleConnection(conn net.Conn, server *Server) {
 		}
 	case consts.LogResponse:
 		if args := rpc.GetLogResponse(); args != nil {
-			server.eventLoop.logResponseChan <- Event[dto.LogResponse]{
+			server.eventLoop.LogResponseChan <- Event[dto.LogResponse]{
 				Type: consts.LogResponse,
 				Data: args,
 			}
@@ -102,7 +102,7 @@ func handleConnection(conn net.Conn, server *Server) {
 				slog.Warn("Received SetCommand from non-leader", "remote_addr", conn.RemoteAddr())
 				return
 			}
-			server.eventLoop.setCommandChan <- Event[dto.SetCommand]{
+			server.eventLoop.SetCommandChan <- Event[dto.SetCommand]{
 				Type: consts.SetCommand,
 				Data: args,
 			}
