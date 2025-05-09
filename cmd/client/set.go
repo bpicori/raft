@@ -3,6 +3,7 @@ package main
 import (
 	"bpicori/raft/pkgs/config"
 	"bpicori/raft/pkgs/consts"
+	"bpicori/raft/pkgs/core"
 	"bpicori/raft/pkgs/dto"
 	"fmt"
 	"log/slog"
@@ -26,7 +27,8 @@ func SetCommand(cfg *config.Config, key string, value string) {
 		},
 	}
 
-	err := sendReceiveRPC(leader, setCommand, &dto.RaftRPC{})
+	_, err := core.SendSyncRPC(leader, setCommand)
+
 	if err != nil {
 		slog.Error("Error sending set command", "error", err)
 		fmt.Printf("Error: Failed to set key '%s': %v\n", key, err)
@@ -38,17 +40,18 @@ func SetCommand(cfg *config.Config, key string, value string) {
 
 func findLeader(cfg *config.Config) string {
 	for _, server := range cfg.Servers {
+
 		nodeStatusReq := &dto.RaftRPC{
 			Type: consts.NodeStatus.String(),
 		}
-		nodeStatusResp := &dto.NodeStatus{}
 
-		err := sendReceiveRPC(server.Addr, nodeStatusReq, nodeStatusResp)
+		rpcResp, err := core.SendSyncRPC(server.Addr, nodeStatusReq)
 		if err != nil {
 			slog.Error("Error in NodeStatus RPC", "server", server.Addr, "error", err)
 			continue
 		}
 
+		nodeStatusResp := rpcResp.GetNodeStatus()
 		if nodeStatusResp.CurrentLeader != "" {
 			return nodeStatusResp.CurrentLeader
 		}

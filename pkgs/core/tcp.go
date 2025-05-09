@@ -80,9 +80,15 @@ func handleConnection(conn net.Conn, server *Server) {
 			LogEntries:    server.logEntry,
 		}
 
-		data, err := proto.Marshal(nodeStatus)
+		// Wrap NodeStatus in RaftRPC for the response
+		rpcResponse := &dto.RaftRPC{
+			Type: consts.NodeStatus.String(),
+			Args: &dto.RaftRPC_NodeStatus{NodeStatus: nodeStatus},
+		}
+
+		data, err := proto.Marshal(rpcResponse)
 		if err != nil {
-			slog.Error("Error marshaling node status for response", "error", err, "remote_addr", conn.RemoteAddr())
+			slog.Error("Error marshaling RaftRPC response for NodeStatus", "error", err, "remote_addr", conn.RemoteAddr())
 			return
 		}
 
@@ -192,4 +198,42 @@ func SendAsyncRPC(addr string, message *dto.RaftRPC) error {
 	}
 
 	return nil
+}
+
+func SendSyncRPC(addr string, request *dto.RaftRPC) (*dto.RaftRPC, error) {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("error getting connection: %v", err)
+	}
+	defer conn.Close()
+
+	// encode the request
+	data, err := proto.Marshal(request)
+	if err != nil {
+		slog.Debug("[SEND_SYNC_RPC] Error marshaling request", "error", err, "request", request, "addr", addr)
+		return nil, fmt.Errorf("error marshaling request: %v", err)
+	}
+
+	// send the request
+	_, err = conn.Write(data)
+	if err != nil {
+		slog.Debug("[SEND_SYNC_RPC] Error sending request", "error", err, "request", request, "addr", addr)
+		return nil, fmt.Errorf("error sending request: %v", err)
+	}
+
+	// receive the response
+	buffer := make([]byte, 4096)
+	n, err := conn.Read(buffer)
+	if err != nil {
+		slog.Debug("[SEND_SYNC_RPC] Error receiving response", "error", err, "request", request, "addr", addr)
+		return nil, fmt.Errorf("error receiving response: %v", err)
+	}
+
+	var response dto.RaftRPC
+	if err := proto.Unmarshal(buffer[:n], &response); err != nil {
+		slog.Debug("[SEND_SYNC_RPC] Error unmarshaling response", "error", err, "request", request, "addr", addr)
+		return nil, fmt.Errorf("error unmarshaling response: %v", err)
+	}
+
+	return &response, nil
 }

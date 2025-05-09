@@ -3,6 +3,7 @@ package main
 import (
 	"bpicori/raft/pkgs/config"
 	"bpicori/raft/pkgs/consts"
+	"bpicori/raft/pkgs/core"
 	"bpicori/raft/pkgs/dto"
 	"fmt"
 	"log/slog"
@@ -18,13 +19,15 @@ func GetClusterStatus(cfg *config.Config) {
 		nodeStatusReq := &dto.RaftRPC{
 			Type: consts.NodeStatus.String(),
 		}
-		nodeStatusResp := &dto.NodeStatus{}
 
-		err := sendReceiveRPC(server.Addr, nodeStatusReq, nodeStatusResp)
+		rpcResp, err := core.SendSyncRPC(server.Addr, nodeStatusReq)
+
 		if err != nil {
 			slog.Error("Error in NodeStatus RPC", "server", server.Addr, "error", err)
 			continue
 		}
+
+		nodeStatusResp := rpcResp.GetNodeStatus()
 
 		results = append(results, nodeStatusResp)
 	}
