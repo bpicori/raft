@@ -5,6 +5,15 @@ import "fmt"
 // RaftRPCType defines the type of Raft RPC message using an iota enum pattern.
 type RaftRPCType int
 
+// Role defines the role of a server in the cluster using an iota enum pattern.
+type Role int
+
+const (
+	Follower Role = iota
+	Candidate
+	Leader
+)
+
 const (
 	UnknownRPCType RaftRPCType = iota
 	VoteRequest
@@ -57,5 +66,19 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return OkResponse, nil
 	default:
 		return UnknownRPCType, fmt.Errorf("unknown RPC type string: %s", rpcTypeStr)
+	}
+}
+
+// MapRoleToString converts the role enum to a string.
+func MapRoleToString(role Role) string {
+	switch role {
+	case Follower:
+		return "Follower"
+	case Candidate:
+		return "Candidate"
+	case Leader:
+		return "Leader"
+	default:
+		return "Unknown"
 	}
 }

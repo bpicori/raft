@@ -9,16 +9,16 @@ import (
 	"time"
 
 	"bpicori/raft/pkgs/config"
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 )
 
-type Role int
-
-const (
-	Follower Role = iota
-	Candidate
-	Leader
+var (
+	Follower = consts.Follower
+	Candidate = consts.Candidate
+	Leader = consts.Leader
 )
+
 
 type Server struct {
 	mu sync.RWMutex // lock when changing server state
@@ -31,7 +31,7 @@ type Server struct {
 	/* End of persisted fields */
 
 	/* Volatile state on all servers */
-	currentRole      Role             // current role of the server
+	currentRole      consts.Role             // current role of the server
 	currentLeader    string           // the current leader
 	votesReceivedMap sync.Map         // map of votes received from other servers
 	sentLength       map[string]int32 // length of log entries sent to other servers

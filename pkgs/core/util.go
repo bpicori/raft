@@ -70,15 +70,3 @@ func sendProtobufMessage(conn net.Conn, message proto.Message) error {
 	return nil
 }
 
-func mapRoleToString(role Role) string {
-	switch role {
-	case Follower:
-		return "Follower"
-	case Candidate:
-		return "Candidate"
-	case Leader:
-		return "Leader"
-	default:
-		return "Unknown"
-	}
-}
