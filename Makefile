@@ -66,6 +66,13 @@ client:
 clean:
 	rm -rf $(PERSISTENT_PATH)/*
 
+kill:
+	kill -9 $(shell lsof -t -i:8080)
+	kill -9 $(shell lsof -t -i:8081)
+	kill -9 $(shell lsof -t -i:8082)
+	kill -9 $(shell lsof -t -i:8083)
+	kill -9 $(shell lsof -t -i:8084)
+
 # This allows passing arguments to the make command without errors
 %:
 	@:
