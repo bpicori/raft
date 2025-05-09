@@ -10,18 +10,21 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func openConnection(addr string) net.Conn {
+func openConnection(addr string) (net.Conn, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		slog.Error("Error getting connection", "error", err)
-		os.Exit(1)
+		return nil, err
 	}
 
-	return conn
+	return conn, nil
 }
 
 func sendReceiveRPC(addr string, req proto.Message, resp proto.Message) error {
-	conn := openConnection(addr)
+	conn, err := openConnection(addr)
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
 	data, err := proto.Marshal(req)

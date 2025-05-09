@@ -50,6 +50,7 @@ func printTable(results []*dto.NodeStatus) {
 			result.VotedFor,
 			result.CurrentRole,
 			result.CurrentLeader,
+			result.LogEntries,
 		})
 	}
 
