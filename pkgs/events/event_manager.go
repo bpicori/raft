@@ -1,4 +1,4 @@
-package core
+package events
 
 import (
 	"bpicori/raft/pkgs/dto"
@@ -9,10 +9,10 @@ type EventManager struct {
 	VoteResponseChan chan dto.VoteResponse
 	LogRequestChan   chan dto.LogRequest
 	LogResponseChan  chan dto.LogResponse
-	SetCommandChan   chan dto.SetCommand 
+	SetCommandChan   chan dto.SetCommand
 }
 
-func NewEventLoop() *EventManager {
+func NewEventManager() *EventManager {
 	return &EventManager{
 		VoteRequestChan:  make(chan dto.VoteRequest),
 		VoteResponseChan: make(chan dto.VoteResponse),

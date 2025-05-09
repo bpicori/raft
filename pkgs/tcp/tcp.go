@@ -1,40 +1,20 @@
 package tcp
 
 import (
-	"bpicori/raft/pkgs/consts"
-	"bpicori/raft/pkgs/dto"
 	"context"
 	"fmt"
 	"log/slog"
 	"net"
 	"sync"
 
-	"bpicori/raft/pkgs/core"
+	"bpicori/raft/pkgs/consts"
+	"bpicori/raft/pkgs/dto"
+	"bpicori/raft/pkgs/events"
 
 	"google.golang.org/protobuf/proto"
 )
 
-// Event struct placeholder - this would ideally be a shared type.
-// If it's defined in core, it would be core.Event.
-// For now, defining it here to make the file self-contained for display.
-// Assumes consts.RaftRPCType is the type for Type.
-type Event[T any] struct {
-	Type consts.RaftRPCType
-	Data T
-}
-
-// HandleConnectionParams holds parameters needed by HandleConnection.
-// These were previously accessed from the core.Server struct.
-type HandleConnectionParams struct {
-	VoteRequestC  chan Event[*dto.VoteRequest]  // Changed to pointer type
-	VoteResponseC chan Event[*dto.VoteResponse] // Changed to pointer type
-	LogRequestC   chan Event[*dto.LogRequest]   // Changed to pointer type
-	LogResponseC  chan Event[*dto.LogResponse]  // Changed to pointer type
-	SetCommandC   chan Event[*dto.SetCommand]   // Changed to pointer type
-}
-
-// HandleConnection processes incoming RPC calls on a network connection.
-func HandleConnection(conn net.Conn, eventManager *core.EventManager) {
+func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 	defer conn.Close()
 
 	buffer := make([]byte, 4096)
@@ -59,37 +39,25 @@ func HandleConnection(conn net.Conn, eventManager *core.EventManager) {
 	switch rpcType {
 	case consts.VoteRequest:
 		if args := rpc.GetVoteRequest(); args != nil {
-			eventManager.VoteRequestChan <- core.Event[dto.VoteRequest]{ // Changed to pointer type
-				Type: consts.VoteRequest, // Using specific const as in original
-				Data: args,
-			}
+			eventManager.VoteRequestChan <- *args
 		} else {
 			slog.Warn("Received VoteRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.VoteResponse:
 		if args := rpc.GetVoteResponse(); args != nil {
-			eventManager.VoteResponseChan <- core.Event[dto.VoteResponse]{ // Changed to pointer type
-				Type: consts.VoteResponse, // Using specific const
-				Data: args,
-			}
+			eventManager.VoteResponseChan <- *args
 		} else {
 			slog.Warn("Received VoteResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.LogRequest:
 		if args := rpc.GetLogRequest(); args != nil {
-			eventManager.LogRequestChan <- core.Event[dto.LogRequest]{ // Changed to pointer type
-				Type: consts.LogRequest, // Using specific const
-				Data: args,
-			}
+			eventManager.LogRequestChan <- *args
 		} else {
 			slog.Warn("Received LogRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.LogResponse:
 		if args := rpc.GetLogResponse(); args != nil {
-			eventManager.LogResponseChan <- core.Event[dto.LogResponse]{ // Changed to pointer type
-				Type: consts.LogResponse, // Using specific const
-				Data: args,
-			}
+			eventManager.LogResponseChan <- *args
 		} else {
 			slog.Warn("Received LogResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
@@ -121,10 +89,7 @@ func HandleConnection(conn net.Conn, eventManager *core.EventManager) {
 	// 	}
 	case consts.SetCommand:
 		if args := rpc.GetSetCommand(); args != nil {
-			eventManager.SetCommandChan <- core.Event[dto.SetCommand]{ // Changed to pointer type
-				Type: consts.SetCommand, // Using specific const
-				Data: args,
-			}
+			eventManager.SetCommandChan <- *args
 
 			okResponse := &dto.RaftRPC{
 				Type: consts.OkResponse.String(),
@@ -158,7 +123,7 @@ type RunTCPServerParams struct {
 	Wg           *sync.WaitGroup
 	Ctx          context.Context
 	ListenAddr   string
-	EventManager *core.EventManager
+	EventManager *events.EventManager
 }
 
 // RunTCPServer starts and manages the TCP server lifecycle.

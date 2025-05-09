@@ -11,6 +11,7 @@ import (
 	"bpicori/raft/pkgs/config"
 	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
+	"bpicori/raft/pkgs/events"
 )
 
 var (
@@ -38,7 +39,7 @@ type Server struct {
 	/* End of volatile fields */
 
 	config          config.Config // cluster configuration
-	eventLoop       *EventManager // event loop
+	eventLoop       *events.EventManager // event loop
 	electionTimeout *time.Timer   // timer for election timeout
 	heartbeatTimer  *time.Timer   // timer for heartbeat
 
@@ -58,7 +59,7 @@ func NewServer() *Server {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	currentTerm, votedFor, logEntry, commitLength := loadPersistedState(config)
-	eventLoop := NewEventLoop()
+	eventLoop := events.NewEventManager()
 
 	s := &Server{
 		config:           config,
