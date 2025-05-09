@@ -10,7 +10,6 @@ import (
 	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
-
 	"google.golang.org/protobuf/proto"
 )
 
@@ -39,25 +38,25 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 	switch rpcType {
 	case consts.VoteRequest:
 		if args := rpc.GetVoteRequest(); args != nil {
-			eventManager.VoteRequestChan <- *args
+			eventManager.VoteRequestChan <- args
 		} else {
 			slog.Warn("Received VoteRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.VoteResponse:
 		if args := rpc.GetVoteResponse(); args != nil {
-			eventManager.VoteResponseChan <- *args
+			eventManager.VoteResponseChan <- args
 		} else {
 			slog.Warn("Received VoteResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.LogRequest:
 		if args := rpc.GetLogRequest(); args != nil {
-			eventManager.LogRequestChan <- *args
+			eventManager.LogRequestChan <- args
 		} else {
 			slog.Warn("Received LogRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.LogResponse:
 		if args := rpc.GetLogResponse(); args != nil {
-			eventManager.LogResponseChan <- *args
+			eventManager.LogResponseChan <- args
 		} else {
 			slog.Warn("Received LogResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
@@ -89,7 +88,7 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 	// 	}
 	case consts.SetCommand:
 		if args := rpc.GetSetCommand(); args != nil {
-			eventManager.SetCommandChan <- *args
+			eventManager.SetCommandChan <- args
 
 			okResponse := &dto.RaftRPC{
 				Type: consts.OkResponse.String(),

@@ -5,20 +5,20 @@ import (
 )
 
 type EventManager struct {
-	VoteRequestChan  chan dto.VoteRequest
-	VoteResponseChan chan dto.VoteResponse
-	LogRequestChan   chan dto.LogRequest
-	LogResponseChan  chan dto.LogResponse
-	SetCommandChan   chan dto.SetCommand
+	VoteRequestChan  chan *dto.VoteRequest
+	VoteResponseChan chan *dto.VoteResponse
+	LogRequestChan   chan *dto.LogRequest
+	LogResponseChan  chan *dto.LogResponse
+	SetCommandChan   chan *dto.SetCommand
 }
 
 func NewEventManager() *EventManager {
 	return &EventManager{
-		VoteRequestChan:  make(chan dto.VoteRequest),
-		VoteResponseChan: make(chan dto.VoteResponse),
-		LogRequestChan:   make(chan dto.LogRequest),
-		LogResponseChan:  make(chan dto.LogResponse),
-		SetCommandChan:   make(chan dto.SetCommand),
+		VoteRequestChan:  make(chan *dto.VoteRequest),
+		VoteResponseChan: make(chan *dto.VoteResponse),
+		LogRequestChan:   make(chan *dto.LogRequest),
+		LogResponseChan:  make(chan *dto.LogResponse),
+		SetCommandChan:   make(chan *dto.SetCommand),
 	}
 }
 

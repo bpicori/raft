@@ -12,6 +12,7 @@ import (
 	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
+	"bpicori/raft/pkgs/tcp"
 )
 
 var (
@@ -82,7 +83,12 @@ func NewServer() *Server {
 
 func (s *Server) Start() error {
 	s.wg.Add(2)
-	go s.RunTcp()
+	go tcp.RunTCPServer(tcp.RunTCPServerParams{
+		Wg:           &s.wg,
+		Ctx:          s.ctx,
+		ListenAddr:   s.config.SelfServer.Addr,
+		EventManager: s.eventLoop,
+	})
 	go s.RunStateMachine()
 	return nil
 }
@@ -147,7 +153,7 @@ func (s *Server) runFollower() {
 				"term", requestVoteReq.Term,
 				"lastLogIndex", requestVoteReq.LastLogIndex,
 				"lastLogTerm", requestVoteReq.LastLogTerm)
-			s.OnVoteRequest(&requestVoteReq)
+			s.OnVoteRequest(requestVoteReq)
 			if s.currentRole != Follower {
 				return
 			}
@@ -157,14 +163,14 @@ func (s *Server) runFollower() {
 				"peer", requestVoteRes.NodeId,
 				"granted", requestVoteRes.VoteGranted,
 				"term", requestVoteRes.Term)
-			s.OnVoteResponse(&requestVoteRes)
+			s.OnVoteResponse(requestVoteRes)
 			if s.currentRole != Follower {
 				return
 			}
 
 		case logRequest := <-s.eventLoop.LogRequestChan:
 			slog.Debug("[FOLLOWER] Received {LogRequest}", "leader", logRequest.LeaderId)
-			s.OnLogRequest(&logRequest)
+			s.OnLogRequest(logRequest)
 			if s.currentRole != Follower {
 				return
 			}
@@ -175,7 +181,7 @@ func (s *Server) runFollower() {
 				"term", logResponse.Term,
 				"ack", logResponse.Ack,
 				"success", logResponse.Success)
-			s.OnLogResponse(&logResponse)
+			s.OnLogResponse(logResponse)
 			if s.currentRole != Follower {
 				return
 			}
@@ -222,7 +228,7 @@ func (s *Server) runCandidate() {
 				},
 			},
 		}
-		go SendAsyncRPC(follower.Addr, rpc)
+		go tcp.SendAsyncRPC(follower.Addr, rpc)
 	}
 
 	s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
@@ -242,7 +248,7 @@ func (s *Server) runCandidate() {
 				"term", requestVoteReq.Term,
 				"lastLogIndex", requestVoteReq.LastLogIndex,
 				"lastLogTerm", requestVoteReq.LastLogTerm)
-			s.OnVoteRequest(&requestVoteReq)
+			s.OnVoteRequest(requestVoteReq)
 			if s.currentRole != Candidate {
 				return
 			}
@@ -252,13 +258,13 @@ func (s *Server) runCandidate() {
 				"peer", requestVoteResp.NodeId,
 				"granted", requestVoteResp.VoteGranted,
 				"term", requestVoteResp.Term)
-			s.OnVoteResponse(&requestVoteResp)
+			s.OnVoteResponse(requestVoteResp)
 			if s.currentRole != Candidate {
 				return
 			}
 		case logRequest := <-s.eventLoop.LogRequestChan:
 			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.LeaderId)
-			s.OnLogRequest(&logRequest)
+			s.OnLogRequest(logRequest)
 			if s.currentRole != Candidate {
 				return
 			}
@@ -299,7 +305,7 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 					VoteGranted: true,
 				},
 			}}
-		go SendAsyncRPC(cID, rpc)
+		go tcp.SendAsyncRPC(cID, rpc)
 	} else {
 		rpc := &dto.RaftRPC{
 			Type: consts.VoteResponse.String(),
@@ -311,7 +317,7 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 				},
 			},
 		}
-		go SendAsyncRPC(cID, rpc)
+		go tcp.SendAsyncRPC(cID, rpc)
 	}
 }
 
@@ -376,25 +382,25 @@ func (s *Server) runLeader() {
 			s.heartbeatTimer.Reset(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		case voteRequest := <-s.eventLoop.VoteRequestChan:
 			slog.Debug("[LEADER] Received {VoteRequest} from", "candidate", voteRequest.CandidateId)
-			s.OnVoteRequest(&voteRequest)
+			s.OnVoteRequest(voteRequest)
 			if s.currentRole != Leader {
 				return
 			}
 		case voteResponse := <-s.eventLoop.VoteResponseChan:
 			slog.Debug("[LEADER] Received {VoteResponse} from", "peer", voteResponse.NodeId)
-			s.OnVoteResponse(&voteResponse)
+			s.OnVoteResponse(voteResponse)
 			if s.currentRole != Leader {
 				return
 			}
 		case logRequest := <-s.eventLoop.LogRequestChan:
 			slog.Debug("[LEADER] Received {LogRequest} from", "leader", logRequest.LeaderId)
-			s.OnLogRequest(&logRequest)
+			s.OnLogRequest(logRequest)
 			if s.currentRole != Leader {
 				return
 			}
 		case logResponse := <-s.eventLoop.LogResponseChan:
 			slog.Debug("[LEADER] Received {LogResponse} from", "peer", logResponse.FollowerId)
-			s.OnLogResponse(&logResponse)
+			s.OnLogResponse(logResponse)
 			if s.currentRole != Leader {
 				return
 			}
@@ -453,7 +459,7 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 				},
 			},
 		}
-		go SendAsyncRPC(leaderId, rpc)
+		go tcp.SendAsyncRPC(leaderId, rpc)
 	} else {
 		rpc := &dto.RaftRPC{
 			Type: consts.LogResponse.String(),
@@ -466,7 +472,7 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 				},
 			},
 		}
-		go SendAsyncRPC(leaderId, rpc)
+		go tcp.SendAsyncRPC(leaderId, rpc)
 	}
 }
 
@@ -515,7 +521,7 @@ func (s *Server) ReplicateLog(leaderId string, followerId string) {
 			},
 		},
 	}
-	go SendAsyncRPC(followerId, rpc)
+	go tcp.SendAsyncRPC(followerId, rpc)
 }
 
 func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
