@@ -14,11 +14,10 @@ import (
 )
 
 var (
-	Follower = consts.Follower
+	Follower  = consts.Follower
 	Candidate = consts.Candidate
-	Leader = consts.Leader
+	Leader    = consts.Leader
 )
-
 
 type Server struct {
 	mu sync.RWMutex // lock when changing server state
@@ -31,7 +30,7 @@ type Server struct {
 	/* End of persisted fields */
 
 	/* Volatile state on all servers */
-	currentRole      consts.Role             // current role of the server
+	currentRole      consts.Role      // current role of the server
 	currentLeader    string           // the current leader
 	votesReceivedMap sync.Map         // map of votes received from other servers
 	sentLength       map[string]int32 // length of log entries sent to other servers
@@ -210,13 +209,19 @@ func (s *Server) runCandidate() {
 		"majority", majority)
 
 	for _, follower := range s.otherServers() {
-		go s.sendVoteRequest(follower.Addr, &dto.VoteRequest{
-			NodeId:       s.config.SelfID,
-			Term:         s.currentTerm,
-			CandidateId:  s.config.SelfID,
-			LastLogIndex: int32(len(s.logEntry)),
-			LastLogTerm:  lastTerm,
-		})
+		rpc := &dto.RaftRPC{
+			Type: consts.VoteRequest.String(),
+			Args: &dto.RaftRPC_VoteRequest{
+				VoteRequest: &dto.VoteRequest{
+					NodeId:       s.config.SelfID,
+					Term:         s.currentTerm,
+					CandidateId:  s.config.SelfID,
+					LastLogIndex: int32(len(s.logEntry)),
+					LastLogTerm:  lastTerm,
+				},
+			},
+		}
+		go SendAsyncRPC(follower.Addr, rpc)
 	}
 
 	s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
@@ -284,17 +289,28 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 
 	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
 		s.votedFor = cID
-		go s.sendVoteResponse(cID, &dto.VoteResponse{
-			NodeId:      s.config.SelfID,
-			Term:        s.currentTerm,
-			VoteGranted: true,
-		})
+		rpc := &dto.RaftRPC{
+			Type: consts.VoteResponse.String(),
+			Args: &dto.RaftRPC_VoteResponse{
+				VoteResponse: &dto.VoteResponse{
+					NodeId:      s.config.SelfID,
+					Term:        s.currentTerm,
+					VoteGranted: true,
+				},
+			}}
+		go SendAsyncRPC(cID, rpc)
 	} else {
-		go s.sendVoteResponse(cID, &dto.VoteResponse{
-			NodeId:      s.config.SelfID,
-			Term:        s.currentTerm,
-			VoteGranted: false,
-		})
+		rpc := &dto.RaftRPC{
+			Type: consts.VoteResponse.String(),
+			Args: &dto.RaftRPC_VoteResponse{
+				VoteResponse: &dto.VoteResponse{
+					NodeId:      s.config.SelfID,
+					Term:        s.currentTerm,
+					VoteGranted: false,
+				},
+			},
+		}
+		go SendAsyncRPC(cID, rpc)
 	}
 }
 
@@ -384,7 +400,7 @@ func (s *Server) runLeader() {
 		case setCommand := <-s.eventLoop.setCommandChan:
 			slog.Info("[LEADER] Received {SetCommand}", "key", setCommand.Data.Key, "value", setCommand.Data.Value)
 			s.logEntry = append(s.logEntry, &dto.LogEntry{
-				Term:    s.currentTerm,
+				Term: s.currentTerm,
 				Command: &dto.Command{
 					Operation: "set",
 					Key:       setCommand.Data.Key,
@@ -425,19 +441,31 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	if term == s.currentTerm && logOk {
 		s.AppendEntries(prefixLength, leaderCommit, suffix)
 		ack := prefixLength + int32(len(suffix))
-		go s.sendLogResponse(leaderId, &dto.LogResponse{
-			FollowerId: s.config.SelfID,
-			Term:       s.currentTerm,
-			Ack:        ack,
-			Success:    true,
-		})
+		rpc := &dto.RaftRPC{
+			Type: consts.LogResponse.String(),
+			Args: &dto.RaftRPC_LogResponse{
+				LogResponse: &dto.LogResponse{
+					FollowerId: s.config.SelfID,
+					Term:       s.currentTerm,
+					Ack:        ack,
+					Success:    true,
+				},
+			},
+		}
+		go SendAsyncRPC(leaderId, rpc)
 	} else {
-		go s.sendLogResponse(leaderId, &dto.LogResponse{
-			FollowerId: s.config.SelfID,
-			Term:       s.currentTerm,
-			Ack:        0,
-			Success:    false,
-		})
+		rpc := &dto.RaftRPC{
+			Type: consts.LogResponse.String(),
+			Args: &dto.RaftRPC_LogResponse{
+				LogResponse: &dto.LogResponse{
+					FollowerId: s.config.SelfID,
+					Term:       s.currentTerm,
+					Ack:        0,
+					Success:    false,
+				},
+			},
+		}
+		go SendAsyncRPC(leaderId, rpc)
 	}
 }
 
@@ -465,7 +493,6 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 }
 
 func (s *Server) ReplicateLog(leaderId string, followerId string) {
-
 	prefixLength := s.sentLength[followerId]
 	suffix := s.logEntry[prefixLength:]
 
@@ -474,14 +501,20 @@ func (s *Server) ReplicateLog(leaderId string, followerId string) {
 		prefixTerm = s.logEntry[prefixLength-1].Term
 	}
 
-	go s.sendLogRequest(followerId, &dto.LogRequest{
-		LeaderId:     leaderId,
-		Term:         s.currentTerm,
-		PrefixLength: int32(prefixLength),
-		PrefixTerm:   prefixTerm,
-		Suffix:       suffix,
-		LeaderCommit: s.commitLength,
-	})
+	rpc := &dto.RaftRPC{
+		Type: consts.LogRequest.String(),
+		Args: &dto.RaftRPC_LogRequest{
+			LogRequest: &dto.LogRequest{
+				LeaderId:     leaderId,
+				Term:         s.currentTerm,
+				PrefixLength: int32(prefixLength),
+				PrefixTerm:   prefixTerm,
+				Suffix:       suffix,
+				LeaderCommit: s.commitLength,
+			},
+		},
+	}
+	go SendAsyncRPC(followerId, rpc)
 }
 
 func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {

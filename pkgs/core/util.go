@@ -6,13 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"log/slog"
 	"math/rand"
-	"net"
 	"os"
 	"time"
-
-	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -52,21 +48,3 @@ func loadPersistedState(config config.Config) (currentTerm int32, votedFor strin
 
 	return state.CurrentTerm, state.VotedFor, state.LogEntry, state.CommitLength
 }
-
-// sendProtobufMessage sends a protobuf message to a connection.
-func sendProtobufMessage(conn net.Conn, message proto.Message) error {
-	data, err := proto.Marshal(message)
-	if err != nil {
-		slog.Debug("Error marshaling message", "error", err)
-		return fmt.Errorf("error marshaling message: %v", err)
-	}
-
-	_, err = conn.Write(data)
-	if err != nil {
-		slog.Debug("Error sending data", "error", err)
-		return fmt.Errorf("error sending data: %v", err)
-	}
-
-	return nil
-}
-

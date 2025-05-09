@@ -168,87 +168,27 @@ func (s *Server) RunTcp() {
 	}
 
 }
-func (s *Server) sendVoteRequest(addr string, args *dto.VoteRequest) error {
+
+// SendAsyncRPC sends a protobuf message to a connection asynchronously.
+func SendAsyncRPC(addr string, message *dto.RaftRPC) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		slog.Info("[TCP_CLIENT][sendVoteRequest] Error getting connection", "addr", addr, "error", err)
 		return fmt.Errorf("error getting connection: %v", err)
 	}
 	defer conn.Close()
 
-	// Create the RPC request
-	rpcRequest := &dto.RaftRPC{
-		Type: consts.VoteRequest.String(),
-		Args: &dto.RaftRPC_VoteRequest{VoteRequest: args},
-	}
-
-
-	// Encode and send the request
-	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
-		return fmt.Errorf("error sending VoteRequest RPC: %v", err)
-	}
-
-	return nil
-}
-
-func (s *Server) sendVoteResponse(addr string, reply *dto.VoteResponse) error {
-	conn, err := net.Dial("tcp", addr)
+	// encode the message
+	data, err := proto.Marshal(message)
 	if err != nil {
-		slog.Debug("[TCP_CLIENT][sendVoteResponse] Error getting connection", "addr", addr, "error", err)
-		return fmt.Errorf("error getting connection: %v", err)
-	}
-	defer conn.Close()
-
-	// Create the RPC request
-	rpcRequest := &dto.RaftRPC{
-		Type: consts.VoteResponse.String(),
-		Args: &dto.RaftRPC_VoteResponse{VoteResponse: reply},
+		slog.Debug("[SEND_ASYNC_RPC] Error marshaling message", "error", err, "message", message, "addr", addr)
+		return fmt.Errorf("error marshaling message: %v", err)
 	}
 
-
-	// Encode and send the request
-	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
-		return fmt.Errorf("error sending VoteResponse RPC: %v", err)
-	}
-
-	return nil
-}
-
-func (s *Server) sendLogRequest(addr string, args *dto.LogRequest) error {
-	conn, err := net.Dial("tcp", addr)
+	// send the message
+	_, err = conn.Write(data)
 	if err != nil {
-		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
-		return fmt.Errorf("error getting connection: %v", err)
-	}
-	defer conn.Close()
-
-	rpcRequest := &dto.RaftRPC{
-		Type: consts.LogRequest.String(),
-		Args: &dto.RaftRPC_LogRequest{LogRequest: args},
-	}
-
-	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
-		return fmt.Errorf("error sending LogRequest RPC: %v", err)
-	}
-
-	return nil
-}
-
-func (s *Server) sendLogResponse(addr string, reply *dto.LogResponse) error {
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		slog.Debug("[TCP_CLIENT] Error getting connection", "addr", addr, "error", err)
-		return fmt.Errorf("error getting connection: %v", err)
-	}
-	defer conn.Close()
-
-	rpcRequest := &dto.RaftRPC{
-		Type: consts.LogResponse.String(),
-		Args: &dto.RaftRPC_LogResponse{LogResponse: reply},
-	}
-
-	if err := sendProtobufMessage(conn, rpcRequest); err != nil {
-		return fmt.Errorf("error sending LogResponse RPC: %v", err)
+		slog.Debug("[SEND_ASYNC_RPC] Error sending data", "error", err, "message", message, "addr", addr)
+		return fmt.Errorf("error sending data: %v", err)
 	}
 
 	return nil
