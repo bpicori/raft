@@ -39,10 +39,8 @@ type Server struct {
 	ackedLength      map[string]int32 // length of log entries acknowledged by other servers
 	/* End of volatile fields */
 
-	config          config.Config // cluster configuration
-	eventLoop       *events.EventManager // event loop
-	electionTimeout *time.Timer   // timer for election timeout
-	heartbeatTimer  *time.Timer   // timer for heartbeat
+	config       config.Config        // cluster configuration
+	eventManager *events.EventManager // event loop
 
 	/* Server lifecycle */
 	wg     sync.WaitGroup
@@ -60,11 +58,11 @@ func NewServer() *Server {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	currentTerm, votedFor, logEntry, commitLength := loadPersistedState(config)
-	eventLoop := events.NewEventManager()
+	eventManager := events.NewEventManager()
 
 	s := &Server{
 		config:           config,
-		eventLoop:        eventLoop,
+		eventManager:     eventManager,
 		currentTerm:      currentTerm,  // should be fetched from persistent storage
 		votedFor:         votedFor,     // should be fetched from persistent storage
 		logEntry:         logEntry,     // should be fetched from persistent storage
@@ -74,10 +72,10 @@ func NewServer() *Server {
 		votesReceivedMap: sync.Map{},
 		sentLength:       make(map[string]int32),
 		ackedLength:      make(map[string]int32),
-		electionTimeout:  time.NewTimer(randomTimeout(config.TimeoutMin, config.TimeoutMax)),
 		ctx:              ctx,
 		cancel:           cancel,
 	}
+	s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	return s
 }
 
@@ -87,7 +85,7 @@ func (s *Server) Start() error {
 		Wg:           &s.wg,
 		Ctx:          s.ctx,
 		ListenAddr:   s.config.SelfServer.Addr,
-		EventManager: s.eventLoop,
+		EventManager: s.eventManager,
 	})
 	go s.RunStateMachine()
 	return nil
@@ -96,7 +94,7 @@ func (s *Server) Start() error {
 func (s *Server) Stop() {
 	s.cancel()
 	s.PersistState()
-	s.eventLoop.Close()
+	s.eventManager.Close()
 	s.wg.Wait()
 }
 
@@ -146,7 +144,7 @@ func (s *Server) runFollower() {
 		case <-s.ctx.Done():
 			return
 
-		case requestVoteReq := <-s.eventLoop.VoteRequestChan:
+		case requestVoteReq := <-s.eventManager.VoteRequestChan:
 			slog.Info(
 				"[FOLLOWER] Received RequestVoteReq",
 				"candidate", requestVoteReq.CandidateId,
@@ -158,7 +156,7 @@ func (s *Server) runFollower() {
 				return
 			}
 
-		case requestVoteRes := <-s.eventLoop.VoteResponseChan:
+		case requestVoteRes := <-s.eventManager.VoteResponseChan:
 			slog.Debug("[FOLLOWER] Received vote response from peer, discarding",
 				"peer", requestVoteRes.NodeId,
 				"granted", requestVoteRes.VoteGranted,
@@ -168,14 +166,14 @@ func (s *Server) runFollower() {
 				return
 			}
 
-		case logRequest := <-s.eventLoop.LogRequestChan:
+		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Debug("[FOLLOWER] Received {LogRequest}", "leader", logRequest.LeaderId)
 			s.OnLogRequest(logRequest)
 			if s.currentRole != Follower {
 				return
 			}
 
-		case logResponse := <-s.eventLoop.LogResponseChan:
+		case logResponse := <-s.eventManager.LogResponseChan:
 			slog.Debug("[FOLLOWER] Received log response from peer",
 				"peer", logResponse.FollowerId,
 				"term", logResponse.Term,
@@ -185,7 +183,7 @@ func (s *Server) runFollower() {
 			if s.currentRole != Follower {
 				return
 			}
-		case <-s.electionTimeout.C:
+		case <-s.eventManager.ElectionTimerChan():
 			slog.Info("[FOLLOWER] Election timeout from Follower state, starting new election")
 			s.startElection()
 			return
@@ -231,18 +229,18 @@ func (s *Server) runCandidate() {
 		go tcp.SendAsyncRPC(follower.Addr, rpc)
 	}
 
-	s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+	s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 
 	for {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-s.electionTimeout.C:
+		case <-s.eventManager.ElectionTimerChan():
 			slog.Info("[CANDIDATE] Election timeout, starting new election")
 			s.startElection()
 			return
 
-		case requestVoteReq := <-s.eventLoop.VoteRequestChan:
+		case requestVoteReq := <-s.eventManager.VoteRequestChan:
 			slog.Info("[CANDIDATE] Received RequestVoteReq",
 				"candidate", requestVoteReq.CandidateId,
 				"term", requestVoteReq.Term,
@@ -253,7 +251,7 @@ func (s *Server) runCandidate() {
 				return
 			}
 
-		case requestVoteResp := <-s.eventLoop.VoteResponseChan:
+		case requestVoteResp := <-s.eventManager.VoteResponseChan:
 			slog.Info("[CANDIDATE] Received vote response from",
 				"peer", requestVoteResp.NodeId,
 				"granted", requestVoteResp.VoteGranted,
@@ -262,7 +260,7 @@ func (s *Server) runCandidate() {
 			if s.currentRole != Candidate {
 				return
 			}
-		case logRequest := <-s.eventLoop.LogRequestChan:
+		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.LeaderId)
 			s.OnLogRequest(logRequest)
 			if s.currentRole != Candidate {
@@ -337,7 +335,7 @@ func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
 		if votesReceived >= majority {
 			s.currentRole = Leader
 			s.currentLeader = s.config.SelfID
-			s.electionTimeout.Stop()
+			s.eventManager.StopElectionTimer()
 
 			for _, follower := range s.otherServers() {
 				s.sentLength[follower.ID] = int32(len(s.logEntry))
@@ -349,7 +347,7 @@ func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
 		s.currentTerm = voterTerm
 		s.currentRole = Follower
 		s.votedFor = ""
-		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
 }
 
@@ -368,43 +366,43 @@ func (s *Server) runLeader() {
 		go s.ReplicateLog(s.config.SelfID, follower.ID)
 	}
 
-	s.heartbeatTimer = time.NewTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
+	s.eventManager.ResetHeartbeatTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
 
 	for {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-s.heartbeatTimer.C:
+		case <-s.eventManager.HeartbeatTimerChan():
 			slog.Debug("[LEADER] Heartbeat timer triggered. Sending updates to followers.")
 			for _, follower := range s.otherServers() {
 				go s.ReplicateLog(s.config.SelfID, follower.ID)
 			}
-			s.heartbeatTimer.Reset(time.Duration(s.config.Heartbeat) * time.Millisecond)
-		case voteRequest := <-s.eventLoop.VoteRequestChan:
+			s.eventManager.ResetHeartbeatTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
+		case voteRequest := <-s.eventManager.VoteRequestChan:
 			slog.Debug("[LEADER] Received {VoteRequest} from", "candidate", voteRequest.CandidateId)
 			s.OnVoteRequest(voteRequest)
 			if s.currentRole != Leader {
 				return
 			}
-		case voteResponse := <-s.eventLoop.VoteResponseChan:
+		case voteResponse := <-s.eventManager.VoteResponseChan:
 			slog.Debug("[LEADER] Received {VoteResponse} from", "peer", voteResponse.NodeId)
 			s.OnVoteResponse(voteResponse)
 			if s.currentRole != Leader {
 				return
 			}
-		case logRequest := <-s.eventLoop.LogRequestChan:
+		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Debug("[LEADER] Received {LogRequest} from", "leader", logRequest.LeaderId)
 			s.OnLogRequest(logRequest)
 			if s.currentRole != Leader {
 				return
 			}
-		case logResponse := <-s.eventLoop.LogResponseChan:
+		case logResponse := <-s.eventManager.LogResponseChan:
 			slog.Debug("[LEADER] Received {LogResponse} from", "peer", logResponse.FollowerId)
 			s.OnLogResponse(logResponse)
 			if s.currentRole != Leader {
 				return
 			}
-		case setCommand := <-s.eventLoop.SetCommandChan:
+		case setCommand := <-s.eventManager.SetCommandChan:
 			slog.Info("[LEADER] Received {SetCommand}", "key", setCommand.Key, "value", setCommand.Value)
 			s.logEntry = append(s.logEntry, &dto.LogEntry{
 				Term: s.currentTerm,
@@ -418,7 +416,7 @@ func (s *Server) runLeader() {
 			for _, follower := range s.otherServers() {
 				go s.ReplicateLog(s.config.SelfID, follower.ID)
 			}
-			s.heartbeatTimer.Reset(time.Duration(s.config.Heartbeat) * time.Millisecond)
+			s.eventManager.ResetHeartbeatTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		}
 	}
 }
@@ -434,13 +432,13 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	if term > s.currentTerm {
 		s.currentTerm = term
 		s.votedFor = ""
-		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
 
 	if term == s.currentTerm {
 		s.currentRole = Follower
 		s.currentLeader = leaderId
-		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
 
 	logOk := len(s.logEntry) >= int(prefixLength) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
@@ -495,7 +493,7 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 		s.currentTerm = term
 		s.currentRole = Follower
 		s.votedFor = ""
-		s.electionTimeout.Reset(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
 }
 
