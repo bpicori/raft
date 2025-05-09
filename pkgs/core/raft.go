@@ -142,39 +142,39 @@ func (s *Server) runFollower() {
 		case requestVoteReq := <-s.eventLoop.VoteRequestChan:
 			slog.Info(
 				"[FOLLOWER] Received RequestVoteReq",
-				"candidate", requestVoteReq.Data.CandidateId,
-				"term", requestVoteReq.Data.Term,
-				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
-				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
-			s.OnVoteRequest(requestVoteReq.Data)
+				"candidate", requestVoteReq.CandidateId,
+				"term", requestVoteReq.Term,
+				"lastLogIndex", requestVoteReq.LastLogIndex,
+				"lastLogTerm", requestVoteReq.LastLogTerm)
+			s.OnVoteRequest(&requestVoteReq)
 			if s.currentRole != Follower {
 				return
 			}
 
 		case requestVoteRes := <-s.eventLoop.VoteResponseChan:
 			slog.Debug("[FOLLOWER] Received vote response from peer, discarding",
-				"peer", requestVoteRes.Data.NodeId,
-				"granted", requestVoteRes.Data.VoteGranted,
-				"term", requestVoteRes.Data.Term)
-			s.OnVoteResponse(requestVoteRes.Data)
+				"peer", requestVoteRes.NodeId,
+				"granted", requestVoteRes.VoteGranted,
+				"term", requestVoteRes.Term)
+			s.OnVoteResponse(&requestVoteRes)
 			if s.currentRole != Follower {
 				return
 			}
 
 		case logRequest := <-s.eventLoop.LogRequestChan:
-			slog.Debug("[FOLLOWER] Received {LogRequest}", "leader", logRequest.Data.LeaderId)
-			s.OnLogRequest(logRequest.Data)
+			slog.Debug("[FOLLOWER] Received {LogRequest}", "leader", logRequest.LeaderId)
+			s.OnLogRequest(&logRequest)
 			if s.currentRole != Follower {
 				return
 			}
 
 		case logResponse := <-s.eventLoop.LogResponseChan:
 			slog.Debug("[FOLLOWER] Received log response from peer",
-				"peer", logResponse.Data.FollowerId,
-				"term", logResponse.Data.Term,
-				"ack", logResponse.Data.Ack,
-				"success", logResponse.Data.Success)
-			s.OnLogResponse(logResponse.Data)
+				"peer", logResponse.FollowerId,
+				"term", logResponse.Term,
+				"ack", logResponse.Ack,
+				"success", logResponse.Success)
+			s.OnLogResponse(&logResponse)
 			if s.currentRole != Follower {
 				return
 			}
@@ -237,27 +237,27 @@ func (s *Server) runCandidate() {
 
 		case requestVoteReq := <-s.eventLoop.VoteRequestChan:
 			slog.Info("[CANDIDATE] Received RequestVoteReq",
-				"candidate", requestVoteReq.Data.CandidateId,
-				"term", requestVoteReq.Data.Term,
-				"lastLogIndex", requestVoteReq.Data.LastLogIndex,
-				"lastLogTerm", requestVoteReq.Data.LastLogTerm)
-			s.OnVoteRequest(requestVoteReq.Data)
+				"candidate", requestVoteReq.CandidateId,
+				"term", requestVoteReq.Term,
+				"lastLogIndex", requestVoteReq.LastLogIndex,
+				"lastLogTerm", requestVoteReq.LastLogTerm)
+			s.OnVoteRequest(&requestVoteReq)
 			if s.currentRole != Candidate {
 				return
 			}
 
 		case requestVoteResp := <-s.eventLoop.VoteResponseChan:
 			slog.Info("[CANDIDATE] Received vote response from",
-				"peer", requestVoteResp.Data.NodeId,
-				"granted", requestVoteResp.Data.VoteGranted,
-				"term", requestVoteResp.Data.Term)
-			s.OnVoteResponse(requestVoteResp.Data)
+				"peer", requestVoteResp.NodeId,
+				"granted", requestVoteResp.VoteGranted,
+				"term", requestVoteResp.Term)
+			s.OnVoteResponse(&requestVoteResp)
 			if s.currentRole != Candidate {
 				return
 			}
 		case logRequest := <-s.eventLoop.LogRequestChan:
-			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.Data.LeaderId)
-			s.OnLogRequest(logRequest.Data)
+			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.LeaderId)
+			s.OnLogRequest(&logRequest)
 			if s.currentRole != Candidate {
 				return
 			}
@@ -374,37 +374,37 @@ func (s *Server) runLeader() {
 			}
 			s.heartbeatTimer.Reset(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		case voteRequest := <-s.eventLoop.VoteRequestChan:
-			slog.Debug("[LEADER] Received {VoteRequest} from", "candidate", voteRequest.Data.CandidateId)
-			s.OnVoteRequest(voteRequest.Data)
+			slog.Debug("[LEADER] Received {VoteRequest} from", "candidate", voteRequest.CandidateId)
+			s.OnVoteRequest(&voteRequest)
 			if s.currentRole != Leader {
 				return
 			}
 		case voteResponse := <-s.eventLoop.VoteResponseChan:
-			slog.Debug("[LEADER] Received {VoteResponse} from", "peer", voteResponse.Data.NodeId)
-			s.OnVoteResponse(voteResponse.Data)
+			slog.Debug("[LEADER] Received {VoteResponse} from", "peer", voteResponse.NodeId)
+			s.OnVoteResponse(&voteResponse)
 			if s.currentRole != Leader {
 				return
 			}
 		case logRequest := <-s.eventLoop.LogRequestChan:
-			slog.Debug("[LEADER] Received {LogRequest} from", "leader", logRequest.Data.LeaderId)
-			s.OnLogRequest(logRequest.Data)
+			slog.Debug("[LEADER] Received {LogRequest} from", "leader", logRequest.LeaderId)
+			s.OnLogRequest(&logRequest)
 			if s.currentRole != Leader {
 				return
 			}
 		case logResponse := <-s.eventLoop.LogResponseChan:
-			slog.Debug("[LEADER] Received {LogResponse} from", "peer", logResponse.Data.FollowerId)
-			s.OnLogResponse(logResponse.Data)
+			slog.Debug("[LEADER] Received {LogResponse} from", "peer", logResponse.FollowerId)
+			s.OnLogResponse(&logResponse)
 			if s.currentRole != Leader {
 				return
 			}
 		case setCommand := <-s.eventLoop.SetCommandChan:
-			slog.Info("[LEADER] Received {SetCommand}", "key", setCommand.Data.Key, "value", setCommand.Data.Value)
+			slog.Info("[LEADER] Received {SetCommand}", "key", setCommand.Key, "value", setCommand.Value)
 			s.logEntry = append(s.logEntry, &dto.LogEntry{
 				Term: s.currentTerm,
 				Command: &dto.Command{
 					Operation: "set",
-					Key:       setCommand.Data.Key,
-					Value:     setCommand.Data.Value,
+					Key:       setCommand.Key,
+					Value:     setCommand.Value,
 				},
 			})
 			s.ackedLength[s.config.SelfID] = int32(len(s.logEntry))

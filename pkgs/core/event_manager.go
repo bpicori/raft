@@ -1,30 +1,24 @@
 package core
 
 import (
-	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 )
 
-type Event[T any] struct {
-	Type consts.RaftRPCType
-	Data *T
-}
-
 type EventManager struct {
-	VoteRequestChan  chan Event[dto.VoteRequest]
-	VoteResponseChan chan Event[dto.VoteResponse]
-	LogRequestChan   chan Event[dto.LogRequest]
-	LogResponseChan  chan Event[dto.LogResponse]
-	SetCommandChan   chan Event[dto.SetCommand]
+	VoteRequestChan  chan dto.VoteRequest
+	VoteResponseChan chan dto.VoteResponse
+	LogRequestChan   chan dto.LogRequest
+	LogResponseChan  chan dto.LogResponse
+	SetCommandChan   chan dto.SetCommand 
 }
 
 func NewEventLoop() *EventManager {
 	return &EventManager{
-		VoteRequestChan:  make(chan Event[dto.VoteRequest]),
-		VoteResponseChan: make(chan Event[dto.VoteResponse]),
-		LogRequestChan:   make(chan Event[dto.LogRequest]),
-		LogResponseChan:  make(chan Event[dto.LogResponse]),
-		SetCommandChan:   make(chan Event[dto.SetCommand]),
+		VoteRequestChan:  make(chan dto.VoteRequest),
+		VoteResponseChan: make(chan dto.VoteResponse),
+		LogRequestChan:   make(chan dto.LogRequest),
+		LogResponseChan:  make(chan dto.LogResponse),
+		SetCommandChan:   make(chan dto.SetCommand),
 	}
 }
 

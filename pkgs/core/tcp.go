@@ -35,37 +35,25 @@ func handleConnection(conn net.Conn, server *Server) {
 	switch rpcType {
 	case consts.VoteRequest:
 		if args := rpc.GetVoteRequest(); args != nil {
-			server.eventLoop.VoteRequestChan <- Event[dto.VoteRequest]{
-				Type: consts.VoteRequest,
-				Data: args,
-			}
+			server.eventLoop.VoteRequestChan <- *args
 		} else {
 			slog.Warn("Received VoteRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.VoteResponse:
 		if args := rpc.GetVoteResponse(); args != nil {
-			server.eventLoop.VoteResponseChan <- Event[dto.VoteResponse]{
-				Type: consts.VoteResponse,
-				Data: args,
-			}
+			server.eventLoop.VoteResponseChan <- *args
 		} else {
 			slog.Warn("Received VoteResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.LogRequest:
 		if args := rpc.GetLogRequest(); args != nil {
-			server.eventLoop.LogRequestChan <- Event[dto.LogRequest]{
-				Type: consts.LogRequest,
-				Data: args,
-			}
+			server.eventLoop.LogRequestChan <- *args
 		} else {
 			slog.Warn("Received LogRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.LogResponse:
 		if args := rpc.GetLogResponse(); args != nil {
-			server.eventLoop.LogResponseChan <- Event[dto.LogResponse]{
-				Type: consts.LogResponse,
-				Data: args,
-			}
+			server.eventLoop.LogResponseChan <- *args
 		} else {
 			slog.Warn("Received LogResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
@@ -102,10 +90,7 @@ func handleConnection(conn net.Conn, server *Server) {
 				slog.Warn("Received SetCommand from non-leader", "remote_addr", conn.RemoteAddr())
 				return
 			}
-			server.eventLoop.SetCommandChan <- Event[dto.SetCommand]{
-				Type: consts.SetCommand,
-				Data: args,
-			}
+			server.eventLoop.SetCommandChan <- *args
 
 			// return ok response
 			okResponse := &dto.RaftRPC{
