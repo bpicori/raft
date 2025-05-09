@@ -1,4 +1,4 @@
-package core
+package consts
 
 import "fmt"
 
@@ -38,8 +38,8 @@ func (rt RaftRPCType) String() string {
 	}
 }
 
-// mapStringToRPCType converts the protobuf string type to our internal enum.
-func mapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
+// MapStringToRPCType converts the protobuf string type to our internal enum.
+func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 	switch rpcTypeStr {
 	case "VoteRequest":
 		return VoteRequest, nil

@@ -2,7 +2,7 @@ package main
 
 import (
 	"bpicori/raft/pkgs/config"
-	"bpicori/raft/pkgs/core"
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"fmt"
 	"log/slog"
@@ -16,7 +16,7 @@ func GetClusterStatus(cfg *config.Config) {
 
 	for _, server := range cfg.Servers {
 		nodeStatusReq := &dto.RaftRPC{
-			Type: core.NodeStatus.String(),
+			Type: consts.NodeStatus.String(),
 		}
 		nodeStatusResp := &dto.NodeStatus{}
 

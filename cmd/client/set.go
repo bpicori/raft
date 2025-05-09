@@ -2,7 +2,7 @@ package main
 
 import (
 	"bpicori/raft/pkgs/config"
-	"bpicori/raft/pkgs/core"
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"fmt"
 	"log/slog"
@@ -17,7 +17,7 @@ func SetCommand(cfg *config.Config, key string, value string) {
 	}
 
 	setCommand := &dto.RaftRPC{
-		Type: core.SetCommand.String(),
+		Type: consts.SetCommand.String(),
 		Args: &dto.RaftRPC_SetCommand{
 			SetCommand: &dto.SetCommand{
 				Key:   key,
@@ -39,7 +39,7 @@ func SetCommand(cfg *config.Config, key string, value string) {
 func findLeader(cfg *config.Config) string {
 	for _, server := range cfg.Servers {
 		nodeStatusReq := &dto.RaftRPC{
-			Type: core.NodeStatus.String(),
+			Type: consts.NodeStatus.String(),
 		}
 		nodeStatusResp := &dto.NodeStatus{}
 

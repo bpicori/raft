@@ -1,9 +1,12 @@
 package core
 
-import "bpicori/raft/pkgs/dto"
+import (
+	"bpicori/raft/pkgs/consts"
+	"bpicori/raft/pkgs/dto"
+)
 
 type Event[T any] struct {
-	Type RaftRPCType
+	Type consts.RaftRPCType
 	Data *T
 }
 

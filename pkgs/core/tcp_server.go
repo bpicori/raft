@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"log/slog"
 	"net"
@@ -24,50 +25,50 @@ func handleConnection(conn net.Conn, server *Server) {
 		return
 	}
 
-	rpcType, err := mapStringToRPCType(rpc.Type)
+	rpcType, err := consts.MapStringToRPCType(rpc.Type)
 	if err != nil {
 		slog.Error("Received unknown RPC type", "type", rpc.Type, "remote_addr", conn.RemoteAddr(), "error", err)
 		return
 	}
 
 	switch rpcType {
-	case VoteRequest:
+	case consts.VoteRequest:
 		if args := rpc.GetVoteRequest(); args != nil {
 			server.eventLoop.voteRequestChan <- Event[dto.VoteRequest]{
-				Type: VoteRequest,
+				Type: consts.VoteRequest,
 				Data: args,
 			}
 		} else {
 			slog.Warn("Received VoteRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case VoteResponse:
+	case consts.VoteResponse:
 		if args := rpc.GetVoteResponse(); args != nil {
 			server.eventLoop.voteResponseChan <- Event[dto.VoteResponse]{
-				Type: VoteResponse,
+				Type: consts.VoteResponse,
 				Data: args,
 			}
 		} else {
 			slog.Warn("Received VoteResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case LogRequest:
+	case consts.LogRequest:
 		if args := rpc.GetLogRequest(); args != nil {
 			server.eventLoop.logRequestChan <- Event[dto.LogRequest]{
-				Type: LogRequest,
+				Type: consts.LogRequest,
 				Data: args,
 			}
 		} else {
 			slog.Warn("Received LogRequest with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case LogResponse:
+	case consts.LogResponse:
 		if args := rpc.GetLogResponse(); args != nil {
 			server.eventLoop.logResponseChan <- Event[dto.LogResponse]{
-				Type: LogResponse,
+				Type: consts.LogResponse,
 				Data: args,
 			}
 		} else {
 			slog.Warn("Received LogResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	case NodeStatus:
+	case consts.NodeStatus:
 		nodeStatus := &dto.NodeStatus{
 			NodeId:        server.config.SelfID,
 			CurrentTerm:   server.currentTerm,
@@ -88,20 +89,20 @@ func handleConnection(conn net.Conn, server *Server) {
 		if err != nil {
 			slog.Error("Error sending cluster state response", "error", err, "remote_addr", conn.RemoteAddr())
 		}
-	case SetCommand:
+	case consts.SetCommand:
 		if args := rpc.GetSetCommand(); args != nil {
 			if server.currentRole != Leader {
 				slog.Warn("Received SetCommand from non-leader", "remote_addr", conn.RemoteAddr())
 				return
 			}
 			server.eventLoop.setCommandChan <- Event[dto.SetCommand]{
-				Type: SetCommand,
+				Type: consts.SetCommand,
 				Data: args,
 			}
 
 			// return ok response
 			okResponse := &dto.RaftRPC{
-				Type: OkResponse.String(),
+				Type: consts.OkResponse.String(),
 				Args: &dto.RaftRPC_OkResponse{
 					OkResponse: &dto.OkResponse{
 						Ok: true,

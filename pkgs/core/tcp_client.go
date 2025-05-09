@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"fmt"
 	"log/slog"
@@ -17,7 +18,7 @@ func (s *Server) sendVoteRequest(addr string, args *dto.VoteRequest) error {
 
 	// Create the RPC request
 	rpcRequest := &dto.RaftRPC{
-		Type: VoteRequest.String(),
+		Type: consts.VoteRequest.String(),
 		Args: &dto.RaftRPC_VoteRequest{VoteRequest: args},
 	}
 
@@ -40,7 +41,7 @@ func (s *Server) sendVoteResponse(addr string, reply *dto.VoteResponse) error {
 
 	// Create the RPC request
 	rpcRequest := &dto.RaftRPC{
-		Type: VoteResponse.String(),
+		Type: consts.VoteResponse.String(),
 		Args: &dto.RaftRPC_VoteResponse{VoteResponse: reply},
 	}
 
@@ -62,7 +63,7 @@ func (s *Server) sendLogRequest(addr string, args *dto.LogRequest) error {
 	defer conn.Close()
 
 	rpcRequest := &dto.RaftRPC{
-		Type: LogRequest.String(),
+		Type: consts.LogRequest.String(),
 		Args: &dto.RaftRPC_LogRequest{LogRequest: args},
 	}
 
@@ -82,7 +83,7 @@ func (s *Server) sendLogResponse(addr string, reply *dto.LogResponse) error {
 	defer conn.Close()
 
 	rpcRequest := &dto.RaftRPC{
-		Type: LogResponse.String(),
+		Type: consts.LogResponse.String(),
 		Args: &dto.RaftRPC_LogResponse{LogResponse: reply},
 	}
 
