@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -85,13 +86,16 @@ func NewServer() *Server {
 
 func (s *Server) Start() error {
 	s.wg.Add(2)
+
 	go tcp.RunTCPServer(tcp.RunTCPServerParams{
 		Wg:           &s.wg,
 		Ctx:          s.ctx,
 		ListenAddr:   s.config.SelfServer.Addr,
 		EventManager: s.eventManager,
 	})
+
 	go s.RunStateMachine()
+
 	return nil
 }
 
@@ -157,7 +161,7 @@ func (s *Server) runFollower() {
 				"term", requestVoteReq.Term,
 				"lastLogIndex", requestVoteReq.LastLogIndex,
 				"lastLogTerm", requestVoteReq.LastLogTerm)
-			s.OnVoteRequest(requestVoteReq)
+			s.onVoteRequest(requestVoteReq)
 			if s.currentRole != Follower {
 				return
 			}
@@ -167,14 +171,14 @@ func (s *Server) runFollower() {
 				"peer", requestVoteRes.NodeId,
 				"granted", requestVoteRes.VoteGranted,
 				"term", requestVoteRes.Term)
-			s.OnVoteResponse(requestVoteRes)
+			s.onVoteResponse(requestVoteRes)
 			if s.currentRole != Follower {
 				return
 			}
 
 		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Debug("[FOLLOWER] Received {LogRequest}", "leader", logRequest.LeaderId)
-			s.OnLogRequest(logRequest)
+			s.onLogRequest(logRequest)
 			if s.currentRole != Follower {
 				return
 			}
@@ -185,7 +189,7 @@ func (s *Server) runFollower() {
 				"term", logResponse.Term,
 				"ack", logResponse.Ack,
 				"success", logResponse.Success)
-			s.OnLogResponse(logResponse)
+			s.onLogResponse(logResponse)
 			if s.currentRole != Follower {
 				return
 			}
@@ -195,13 +199,13 @@ func (s *Server) runFollower() {
 			return
 		case replyCh := <-s.eventManager.NodeStatusChan:
 			replyCh <- &dto.NodeStatusResponse{
-				NodeId: s.config.SelfID,
-				CurrentTerm: s.currentTerm,
-				VotedFor: s.votedFor,
-				CurrentRole: consts.MapRoleToString(s.currentRole),
+				NodeId:        s.config.SelfID,
+				CurrentTerm:   s.currentTerm,
+				VotedFor:      s.votedFor,
+				CurrentRole:   consts.MapRoleToString(s.currentRole),
 				CurrentLeader: s.currentLeader,
-				CommitLength: s.commitLength,
-				LogEntries: s.logEntry,
+				CommitLength:  s.commitLength,
+				LogEntries:    s.logEntry,
 			}
 		}
 	}
@@ -262,7 +266,7 @@ func (s *Server) runCandidate() {
 				"term", requestVoteReq.Term,
 				"lastLogIndex", requestVoteReq.LastLogIndex,
 				"lastLogTerm", requestVoteReq.LastLogTerm)
-			s.OnVoteRequest(requestVoteReq)
+			s.onVoteRequest(requestVoteReq)
 			if s.currentRole != Candidate {
 				return
 			}
@@ -272,32 +276,32 @@ func (s *Server) runCandidate() {
 				"peer", requestVoteResp.NodeId,
 				"granted", requestVoteResp.VoteGranted,
 				"term", requestVoteResp.Term)
-			s.OnVoteResponse(requestVoteResp)
+			s.onVoteResponse(requestVoteResp)
 			if s.currentRole != Candidate {
 				return
 			}
 		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.LeaderId)
-			s.OnLogRequest(logRequest)
+			s.onLogRequest(logRequest)
 			if s.currentRole != Candidate {
 				return
 			}
 
 		case replyCh := <-s.eventManager.NodeStatusChan:
 			replyCh <- &dto.NodeStatusResponse{
-				NodeId: s.config.SelfID,
-				CurrentTerm: s.currentTerm,
-				VotedFor: s.votedFor,
-				CurrentRole: consts.MapRoleToString(s.currentRole),
+				NodeId:        s.config.SelfID,
+				CurrentTerm:   s.currentTerm,
+				VotedFor:      s.votedFor,
+				CurrentRole:   consts.MapRoleToString(s.currentRole),
 				CurrentLeader: s.currentLeader,
-				CommitLength: s.commitLength,
-				LogEntries: s.logEntry,
+				CommitLength:  s.commitLength,
+				LogEntries:    s.logEntry,
 			}
 		}
 	}
 }
 
-func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
+func (s *Server) onVoteRequest(requestVoteArgs *dto.VoteRequest) {
 	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateId)
 	cID := requestVoteArgs.CandidateId
 	cTerm := requestVoteArgs.Term
@@ -345,7 +349,7 @@ func (s *Server) OnVoteRequest(requestVoteArgs *dto.VoteRequest) {
 	}
 }
 
-func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
+func (s *Server) onVoteResponse(requestVoteReply *dto.VoteResponse) {
 	voterId := requestVoteReply.NodeId
 	voterTerm := requestVoteReply.Term
 	voterVoteGranted := requestVoteReply.VoteGranted
@@ -366,7 +370,7 @@ func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
 			for _, follower := range s.otherServers() {
 				s.sentLength[follower.ID] = int32(len(s.logEntry))
 				s.ackedLength[follower.ID] = 0
-				go s.ReplicateLog(s.config.SelfID, follower.ID)
+				go s.replicateLog(s.config.SelfID, follower.ID)
 			}
 		}
 	} else if voterTerm > s.currentTerm {
@@ -377,19 +381,9 @@ func (s *Server) OnVoteResponse(requestVoteReply *dto.VoteResponse) {
 	}
 }
 
-func (s *Server) otherServers() []config.ServerConfig {
-	others := make([]config.ServerConfig, 0, len(s.config.Servers)-1)
-	for _, server := range s.config.Servers {
-		if server.ID != s.config.SelfID {
-			others = append(others, server)
-		}
-	}
-	return others
-}
-
 func (s *Server) runLeader() {
 	for _, follower := range s.otherServers() {
-		go s.ReplicateLog(s.config.SelfID, follower.ID)
+		go s.replicateLog(s.config.SelfID, follower.ID)
 	}
 
 	s.eventManager.ResetHeartbeatTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
@@ -401,30 +395,30 @@ func (s *Server) runLeader() {
 		case <-s.eventManager.HeartbeatTimerChan():
 			slog.Debug("[LEADER] Heartbeat timer triggered. Sending updates to followers.")
 			for _, follower := range s.otherServers() {
-				go s.ReplicateLog(s.config.SelfID, follower.ID)
+				go s.replicateLog(s.config.SelfID, follower.ID)
 			}
 			s.eventManager.ResetHeartbeatTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		case voteRequest := <-s.eventManager.VoteRequestChan:
 			slog.Debug("[LEADER] Received {VoteRequest} from", "candidate", voteRequest.CandidateId)
-			s.OnVoteRequest(voteRequest)
+			s.onVoteRequest(voteRequest)
 			if s.currentRole != Leader {
 				return
 			}
 		case voteResponse := <-s.eventManager.VoteResponseChan:
 			slog.Debug("[LEADER] Received {VoteResponse} from", "peer", voteResponse.NodeId)
-			s.OnVoteResponse(voteResponse)
+			s.onVoteResponse(voteResponse)
 			if s.currentRole != Leader {
 				return
 			}
 		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Debug("[LEADER] Received {LogRequest} from", "leader", logRequest.LeaderId)
-			s.OnLogRequest(logRequest)
+			s.onLogRequest(logRequest)
 			if s.currentRole != Leader {
 				return
 			}
 		case logResponse := <-s.eventManager.LogResponseChan:
 			slog.Debug("[LEADER] Received {LogResponse} from", "peer", logResponse.FollowerId)
-			s.OnLogResponse(logResponse)
+			s.onLogResponse(logResponse)
 			if s.currentRole != Leader {
 				return
 			}
@@ -440,24 +434,24 @@ func (s *Server) runLeader() {
 			})
 			s.ackedLength[s.config.SelfID] = int32(len(s.logEntry))
 			for _, follower := range s.otherServers() {
-				go s.ReplicateLog(s.config.SelfID, follower.ID)
+				go s.replicateLog(s.config.SelfID, follower.ID)
 			}
 			s.eventManager.ResetHeartbeatTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
 		case replyCh := <-s.eventManager.NodeStatusChan:
 			replyCh <- &dto.NodeStatusResponse{
-				NodeId: s.config.SelfID,
-				CurrentTerm: s.currentTerm,
-				VotedFor: s.votedFor,
-				CurrentRole: consts.MapRoleToString(s.currentRole),
+				NodeId:        s.config.SelfID,
+				CurrentTerm:   s.currentTerm,
+				VotedFor:      s.votedFor,
+				CurrentRole:   consts.MapRoleToString(s.currentRole),
 				CurrentLeader: s.currentLeader,
-				CommitLength: s.commitLength,
-				LogEntries: s.logEntry,
+				CommitLength:  s.commitLength,
+				LogEntries:    s.logEntry,
 			}
 		}
 	}
 }
 
-func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
+func (s *Server) onLogRequest(logRequest *dto.LogRequest) {
 	leaderId := logRequest.LeaderId
 	term := logRequest.Term
 	prefixLength := logRequest.PrefixLength
@@ -480,7 +474,7 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	logOk := len(s.logEntry) >= int(prefixLength) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
 
 	if term == s.currentTerm && logOk {
-		s.AppendEntries(prefixLength, leaderCommit, suffix)
+		s.appendEntries(prefixLength, leaderCommit, suffix)
 		ack := prefixLength + int32(len(suffix))
 		rpc := &dto.RaftRPC{
 			Type: consts.LogResponse.String(),
@@ -510,7 +504,7 @@ func (s *Server) OnLogRequest(logRequest *dto.LogRequest) {
 	}
 }
 
-func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
+func (s *Server) onLogResponse(logResponse *dto.LogResponse) {
 	followerId := logResponse.FollowerId
 	term := logResponse.Term
 	ack := logResponse.Ack
@@ -520,10 +514,10 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 		if success && ack >= int32(s.ackedLength[followerId]) {
 			s.sentLength[followerId] = ack
 			s.ackedLength[followerId] = ack
-			s.CommitLogEntries()
+			s.commitLogEntries()
 		} else if s.sentLength[followerId] > 0 {
 			s.sentLength[followerId] -= 1
-			s.ReplicateLog(s.config.SelfID, followerId)
+			s.replicateLog(s.config.SelfID, followerId)
 		}
 	} else if term > s.currentTerm {
 		s.currentTerm = term
@@ -533,7 +527,7 @@ func (s *Server) OnLogResponse(logResponse *dto.LogResponse) {
 	}
 }
 
-func (s *Server) ReplicateLog(leaderId string, followerId string) {
+func (s *Server) replicateLog(leaderId string, followerId string) {
 	prefixLength := s.sentLength[followerId]
 	suffix := s.logEntry[prefixLength:]
 
@@ -558,7 +552,7 @@ func (s *Server) ReplicateLog(leaderId string, followerId string) {
 	go tcp.SendAsyncRPC(followerId, rpc)
 }
 
-func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
+func (s *Server) appendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
 	suffixLength := int32(len(suffix))
 	logLength := int32(len(s.logEntry))
 
@@ -584,7 +578,7 @@ func (s *Server) AppendEntries(prefixLength int32, leaderCommit int32, suffix []
 	}
 }
 
-func (s *Server) CommitLogEntries() {
+func (s *Server) commitLogEntries() {
 
 	majority := len(s.config.Servers)/2 + 1
 
@@ -603,4 +597,18 @@ func (s *Server) CommitLogEntries() {
 			break
 		}
 	}
+}
+
+func randomTimeout(from int, to int) time.Duration {
+	return time.Duration(rand.Intn(to-from)+from) * time.Millisecond
+}
+
+func (s *Server) otherServers() []config.ServerConfig {
+	others := make([]config.ServerConfig, 0, len(s.config.Servers)-1)
+	for _, server := range s.config.Servers {
+		if server.ID != s.config.SelfID {
+			others = append(others, server)
+		}
+	}
+	return others
 }
