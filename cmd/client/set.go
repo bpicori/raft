@@ -19,8 +19,8 @@ func SetCommand(cfg *config.Config, key string, value string) {
 
 	setCommand := &dto.RaftRPC{
 		Type: consts.SetCommand.String(),
-		Args: &dto.RaftRPC_SetCommand{
-			SetCommand: &dto.SetCommand{
+		Args: &dto.RaftRPC_SetCommandRequest{
+			SetCommandRequest: &dto.SetCommandRequest{
 				Key:   key,
 				Value: value,
 			},
@@ -43,6 +43,9 @@ func findLeader(cfg *config.Config) string {
 
 		nodeStatusReq := &dto.RaftRPC{
 			Type: consts.NodeStatus.String(),
+			Args: &dto.RaftRPC_NodeStatusRequest{
+				NodeStatusRequest: &dto.NodeStatusRequest{},
+			},
 		}
 
 		rpcResp, err := tcp.SendSyncRPC(server.Addr, nodeStatusReq)
@@ -51,7 +54,7 @@ func findLeader(cfg *config.Config) string {
 			continue
 		}
 
-		nodeStatusResp := rpcResp.GetNodeStatus()
+		nodeStatusResp := rpcResp.GetNodeStatusResponse()
 		if nodeStatusResp.CurrentLeader != "" {
 			return nodeStatusResp.CurrentLeader
 		}

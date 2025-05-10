@@ -10,7 +10,8 @@ type EventManager struct {
 	VoteResponseChan chan *dto.VoteResponse
 	LogRequestChan   chan *dto.LogRequest
 	LogResponseChan  chan *dto.LogResponse
-	SetCommandChan   chan *dto.SetCommand
+	SetCommandChan   chan *dto.SetCommandRequest
+	NodeStatusChan   chan chan *dto.NodeStatusResponse
 
 	ElectionTimer  *time.Timer
 	HeartbeatTimer *time.Timer
@@ -33,7 +34,8 @@ func NewEventManager() *EventManager {
 		VoteResponseChan: make(chan *dto.VoteResponse),
 		LogRequestChan:   make(chan *dto.LogRequest),
 		LogResponseChan:  make(chan *dto.LogResponse),
-		SetCommandChan:   make(chan *dto.SetCommand),
+		SetCommandChan:   make(chan *dto.SetCommandRequest),
+		NodeStatusChan:   make(chan chan *dto.NodeStatusResponse),
 		ElectionTimer:    electionTimer,
 		HeartbeatTimer:   heartbeatTimer,
 	}

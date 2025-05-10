@@ -12,9 +12,10 @@ message RaftRPC {
     VoteResponse voteResponse = 3;
     LogRequest logRequest = 4;
     LogResponse logResponse = 5;
-    NodeStatus nodeStatus = 6;
-    SetCommand setCommand = 7;
-    OkResponse okResponse = 8;
+    NodeStatusRequest nodeStatusRequest = 6;
+    NodeStatusResponse nodeStatusResponse = 7;
+    SetCommandRequest setCommandRequest = 8;
+    OkResponse okResponse = 9;
   }
 }
 
@@ -59,7 +60,9 @@ message LogResponse {
   bool success = 4;
 }
 
-message NodeStatus { 
+message NodeStatusRequest {}
+
+message NodeStatusResponse { 
   string nodeId = 1;
   int32 currentTerm = 2;
   string votedFor = 3;
@@ -69,7 +72,7 @@ message NodeStatus {
   repeated LogEntry logEntries = 7;
 }
 
-message SetCommand {
+message SetCommandRequest {
   string key = 1;
   string value = 2;
 }

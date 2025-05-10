@@ -187,6 +187,16 @@ func (s *Server) runFollower() {
 			slog.Info("[FOLLOWER] Election timeout from Follower state, starting new election")
 			s.startElection()
 			return
+		case replyCh := <-s.eventManager.NodeStatusChan:
+			replyCh <- &dto.NodeStatusResponse{
+				NodeId: s.config.SelfID,
+				CurrentTerm: s.currentTerm,
+				VotedFor: s.votedFor,
+				CurrentRole: consts.MapRoleToString(s.currentRole),
+				CurrentLeader: s.currentLeader,
+				CommitLength: s.commitLength,
+				LogEntries: s.logEntry,
+			}
 		}
 	}
 }
@@ -267,6 +277,16 @@ func (s *Server) runCandidate() {
 				return
 			}
 
+		case replyCh := <-s.eventManager.NodeStatusChan:
+			replyCh <- &dto.NodeStatusResponse{
+				NodeId: s.config.SelfID,
+				CurrentTerm: s.currentTerm,
+				VotedFor: s.votedFor,
+				CurrentRole: consts.MapRoleToString(s.currentRole),
+				CurrentLeader: s.currentLeader,
+				CommitLength: s.commitLength,
+				LogEntries: s.logEntry,
+			}
 		}
 	}
 }
@@ -417,6 +437,16 @@ func (s *Server) runLeader() {
 				go s.ReplicateLog(s.config.SelfID, follower.ID)
 			}
 			s.eventManager.ResetHeartbeatTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
+		case replyCh := <-s.eventManager.NodeStatusChan:
+			replyCh <- &dto.NodeStatusResponse{
+				NodeId: s.config.SelfID,
+				CurrentTerm: s.currentTerm,
+				VotedFor: s.votedFor,
+				CurrentRole: consts.MapRoleToString(s.currentRole),
+				CurrentLeader: s.currentLeader,
+				CommitLength: s.commitLength,
+				LogEntries: s.logEntry,
+			}
 		}
 	}
 }

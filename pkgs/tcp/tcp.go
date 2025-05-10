@@ -60,34 +60,38 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		} else {
 			slog.Warn("Received LogResponse with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	// case consts.NodeStatus:
-	// 	nodeStatus := &dto.NodeStatus{
-	// 		NodeId:        params.NodeID,
-	// 		CurrentTerm:   int32(params.CurrentTerm), // Added int32 conversion
-	// 		VotedFor:      params.VotedFor,
-	// 		CurrentRole:   consts.MapRoleToString(params.CurrentRole), // Ensure params.CurrentRole type matches MapRoleToString input
-	// 		CurrentLeader: params.CurrentLeader,
-	// 		CommitLength:  int32(params.CommitLength), // Added int32 conversion
-	// 		LogEntries:    params.LogEntries,
-	// 	}
-
-	// 	rpcResponse := &dto.RaftRPC{
-	// 		Type: consts.NodeStatus.String(),
-	// 		Args: &dto.RaftRPC_NodeStatus{NodeStatus: nodeStatus},
-	// 	}
-
-	// 	data, err := proto.Marshal(rpcResponse)
-	// 	if err != nil {
-	// 		slog.Error("Error marshaling RaftRPC response for NodeStatus", "error", err, "remote_addr", conn.RemoteAddr())
-	// 		return
-	// 	}
-
-	// 	_, err = conn.Write(data)
-	// 	if err != nil {
-	// 		slog.Error("Error sending cluster state response", "error", err, "remote_addr", conn.RemoteAddr())
-	// 	}
+	case consts.NodeStatus:
+		if args := rpc.GetNodeStatusRequest(); args != nil {
+			fmt.Println("Received NodeStatusRequest")
+			ch := make(chan *dto.NodeStatusResponse)
+			fmt.Println("Sending NodeStatusResponse to channel")
+			eventManager.NodeStatusChan <- ch
+			fmt.Println("NodeStatusResponse sent to channel")
+			response := <-ch
+			fmt.Println("Received NodeStatusResponse from channel")
+			rpcResponse := &dto.RaftRPC{
+				Type: consts.NodeStatus.String(),
+				Args: &dto.RaftRPC_NodeStatusResponse{
+					NodeStatusResponse: response,
+				},
+			}
+			fmt.Println("Marshaling NodeStatusResponse")
+			data, err := proto.Marshal(rpcResponse)
+			if err != nil {
+				slog.Error("Error marshaling node status response", "error", err, "remote_addr", conn.RemoteAddr())
+				return
+			}
+			_, err = conn.Write(data)
+			if err != nil {
+				slog.Error("Error sending node status response", "error", err, "remote_addr", conn.RemoteAddr())
+				return
+			}
+		} else {
+			slog.Warn("Received NodeStatus with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	
 	case consts.SetCommand:
-		if args := rpc.GetSetCommand(); args != nil {
+		if args := rpc.GetSetCommandRequest(); args != nil {
 			eventManager.SetCommandChan <- args
 
 			okResponse := &dto.RaftRPC{

@@ -13,11 +13,14 @@ import (
 )
 
 func GetClusterStatus(cfg *config.Config) {
-	results := make([]*dto.NodeStatus, 0)
+	results := make([]*dto.NodeStatusResponse, 0)
 
 	for _, server := range cfg.Servers {
 		nodeStatusReq := &dto.RaftRPC{
 			Type: consts.NodeStatus.String(),
+			Args: &dto.RaftRPC_NodeStatusRequest{
+				NodeStatusRequest: &dto.NodeStatusRequest{},
+			},
 		}
 
 		rpcResp, err := tcp.SendSyncRPC(server.Addr, nodeStatusReq)
@@ -27,7 +30,7 @@ func GetClusterStatus(cfg *config.Config) {
 			continue
 		}
 
-		nodeStatusResp := rpcResp.GetNodeStatus()
+		nodeStatusResp := rpcResp.GetNodeStatusResponse()
 
 		results = append(results, nodeStatusResp)
 	}
@@ -35,7 +38,7 @@ func GetClusterStatus(cfg *config.Config) {
 	printTable(results)
 }
 
-func printTable(results []*dto.NodeStatus) {
+func printTable(results []*dto.NodeStatusResponse) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 
