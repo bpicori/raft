@@ -18,15 +18,13 @@ type EventManager struct {
 }
 
 func NewEventManager() *EventManager {
-	// Initialize timers in a stopped state or with a placeholder duration.
-	// They will be reset with actual durations when needed.
 	electionTimer := time.NewTimer(1 * time.Second)
 	if !electionTimer.Stop() {
-		<-electionTimer.C // Ensure channel is drained if Stop returns false
+		<-electionTimer.C
 	}
 	heartbeatTimer := time.NewTimer(1 * time.Second)
 	if !heartbeatTimer.Stop() {
-		<-heartbeatTimer.C // Ensure channel is drained if Stop returns false
+		<-heartbeatTimer.C
 	}
 
 	return &EventManager{

@@ -62,20 +62,16 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		}
 	case consts.NodeStatus:
 		if args := rpc.GetNodeStatusRequest(); args != nil {
-			fmt.Println("Received NodeStatusRequest")
 			ch := make(chan *dto.NodeStatusResponse)
-			fmt.Println("Sending NodeStatusResponse to channel")
 			eventManager.NodeStatusChan <- ch
-			fmt.Println("NodeStatusResponse sent to channel")
+
 			response := <-ch
-			fmt.Println("Received NodeStatusResponse from channel")
 			rpcResponse := &dto.RaftRPC{
 				Type: consts.NodeStatus.String(),
 				Args: &dto.RaftRPC_NodeStatusResponse{
 					NodeStatusResponse: response,
 				},
 			}
-			fmt.Println("Marshaling NodeStatusResponse")
 			data, err := proto.Marshal(rpcResponse)
 			if err != nil {
 				slog.Error("Error marshaling node status response", "error", err, "remote_addr", conn.RemoteAddr())

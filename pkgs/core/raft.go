@@ -12,6 +12,7 @@ import (
 	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
+	"bpicori/raft/pkgs/storage"
 	"bpicori/raft/pkgs/tcp"
 )
 
@@ -57,16 +58,19 @@ func NewServer() *Server {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	currentTerm, votedFor, logEntry, commitLength := loadPersistedState(config)
+	state, err := storage.LoadStateMachine(config.SelfID, config.PersistentFilePath)
+	if err != nil {
+		panic(fmt.Sprintf("Error loading state machine %v", err))
+	}
 	eventManager := events.NewEventManager()
 
 	s := &Server{
 		config:           config,
 		eventManager:     eventManager,
-		currentTerm:      currentTerm,  // should be fetched from persistent storage
-		votedFor:         votedFor,     // should be fetched from persistent storage
-		logEntry:         logEntry,     // should be fetched from persistent storage
-		commitLength:     commitLength, // should be fetched from persistent storage
+		currentTerm:      state.CurrentTerm,  // should be fetched from persistent storage
+		votedFor:         state.VotedFor,     // should be fetched from persistent storage
+		logEntry:         state.LogEntry,     // should be fetched from persistent storage
+		commitLength:     state.CommitLength, // should be fetched from persistent storage
 		currentRole:      Follower,
 		currentLeader:    "",
 		votesReceivedMap: sync.Map{},
@@ -99,14 +103,16 @@ func (s *Server) Stop() {
 }
 
 func (s *Server) PersistState() {
-	persistedState := ServerState{
+	persistedState := storage.StateMachineState{
+		ServerId:     s.config.SelfID,
+		Path:         s.config.PersistentFilePath,
 		CurrentTerm:  s.currentTerm,
 		VotedFor:     s.votedFor,
 		LogEntry:     s.logEntry,
 		CommitLength: s.commitLength,
 	}
 
-	err := persistedState.SaveToFile(s.config.SelfID, s.config.PersistentFilePath)
+	err := storage.PersistStateMachine(&persistedState)
 	if err != nil {
 		slog.Error("Error saving state to file", "error", err)
 	}
