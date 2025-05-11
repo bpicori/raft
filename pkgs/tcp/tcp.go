@@ -159,6 +159,38 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		} else {
 			slog.Warn("Received SetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
+	case consts.GetCommand:
+		if args := rpc.GetGetCommandRequest(); args != nil {
+			replyCh := make(chan *dto.GetCommandResponse)
+			eventManager.GetCommandRequestChan <- events.GetCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.GetCommand.String(),
+					Args: &dto.RaftRPC_GetCommandResponse{
+						GetCommandResponse: response,
+					},
+				}
+
+				data, err := proto.Marshal(rpcResponse)
+				if err != nil {
+					slog.Error("Error marshaling get command response", "error", err, "remote_addr", conn.RemoteAddr())
+					return
+				}
+
+				_, err = conn.Write(data)
+				if err != nil {
+					slog.Error("Error sending get command response", "error", err, "remote_addr", conn.RemoteAddr())
+					return
+				}
+			}
+		} else {
+			slog.Warn("Received GetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
 	default:
 		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())
 	}

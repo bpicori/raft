@@ -82,6 +82,14 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 		value := args[1]
 
 		SetCommand(cfg, key, value)
+	case "get":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for get operation\n")
+			showUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		GetCommand(cfg, key)
 	case "rm":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")

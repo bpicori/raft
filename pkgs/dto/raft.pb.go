@@ -788,6 +788,8 @@ type RaftRPC struct {
 	//	*RaftRPC_NodeStatusResponse
 	//	*RaftRPC_OkResponse
 	//	*RaftRPC_SetCommandRequest
+	//	*RaftRPC_GetCommandRequest
+	//	*RaftRPC_GetCommandResponse
 	Args          isRaftRPC_Args `protobuf_oneof:"args"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -909,6 +911,24 @@ func (x *RaftRPC) GetSetCommandRequest() *SetCommandRequest {
 	return nil
 }
 
+func (x *RaftRPC) GetGetCommandRequest() *GetCommandRequest {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_GetCommandRequest); ok {
+			return x.GetCommandRequest
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetGetCommandResponse() *GetCommandResponse {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_GetCommandResponse); ok {
+			return x.GetCommandResponse
+		}
+	}
+	return nil
+}
+
 type isRaftRPC_Args interface {
 	isRaftRPC_Args()
 }
@@ -945,6 +965,14 @@ type RaftRPC_SetCommandRequest struct {
 	SetCommandRequest *SetCommandRequest `protobuf:"bytes,9,opt,name=setCommandRequest,proto3,oneof"`
 }
 
+type RaftRPC_GetCommandRequest struct {
+	GetCommandRequest *GetCommandRequest `protobuf:"bytes,10,opt,name=getCommandRequest,proto3,oneof"`
+}
+
+type RaftRPC_GetCommandResponse struct {
+	GetCommandResponse *GetCommandResponse `protobuf:"bytes,11,opt,name=getCommandResponse,proto3,oneof"`
+}
+
 func (*RaftRPC_VoteRequest) isRaftRPC_Args() {}
 
 func (*RaftRPC_VoteResponse) isRaftRPC_Args() {}
@@ -960,6 +988,10 @@ func (*RaftRPC_NodeStatusResponse) isRaftRPC_Args() {}
 func (*RaftRPC_OkResponse) isRaftRPC_Args() {}
 
 func (*RaftRPC_SetCommandRequest) isRaftRPC_Args() {}
+
+func (*RaftRPC_GetCommandRequest) isRaftRPC_Args() {}
+
+func (*RaftRPC_GetCommandResponse) isRaftRPC_Args() {}
 
 type StateMachineState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1029,6 +1061,94 @@ func (x *StateMachineState) GetCommitLength() int32 {
 	return 0
 }
 
+type GetCommandRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCommandRequest) Reset() {
+	*x = GetCommandRequest{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCommandRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCommandRequest) ProtoMessage() {}
+
+func (x *GetCommandRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCommandRequest.ProtoReflect.Descriptor instead.
+func (*GetCommandRequest) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetCommandRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type GetCommandResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCommandResponse) Reset() {
+	*x = GetCommandResponse{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCommandResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCommandResponse) ProtoMessage() {}
+
+func (x *GetCommandResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCommandResponse.ProtoReflect.Descriptor instead.
+func (*GetCommandResponse) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetCommandResponse) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 var File_pkgs_dto_raft_proto protoreflect.FileDescriptor
 
 const file_pkgs_dto_raft_proto_rawDesc = "" +
@@ -1091,7 +1211,7 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"\x1c\n" +
 	"\n" +
 	"OkResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x8b\x04\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x9e\x05\n" +
 	"\aRaftRPC\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x124\n" +
 	"\vvoteRequest\x18\x02 \x01(\v2\x10.dto.VoteRequestH\x00R\vvoteRequest\x127\n" +
@@ -1105,13 +1225,20 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\n" +
 	"okResponse\x18\b \x01(\v2\x0f.dto.OkResponseH\x00R\n" +
 	"okResponse\x12F\n" +
-	"\x11setCommandRequest\x18\t \x01(\v2\x16.dto.SetCommandRequestH\x00R\x11setCommandRequestB\x06\n" +
+	"\x11setCommandRequest\x18\t \x01(\v2\x16.dto.SetCommandRequestH\x00R\x11setCommandRequest\x12F\n" +
+	"\x11getCommandRequest\x18\n" +
+	" \x01(\v2\x16.dto.GetCommandRequestH\x00R\x11getCommandRequest\x12I\n" +
+	"\x12getCommandResponse\x18\v \x01(\v2\x17.dto.GetCommandResponseH\x00R\x12getCommandResponseB\x06\n" +
 	"\x04args\"\xa4\x01\n" +
 	"\x11StateMachineState\x12!\n" +
 	"\fcurrent_term\x18\x01 \x01(\x05R\vcurrentTerm\x12\x1b\n" +
 	"\tvoted_for\x18\x02 \x01(\tR\bvotedFor\x12*\n" +
 	"\tlog_entry\x18\x03 \x03(\v2\r.dto.LogEntryR\blogEntry\x12#\n" +
-	"\rcommit_length\x18\x04 \x01(\x05R\fcommitLength*E\n" +
+	"\rcommit_length\x18\x04 \x01(\x05R\fcommitLength\"%\n" +
+	"\x11GetCommandRequest\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\"*\n" +
+	"\x12GetCommandResponse\x12\x14\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value*E\n" +
 	"\x10CommandOperation\x12\a\n" +
 	"\x03SET\x10\x00\x12\n" +
 	"\n" +
@@ -1133,7 +1260,7 @@ func file_pkgs_dto_raft_proto_rawDescGZIP() []byte {
 }
 
 var file_pkgs_dto_raft_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_pkgs_dto_raft_proto_goTypes = []any{
 	(CommandOperation)(0),      // 0: dto.CommandOperation
 	(*VoteRequest)(nil),        // 1: dto.VoteRequest
@@ -1149,6 +1276,8 @@ var file_pkgs_dto_raft_proto_goTypes = []any{
 	(*OkResponse)(nil),         // 11: dto.OkResponse
 	(*RaftRPC)(nil),            // 12: dto.RaftRPC
 	(*StateMachineState)(nil),  // 13: dto.StateMachineState
+	(*GetCommandRequest)(nil),  // 14: dto.GetCommandRequest
+	(*GetCommandResponse)(nil), // 15: dto.GetCommandResponse
 }
 var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	7,  // 0: dto.LogRequest.suffix:type_name -> dto.LogEntry
@@ -1164,12 +1293,14 @@ var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	6,  // 10: dto.RaftRPC.nodeStatusResponse:type_name -> dto.NodeStatusResponse
 	11, // 11: dto.RaftRPC.okResponse:type_name -> dto.OkResponse
 	10, // 12: dto.RaftRPC.setCommandRequest:type_name -> dto.SetCommandRequest
-	7,  // 13: dto.StateMachineState.log_entry:type_name -> dto.LogEntry
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	14, // 13: dto.RaftRPC.getCommandRequest:type_name -> dto.GetCommandRequest
+	15, // 14: dto.RaftRPC.getCommandResponse:type_name -> dto.GetCommandResponse
+	7,  // 15: dto.StateMachineState.log_entry:type_name -> dto.LogEntry
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_pkgs_dto_raft_proto_init() }
@@ -1189,6 +1320,8 @@ func file_pkgs_dto_raft_proto_init() {
 		(*RaftRPC_NodeStatusResponse)(nil),
 		(*RaftRPC_OkResponse)(nil),
 		(*RaftRPC_SetCommandRequest)(nil),
+		(*RaftRPC_GetCommandRequest)(nil),
+		(*RaftRPC_GetCommandResponse)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1196,7 +1329,7 @@ func file_pkgs_dto_raft_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkgs_dto_raft_proto_rawDesc), len(file_pkgs_dto_raft_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

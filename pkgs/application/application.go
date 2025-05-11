@@ -11,7 +11,26 @@ import (
 	"github.com/google/uuid"
 )
 
-func Start(eventManager *events.EventManager, ctx context.Context, wg *sync.WaitGroup) {
+var hashMap = sync.Map{}
+
+type ApplicationParam struct {
+	EventManager *events.EventManager
+	Context      context.Context
+	WaitGroup    *sync.WaitGroup
+	LogEntry     []*dto.LogEntry
+	CommitLength int32
+}
+
+func Start(param *ApplicationParam) {
+	eventManager := param.EventManager
+	ctx := param.Context
+	wg := param.WaitGroup
+
+	logEntry := param.LogEntry
+	commitLength := param.CommitLength
+
+	replicateLogEntry(logEntry, commitLength)
+
 	slog.Info("[APPLICATION] Starting application")
 
 	for {
@@ -46,11 +65,37 @@ func Start(eventManager *events.EventManager, ctx context.Context, wg *sync.Wait
 				case <-ch:
 					slog.Debug("[APPLICATION] Received response from append log entry", "uuid", uuid)
 					setCommandEvent.Reply <- &dto.OkResponse{Ok: true}
+					hashMap.Store(setCommandEvent.Payload.Key, setCommandEvent.Payload.Value)
 				case <-time.After(5 * time.Second):
 					slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
 					setCommandEvent.Reply <- &dto.OkResponse{Ok: false}
 				}
 			}()
+		case getCommandEvent := <-eventManager.GetCommandRequestChan:
+			slog.Debug("[APPLICATION] Received get command", "command", getCommandEvent.Payload)
+
+			value, ok := hashMap.Load(getCommandEvent.Payload.Key)
+			if !ok {
+				getCommandEvent.Reply <- &dto.GetCommandResponse{Value: ""}
+				continue
+			}
+
+			getCommandEvent.Reply <- &dto.GetCommandResponse{Value: value.(string)}
 		}
 	}
+}
+
+func replicateLogEntry(logEntry []*dto.LogEntry, commitLength int32) {
+
+	for i := 0; i < int(commitLength); i++ {
+		command := logEntry[i].Command
+		operation := command.Operation
+
+		switch operation {
+		case dto.CommandOperation_SET:
+			args := command.GetSetCommand()
+			hashMap.Store(args.Key, args.Value)
+		}
+	}
+
 }

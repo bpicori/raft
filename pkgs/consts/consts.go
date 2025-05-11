@@ -22,6 +22,7 @@ const (
 	LogResponse
 	NodeStatus
 	SetCommand
+	GetCommand
 	OkResponse
 )
 
@@ -40,6 +41,8 @@ func (rt RaftRPCType) String() string {
 		return "NodeStatus"
 	case SetCommand:
 		return "SetCommand"
+	case GetCommand:
+		return "GetCommand"
 	case OkResponse:
 		return "OkResponse"
 	default:
@@ -62,6 +65,8 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return NodeStatus, nil
 	case "SetCommand":
 		return SetCommand, nil
+	case "GetCommand":
+		return GetCommand, nil
 	case "OkResponse":
 		return OkResponse, nil
 	default:
@@ -82,3 +87,5 @@ func MapRoleToString(role Role) string {
 		return "Unknown"
 	}
 }
+
+

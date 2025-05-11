@@ -51,7 +51,14 @@ func main() {
 
 	// initialize application
 	wg.Add(1)
-	go application.Start(eventManager, ctx, &wg)
+	applicationParam := &application.ApplicationParam{
+		EventManager: eventManager,
+		Context:      ctx,
+		WaitGroup:    &wg,
+		LogEntry:     server.LogEntry,
+		CommitLength: server.CommitLength,
+	}
+	go application.Start(applicationParam)
 
 	// set up signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)

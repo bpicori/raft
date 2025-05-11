@@ -98,6 +98,8 @@ message RaftRPC {
     NodeStatusResponse nodeStatusResponse = 7;
     OkResponse okResponse = 8;
     SetCommandRequest setCommandRequest = 9;
+    GetCommandRequest getCommandRequest = 10;
+    GetCommandResponse getCommandResponse = 11;
   }
 }
 
@@ -107,3 +109,11 @@ message StateMachineState {
   repeated LogEntry log_entry = 3;
   int32 commit_length = 4;
 } 
+
+message GetCommandRequest {
+  string key = 1;
+}
+
+message GetCommandResponse {
+  string value = 1;
+}

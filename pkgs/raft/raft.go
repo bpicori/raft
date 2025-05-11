@@ -36,8 +36,8 @@ type Raft struct {
 	/* Fields that need to be persisted */
 	currentTerm  int32           // latest term server has seen
 	votedFor     string          // in election state, the candidateId that this server voted for
-	logEntry     []*dto.LogEntry // log entries
-	commitLength int32           // index of highest log entry known to be committed
+	LogEntry     []*dto.LogEntry // log entries
+	CommitLength int32           // index of highest log entry known to be committed
 	/* End of persisted fields */
 
 	/* Volatile state on all servers */
@@ -74,8 +74,8 @@ func NewRaft(
 		eventManager:     eventManager,
 		currentTerm:      state.CurrentTerm,  // should be fetched from persistent storage
 		votedFor:         state.VotedFor,     // should be fetched from persistent storage
-		logEntry:         state.LogEntry,     // should be fetched from persistent storage
-		commitLength:     state.CommitLength, // should be fetched from persistent storage
+		LogEntry:         state.LogEntry,     // should be fetched from persistent storage
+		CommitLength:     state.CommitLength, // should be fetched from persistent storage
 		currentRole:      Follower,
 		currentLeader:    "",
 		votesReceivedMap: sync.Map{},
@@ -92,8 +92,8 @@ func (s *Raft) PersistState() {
 	persistedState := dto.StateMachineState{
 		CurrentTerm:  s.currentTerm,
 		VotedFor:     s.votedFor,
-		LogEntry:     s.logEntry,
-		CommitLength: s.commitLength,
+		LogEntry:     s.LogEntry,
+		CommitLength: s.CommitLength,
 	}
 
 	err := storage.PersistStateMachine(s.config.SelfID, s.config.PersistentFilePath, &persistedState)
@@ -101,7 +101,7 @@ func (s *Raft) PersistState() {
 		slog.Error("Error saving state to file", "error", err)
 	}
 
-	slog.Info("State saved to file", "term", s.currentTerm, "votedFor", s.votedFor, "commitLength", s.commitLength)
+	slog.Info("State saved to file", "term", s.currentTerm, "votedFor", s.votedFor, "commitLength", s.CommitLength)
 }
 
 func (s *Raft) Start() {
@@ -185,8 +185,8 @@ func (s *Raft) runFollower() {
 				VotedFor:      s.votedFor,
 				CurrentRole:   consts.MapRoleToString(s.currentRole),
 				CurrentLeader: s.currentLeader,
-				CommitLength:  s.commitLength,
-				LogEntries:    s.logEntry,
+				CommitLength:  s.CommitLength,
+				LogEntries:    s.LogEntry,
 			}
 		}
 	}
@@ -196,8 +196,8 @@ func (s *Raft) runCandidate() {
 	votes := 1
 	majority := len(s.config.Servers)/2 + 1
 	lastTerm := int32(0)
-	if len(s.logEntry) > 0 {
-		lastTerm = s.logEntry[len(s.logEntry)-1].Term
+	if len(s.LogEntry) > 0 {
+		lastTerm = s.LogEntry[len(s.LogEntry)-1].Term
 	}
 
 	slog.Info("[CANDIDATE] Running...",
@@ -214,7 +214,7 @@ func (s *Raft) runCandidate() {
 					NodeId:       s.config.SelfID,
 					Term:         s.currentTerm,
 					CandidateId:  s.config.SelfID,
-					LastLogIndex: int32(len(s.logEntry)),
+					LastLogIndex: int32(len(s.LogEntry)),
 					LastLogTerm:  lastTerm,
 				},
 			},
@@ -268,8 +268,8 @@ func (s *Raft) runCandidate() {
 				VotedFor:      s.votedFor,
 				CurrentRole:   consts.MapRoleToString(s.currentRole),
 				CurrentLeader: s.currentLeader,
-				CommitLength:  s.commitLength,
-				LogEntries:    s.logEntry,
+				CommitLength:  s.CommitLength,
+				LogEntries:    s.LogEntry,
 			}
 		}
 	}
@@ -325,13 +325,13 @@ func (s *Raft) runLeader() {
 				Command: appendLogEntry.Command,
 				Uuid:    appendLogEntry.Uuid,
 			}
-			s.logEntry = append(s.logEntry, &logEntry)
+			s.LogEntry = append(s.LogEntry, &logEntry)
 
 			replyMap.mu.Lock()
 			replyMap.responses[appendLogEntry.Uuid] = appendLogEntry.Reply
 			replyMap.mu.Unlock()
 
-			s.ackedLength[s.config.SelfID] = int32(len(s.logEntry))
+			s.ackedLength[s.config.SelfID] = int32(len(s.LogEntry))
 			for _, follower := range s.otherServers() {
 				go s.replicateLog(s.config.SelfID, follower.ID)
 			}
@@ -343,8 +343,8 @@ func (s *Raft) runLeader() {
 				VotedFor:      s.votedFor,
 				CurrentRole:   consts.MapRoleToString(s.currentRole),
 				CurrentLeader: s.currentLeader,
-				CommitLength:  s.commitLength,
-				LogEntries:    s.logEntry,
+				CommitLength:  s.CommitLength,
+				LogEntries:    s.LogEntry,
 			}
 		}
 	}
@@ -373,11 +373,11 @@ func (s *Raft) onVoteRequest(requestVoteArgs *dto.VoteRequest) {
 
 	lastTerm := int32(0)
 
-	if len(s.logEntry) > 0 {
-		lastTerm = s.logEntry[len(s.logEntry)-1].Term
+	if len(s.LogEntry) > 0 {
+		lastTerm = s.LogEntry[len(s.LogEntry)-1].Term
 	}
 
-	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= int32(len(s.logEntry)))
+	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= int32(len(s.LogEntry)))
 
 	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
 		s.votedFor = cID
@@ -426,7 +426,7 @@ func (s *Raft) onVoteResponse(requestVoteReply *dto.VoteResponse) {
 			s.eventManager.StopElectionTimer()
 
 			for _, follower := range s.otherServers() {
-				s.sentLength[follower.ID] = int32(len(s.logEntry))
+				s.sentLength[follower.ID] = int32(len(s.LogEntry))
 				s.ackedLength[follower.ID] = 0
 				go s.replicateLog(s.config.SelfID, follower.ID)
 			}
@@ -459,7 +459,7 @@ func (s *Raft) onLogRequest(logRequest *dto.LogRequest) {
 		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
 
-	logOk := len(s.logEntry) >= int(prefixLength) && (prefixLength == 0 || s.logEntry[prefixLength-1].Term == prefixTerm)
+	logOk := len(s.LogEntry) >= int(prefixLength) && (prefixLength == 0 || s.LogEntry[prefixLength-1].Term == prefixTerm)
 
 	if term == s.currentTerm && logOk {
 		s.appendEntries(prefixLength, leaderCommit, suffix)
@@ -517,11 +517,11 @@ func (s *Raft) onLogResponse(logResponse *dto.LogResponse) {
 
 func (s *Raft) replicateLog(leaderId string, followerId string) {
 	prefixLength := s.sentLength[followerId]
-	suffix := s.logEntry[prefixLength:]
+	suffix := s.LogEntry[prefixLength:]
 
 	prefixTerm := int32(0)
 	if prefixLength > 0 {
-		prefixTerm = s.logEntry[prefixLength-1].Term
+		prefixTerm = s.LogEntry[prefixLength-1].Term
 	}
 
 	rpc := &dto.RaftRPC{
@@ -533,7 +533,7 @@ func (s *Raft) replicateLog(leaderId string, followerId string) {
 				PrefixLength: int32(prefixLength),
 				PrefixTerm:   prefixTerm,
 				Suffix:       suffix,
-				LeaderCommit: s.commitLength,
+				LeaderCommit: s.CommitLength,
 			},
 		},
 	}
@@ -542,45 +542,60 @@ func (s *Raft) replicateLog(leaderId string, followerId string) {
 
 func (s *Raft) appendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
 	suffixLength := int32(len(suffix))
-	logLength := int32(len(s.logEntry))
+	logLength := int32(len(s.LogEntry))
 
 	// discard conflicting log entries
 	if suffixLength > 0 && logLength > prefixLength {
 		index := math.Min(float64(logLength), float64(prefixLength+suffixLength)) - 1
-		logAtIndex := s.logEntry[int(index)] // last log entry in the prefix
+		logAtIndex := s.LogEntry[int(index)] // last log entry in the prefix
 		suffixTerm := suffix[int32(index)-prefixLength].Term
 
 		if logAtIndex.Term != suffixTerm {
-			s.logEntry = s.logEntry[:prefixLength]
+			s.LogEntry = s.LogEntry[:prefixLength]
 		}
 	}
 
 	// append new log entries if suffix is not empty
 	if (prefixLength + suffixLength) > logLength {
-		s.logEntry = append(s.logEntry, suffix...)
+		s.LogEntry = append(s.LogEntry, suffix...)
 	}
 
-	if leaderCommit > s.commitLength {
-		s.commitLength = leaderCommit
-		// TODO: deliver log entries to application (run the command to update the state)
+	if leaderCommit > s.CommitLength {
+		slog.Debug("[FOLLOWER] Leader commit is greater than follower commit", "leaderCommit", leaderCommit, "followerCommit", s.CommitLength)
+
+		// deliver log entries to application
+		for i := s.CommitLength; i < leaderCommit; i++ {
+			slog.Debug("[FOLLOWER] Delivering log entry to application", "logEntry", s.LogEntry[i])
+			replyMap.mu.Lock()
+			ch := replyMap.responses[s.LogEntry[i].Uuid]
+			if ch != nil {
+				ch <- true
+			} else {
+				slog.Warn("[FOLLOWER] No channel found for log entry", "logEntry", s.LogEntry[i], "uuid", s.LogEntry[i].Uuid)
+			}
+			replyMap.mu.Unlock()
+		}
+
+		s.CommitLength = leaderCommit
 	}
 }
 
 func (s *Raft) commitLogEntries() {
 	majority := len(s.config.Servers)/2 + 1
 
-	for s.commitLength < int32(len(s.logEntry)) {
+	for s.CommitLength < int32(len(s.LogEntry)) {
 		acks := 0
 		for _, follower := range s.otherServers() {
-			if s.ackedLength[follower.ID] >= s.commitLength {
+			if s.ackedLength[follower.ID] >= s.CommitLength {
 				acks++
 			}
 		}
 
 		if acks >= majority {
-			slog.Debug("[LEADER] Committing log entry", "logEntry", s.logEntry[s.commitLength])
+			slog.Debug("[LEADER] Committing log entry", "logEntry", s.LogEntry[s.CommitLength])
 
-			logEntry := s.logEntry[s.commitLength]
+			// deliver log entries to application
+			logEntry := s.LogEntry[s.CommitLength]
 			replyMap.mu.Lock()
 			ch := replyMap.responses[logEntry.Uuid]
 
@@ -591,7 +606,7 @@ func (s *Raft) commitLogEntries() {
 			}
 			delete(replyMap.responses, logEntry.Uuid)
 			replyMap.mu.Unlock()
-			s.commitLength = s.commitLength + 1
+			s.CommitLength = s.CommitLength + 1
 		} else {
 			break
 		}
