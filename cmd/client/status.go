@@ -46,7 +46,7 @@ func printTable(results []*dto.NodeStatusResponse) {
 	t.SetStyle(table.StyleRounded)
 
 	// Add table header
-	t.AppendHeader(table.Row{"Node ID", "Term", "Voted For", "Role", "Leader"})
+	t.AppendHeader(table.Row{"Node ID", "Term", "Voted For", "Role", "Leader", "Log Count", "Last Log Entry"})
 
 	// Add data rows
 	for _, result := range results {
@@ -56,7 +56,8 @@ func printTable(results []*dto.NodeStatusResponse) {
 			result.VotedFor,
 			result.CurrentRole,
 			result.CurrentLeader,
-			result.LogEntries,
+			len(result.LogEntries),
+			result.LogEntries[len(result.LogEntries)-1],
 		})
 	}
 

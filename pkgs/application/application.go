@@ -90,7 +90,7 @@ func Start(param *ApplicationParam) {
 }
 
 func replicateLogEntries(logEntry []*dto.LogEntry, commitLength int32) {
-	for i := 0; i < int(commitLength); i++ {
+	for i := range int(commitLength) {
 		replicateLogEntry(logEntry[i])
 	}
 }
