@@ -318,11 +318,12 @@ func (s *Raft) runLeader() {
 				return
 			}
 		case appendLogEntry := <-s.eventManager.AppendLogEntryChan:
-			slog.Info("[LEADER] Received {AppendLogEntry}", "command", appendLogEntry.Command, "uuid", appendLogEntry.Uuid)
+			slog.Debug("[LEADER] Received {AppendLogEntry}", "command", appendLogEntry.Command, "uuid", appendLogEntry.Uuid)
 
 			logEntry := dto.LogEntry{
 				Term:    s.currentTerm,
 				Command: appendLogEntry.Command,
+				Uuid:    appendLogEntry.Uuid,
 			}
 			s.logEntry = append(s.logEntry, &logEntry)
 
@@ -577,8 +578,7 @@ func (s *Raft) commitLogEntries() {
 		}
 
 		if acks >= majority {
-			// TODO: deliver log entries to application
-			slog.Info("[LEADER] Committing log entry", "logEntry", s.logEntry[s.commitLength])
+			slog.Debug("[LEADER] Committing log entry", "logEntry", s.logEntry[s.commitLength])
 
 			logEntry := s.logEntry[s.commitLength]
 			replyMap.mu.Lock()

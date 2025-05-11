@@ -6,6 +6,7 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -20,8 +21,7 @@ func Start(eventManager *events.EventManager, ctx context.Context, wg *sync.Wait
 			wg.Done()
 			return
 		case setCommandEvent := <-eventManager.SetCommandRequestChan:
-			slog.Info("[APPLICATION] Received set command", "command", setCommandEvent.Payload)
-			// TODO: implement set command
+			slog.Debug("[APPLICATION] Received set command", "command", setCommandEvent.Payload)
 
 			uuid := uuid.New().String()
 			ch := make(chan bool)
@@ -41,7 +41,16 @@ func Start(eventManager *events.EventManager, ctx context.Context, wg *sync.Wait
 			}
 			eventManager.AppendLogEntryChan <- appendLogEntryEvent
 
-			setCommandEvent.Reply <- &dto.OkResponse{Ok: true}
+			go func() {
+				select {
+				case <-ch:
+					slog.Debug("[APPLICATION] Received response from append log entry", "uuid", uuid)
+					setCommandEvent.Reply <- &dto.OkResponse{Ok: true}
+				case <-time.After(5 * time.Second):
+					slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
+					setCommandEvent.Reply <- &dto.OkResponse{Ok: false}
+				}
+			}()
 		}
 	}
 }
