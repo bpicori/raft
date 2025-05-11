@@ -11,7 +11,7 @@ type EventManager struct {
 	VoteResponseChan   chan *dto.VoteResponse
 	LogRequestChan     chan *dto.LogRequest
 	LogResponseChan    chan *dto.LogResponse
-	NodeStatusChan     chan chan *dto.NodeStatusResponse
+	NodeStatusChan     chan NodeStatusEvent
 	AppendLogEntryChan chan AppendLogEntryEvent
 	/* Raft Timers */
 	ElectionTimer  *time.Timer
@@ -37,6 +37,10 @@ type SyncCommandEvent struct {
 	LogEntry *dto.LogEntry
 }
 
+type NodeStatusEvent struct {
+	Reply chan *dto.NodeStatusResponse
+}
+
 type AppendLogEntryEvent struct {
 	Command *dto.Command
 	Uuid    string
@@ -58,7 +62,7 @@ func NewEventManager() *EventManager {
 		VoteResponseChan:   make(chan *dto.VoteResponse),
 		LogRequestChan:     make(chan *dto.LogRequest),
 		LogResponseChan:    make(chan *dto.LogResponse),
-		NodeStatusChan:     make(chan chan *dto.NodeStatusResponse),
+		NodeStatusChan:     make(chan NodeStatusEvent),
 		AppendLogEntryChan: make(chan AppendLogEntryEvent),
 		ElectionTimer:      electionTimer,
 		HeartbeatTimer:     heartbeatTimer,

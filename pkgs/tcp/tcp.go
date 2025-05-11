@@ -105,7 +105,9 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 	case consts.NodeStatus:
 		if args := rpc.GetNodeStatusRequest(); args != nil {
 			ch := make(chan *dto.NodeStatusResponse)
-			eventManager.NodeStatusChan <- ch
+			eventManager.NodeStatusChan <- events.NodeStatusEvent{
+				Reply: ch,
+			}
 
 			response := <-ch
 			rpcResponse := &dto.RaftRPC{
@@ -114,16 +116,7 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 					NodeStatusResponse: response,
 				},
 			}
-			data, err := proto.Marshal(rpcResponse)
-			if err != nil {
-				slog.Error("Error marshaling node status response", "error", err, "remote_addr", conn.RemoteAddr())
-				return
-			}
-			_, err = conn.Write(data)
-			if err != nil {
-				slog.Error("Error sending node status response", "error", err, "remote_addr", conn.RemoteAddr())
-				return
-			}
+			sendResponse(conn, rpcResponse)
 		} else {
 			slog.Warn("Received NodeStatus with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
@@ -143,18 +136,7 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 						OkResponse: response,
 					},
 				}
-
-				data, err := proto.Marshal(rpcResponse)
-				if err != nil {
-					slog.Error("Error marshaling ok response", "error", err, "remote_addr", conn.RemoteAddr())
-					return
-				}
-
-				_, err = conn.Write(data)
-				if err != nil {
-					slog.Error("Error sending ok response", "error", err, "remote_addr", conn.RemoteAddr())
-					return
-				}
+				sendResponse(conn, rpcResponse)
 			}
 		} else {
 			slog.Warn("Received SetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
@@ -175,18 +157,7 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 						GetCommandResponse: response,
 					},
 				}
-
-				data, err := proto.Marshal(rpcResponse)
-				if err != nil {
-					slog.Error("Error marshaling get command response", "error", err, "remote_addr", conn.RemoteAddr())
-					return
-				}
-
-				_, err = conn.Write(data)
-				if err != nil {
-					slog.Error("Error sending get command response", "error", err, "remote_addr", conn.RemoteAddr())
-					return
-				}
+				sendResponse(conn, rpcResponse)
 			}
 		} else {
 			slog.Warn("Received GetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
@@ -253,4 +224,17 @@ func SendSyncRPC(addr string, request *dto.RaftRPC) (*dto.RaftRPC, error) {
 	}
 
 	return &response, nil
+}
+
+// sendResponse marshals and sends an RPC response to the client.
+func sendResponse(conn net.Conn, rpcResponse *dto.RaftRPC) {
+	data, err := proto.Marshal(rpcResponse)
+	if err != nil {
+		slog.Error("Error marshaling response", "error", err, "remote_addr", conn.RemoteAddr())
+		return
+	}
+	_, err = conn.Write(data)
+	if err != nil {
+		slog.Error("Error sending response", "error", err, "remote_addr", conn.RemoteAddr())
+	}
 }

@@ -178,8 +178,8 @@ func (s *Raft) runFollower() {
 			slog.Info("[FOLLOWER] Election timeout from Follower state, starting new election")
 			s.startElection()
 			return
-		case replyCh := <-s.eventManager.NodeStatusChan:
-			replyCh <- &dto.NodeStatusResponse{
+		case nodeStatusEvent := <-s.eventManager.NodeStatusChan:
+			nodeStatusEvent.Reply <- &dto.NodeStatusResponse{
 				NodeId:        s.config.SelfID,
 				CurrentTerm:   s.currentTerm,
 				VotedFor:      s.votedFor,
@@ -261,8 +261,8 @@ func (s *Raft) runCandidate() {
 				return
 			}
 
-		case replyCh := <-s.eventManager.NodeStatusChan:
-			replyCh <- &dto.NodeStatusResponse{
+		case nodeStatusEvent := <-s.eventManager.NodeStatusChan:
+			nodeStatusEvent.Reply <- &dto.NodeStatusResponse{
 				NodeId:        s.config.SelfID,
 				CurrentTerm:   s.currentTerm,
 				VotedFor:      s.votedFor,
@@ -336,8 +336,8 @@ func (s *Raft) runLeader() {
 				go s.replicateLog(s.config.SelfID, follower.ID)
 			}
 			s.eventManager.ResetHeartbeatTimer(time.Duration(s.config.Heartbeat) * time.Millisecond)
-		case replyCh := <-s.eventManager.NodeStatusChan:
-			replyCh <- &dto.NodeStatusResponse{
+		case nodeStatusEvent := <-s.eventManager.NodeStatusChan:
+			nodeStatusEvent.Reply <- &dto.NodeStatusResponse{
 				NodeId:        s.config.SelfID,
 				CurrentTerm:   s.currentTerm,
 				VotedFor:      s.votedFor,
