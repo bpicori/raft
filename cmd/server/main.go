@@ -9,6 +9,7 @@ import (
 	"sync"
 	"syscall"
 
+	"bpicori/raft/pkgs/application"
 	"bpicori/raft/pkgs/config"
 	"bpicori/raft/pkgs/events"
 	"bpicori/raft/pkgs/logger"
@@ -30,7 +31,7 @@ func main() {
 	// initialize event manager
 	eventManager := events.NewEventManager()
 
-	// initialize lifecycle 
+	// initialize lifecycle
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
 
@@ -47,6 +48,10 @@ func main() {
 	// initialize tcp server
 	wg.Add(1)
 	go tcp.Start(config.SelfServer.Addr, eventManager, ctx, &wg)
+
+	// initialize application
+	wg.Add(1)
+	go application.Start(eventManager, ctx, &wg)
 
 	// set up signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)

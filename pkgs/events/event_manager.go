@@ -6,15 +6,31 @@ import (
 )
 
 type EventManager struct {
-	VoteRequestChan  chan *dto.VoteRequest
-	VoteResponseChan chan *dto.VoteResponse
-	LogRequestChan   chan *dto.LogRequest
-	LogResponseChan  chan *dto.LogResponse
-	SetCommandChan   chan *dto.SetCommandRequest
-	NodeStatusChan   chan chan *dto.NodeStatusResponse
-
+	/* Raft */
+	VoteRequestChan    chan *dto.VoteRequest
+	VoteResponseChan   chan *dto.VoteResponse
+	LogRequestChan     chan *dto.LogRequest
+	LogResponseChan    chan *dto.LogResponse
+	NodeStatusChan     chan chan *dto.NodeStatusResponse
+	AppendLogEntryChan chan AppendLogEntryEvent
+	/* Raft Timers */
 	ElectionTimer  *time.Timer
 	HeartbeatTimer *time.Timer
+
+	/* Application */
+	LogEntryCommittedChan chan *dto.LogEntry
+	SetCommandRequestChan chan SetCommandEvent
+}
+
+type SetCommandEvent struct {
+	Payload *dto.SetCommandRequest
+	Reply   chan *dto.OkResponse
+}
+
+type AppendLogEntryEvent struct {
+	Command *dto.Command
+	Uuid    string
+	Reply   chan bool
 }
 
 func NewEventManager() *EventManager {
@@ -28,14 +44,18 @@ func NewEventManager() *EventManager {
 	}
 
 	return &EventManager{
-		VoteRequestChan:  make(chan *dto.VoteRequest),
-		VoteResponseChan: make(chan *dto.VoteResponse),
-		LogRequestChan:   make(chan *dto.LogRequest),
-		LogResponseChan:  make(chan *dto.LogResponse),
-		SetCommandChan:   make(chan *dto.SetCommandRequest),
-		NodeStatusChan:   make(chan chan *dto.NodeStatusResponse),
-		ElectionTimer:    electionTimer,
-		HeartbeatTimer:   heartbeatTimer,
+		VoteRequestChan:    make(chan *dto.VoteRequest),
+		VoteResponseChan:   make(chan *dto.VoteResponse),
+		LogRequestChan:     make(chan *dto.LogRequest),
+		LogResponseChan:    make(chan *dto.LogResponse),
+		NodeStatusChan:     make(chan chan *dto.NodeStatusResponse),
+		AppendLogEntryChan: make(chan AppendLogEntryEvent),
+		ElectionTimer:      electionTimer,
+		HeartbeatTimer:     heartbeatTimer,
+
+		/* Application */
+		LogEntryCommittedChan: make(chan *dto.LogEntry),
+		SetCommandRequestChan: make(chan SetCommandEvent),
 	}
 }
 
@@ -80,7 +100,10 @@ func (el *EventManager) Close() {
 	close(el.VoteResponseChan)
 	close(el.LogRequestChan)
 	close(el.LogResponseChan)
-	close(el.SetCommandChan)
+	close(el.NodeStatusChan)
+	close(el.AppendLogEntryChan)
+	close(el.SetCommandRequestChan)
+	close(el.LogEntryCommittedChan)
 
 	if el.ElectionTimer != nil {
 		el.ElectionTimer.Stop()

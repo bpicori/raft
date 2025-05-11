@@ -21,192 +21,57 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Define RPC messages
-type RaftRPC struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Type  string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	// Types that are valid to be assigned to Args:
-	//
-	//	*RaftRPC_VoteRequest
-	//	*RaftRPC_VoteResponse
-	//	*RaftRPC_LogRequest
-	//	*RaftRPC_LogResponse
-	//	*RaftRPC_NodeStatusRequest
-	//	*RaftRPC_NodeStatusResponse
-	//	*RaftRPC_SetCommandRequest
-	//	*RaftRPC_OkResponse
-	Args          isRaftRPC_Args `protobuf_oneof:"args"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
+type CommandOperation int32
 
-func (x *RaftRPC) Reset() {
-	*x = RaftRPC{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
+const (
+	CommandOperation_SET       CommandOperation = 0
+	CommandOperation_DELETE    CommandOperation = 1
+	CommandOperation_INCREMENT CommandOperation = 2
+	CommandOperation_DECREMENT CommandOperation = 3
+)
 
-func (x *RaftRPC) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RaftRPC) ProtoMessage() {}
-
-func (x *RaftRPC) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+// Enum value maps for CommandOperation.
+var (
+	CommandOperation_name = map[int32]string{
+		0: "SET",
+		1: "DELETE",
+		2: "INCREMENT",
+		3: "DECREMENT",
 	}
-	return mi.MessageOf(x)
+	CommandOperation_value = map[string]int32{
+		"SET":       0,
+		"DELETE":    1,
+		"INCREMENT": 2,
+		"DECREMENT": 3,
+	}
+)
+
+func (x CommandOperation) Enum() *CommandOperation {
+	p := new(CommandOperation)
+	*p = x
+	return p
 }
 
-// Deprecated: Use RaftRPC.ProtoReflect.Descriptor instead.
-func (*RaftRPC) Descriptor() ([]byte, []int) {
+func (x CommandOperation) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CommandOperation) Descriptor() protoreflect.EnumDescriptor {
+	return file_pkgs_dto_raft_proto_enumTypes[0].Descriptor()
+}
+
+func (CommandOperation) Type() protoreflect.EnumType {
+	return &file_pkgs_dto_raft_proto_enumTypes[0]
+}
+
+func (x CommandOperation) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CommandOperation.Descriptor instead.
+func (CommandOperation) EnumDescriptor() ([]byte, []int) {
 	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{0}
 }
-
-func (x *RaftRPC) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *RaftRPC) GetArgs() isRaftRPC_Args {
-	if x != nil {
-		return x.Args
-	}
-	return nil
-}
-
-func (x *RaftRPC) GetVoteRequest() *VoteRequest {
-	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_VoteRequest); ok {
-			return x.VoteRequest
-		}
-	}
-	return nil
-}
-
-func (x *RaftRPC) GetVoteResponse() *VoteResponse {
-	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_VoteResponse); ok {
-			return x.VoteResponse
-		}
-	}
-	return nil
-}
-
-func (x *RaftRPC) GetLogRequest() *LogRequest {
-	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_LogRequest); ok {
-			return x.LogRequest
-		}
-	}
-	return nil
-}
-
-func (x *RaftRPC) GetLogResponse() *LogResponse {
-	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_LogResponse); ok {
-			return x.LogResponse
-		}
-	}
-	return nil
-}
-
-func (x *RaftRPC) GetNodeStatusRequest() *NodeStatusRequest {
-	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_NodeStatusRequest); ok {
-			return x.NodeStatusRequest
-		}
-	}
-	return nil
-}
-
-func (x *RaftRPC) GetNodeStatusResponse() *NodeStatusResponse {
-	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_NodeStatusResponse); ok {
-			return x.NodeStatusResponse
-		}
-	}
-	return nil
-}
-
-func (x *RaftRPC) GetSetCommandRequest() *SetCommandRequest {
-	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_SetCommandRequest); ok {
-			return x.SetCommandRequest
-		}
-	}
-	return nil
-}
-
-func (x *RaftRPC) GetOkResponse() *OkResponse {
-	if x != nil {
-		if x, ok := x.Args.(*RaftRPC_OkResponse); ok {
-			return x.OkResponse
-		}
-	}
-	return nil
-}
-
-type isRaftRPC_Args interface {
-	isRaftRPC_Args()
-}
-
-type RaftRPC_VoteRequest struct {
-	VoteRequest *VoteRequest `protobuf:"bytes,2,opt,name=voteRequest,proto3,oneof"`
-}
-
-type RaftRPC_VoteResponse struct {
-	VoteResponse *VoteResponse `protobuf:"bytes,3,opt,name=voteResponse,proto3,oneof"`
-}
-
-type RaftRPC_LogRequest struct {
-	LogRequest *LogRequest `protobuf:"bytes,4,opt,name=logRequest,proto3,oneof"`
-}
-
-type RaftRPC_LogResponse struct {
-	LogResponse *LogResponse `protobuf:"bytes,5,opt,name=logResponse,proto3,oneof"`
-}
-
-type RaftRPC_NodeStatusRequest struct {
-	NodeStatusRequest *NodeStatusRequest `protobuf:"bytes,6,opt,name=nodeStatusRequest,proto3,oneof"`
-}
-
-type RaftRPC_NodeStatusResponse struct {
-	NodeStatusResponse *NodeStatusResponse `protobuf:"bytes,7,opt,name=nodeStatusResponse,proto3,oneof"`
-}
-
-type RaftRPC_SetCommandRequest struct {
-	SetCommandRequest *SetCommandRequest `protobuf:"bytes,8,opt,name=setCommandRequest,proto3,oneof"`
-}
-
-type RaftRPC_OkResponse struct {
-	OkResponse *OkResponse `protobuf:"bytes,9,opt,name=okResponse,proto3,oneof"`
-}
-
-func (*RaftRPC_VoteRequest) isRaftRPC_Args() {}
-
-func (*RaftRPC_VoteResponse) isRaftRPC_Args() {}
-
-func (*RaftRPC_LogRequest) isRaftRPC_Args() {}
-
-func (*RaftRPC_LogResponse) isRaftRPC_Args() {}
-
-func (*RaftRPC_NodeStatusRequest) isRaftRPC_Args() {}
-
-func (*RaftRPC_NodeStatusResponse) isRaftRPC_Args() {}
-
-func (*RaftRPC_SetCommandRequest) isRaftRPC_Args() {}
-
-func (*RaftRPC_OkResponse) isRaftRPC_Args() {}
 
 type VoteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -221,7 +86,7 @@ type VoteRequest struct {
 
 func (x *VoteRequest) Reset() {
 	*x = VoteRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[1]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -233,7 +98,7 @@ func (x *VoteRequest) String() string {
 func (*VoteRequest) ProtoMessage() {}
 
 func (x *VoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[1]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -246,7 +111,7 @@ func (x *VoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VoteRequest.ProtoReflect.Descriptor instead.
 func (*VoteRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{1}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *VoteRequest) GetNodeId() string {
@@ -295,7 +160,7 @@ type VoteResponse struct {
 
 func (x *VoteResponse) Reset() {
 	*x = VoteResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[2]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -307,7 +172,7 @@ func (x *VoteResponse) String() string {
 func (*VoteResponse) ProtoMessage() {}
 
 func (x *VoteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[2]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -320,7 +185,7 @@ func (x *VoteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VoteResponse.ProtoReflect.Descriptor instead.
 func (*VoteResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{2}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *VoteResponse) GetNodeId() string {
@@ -344,118 +209,6 @@ func (x *VoteResponse) GetVoteGranted() bool {
 	return false
 }
 
-type Command struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Operation     string                 `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
-	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Command) Reset() {
-	*x = Command{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Command) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Command) ProtoMessage() {}
-
-func (x *Command) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Command.ProtoReflect.Descriptor instead.
-func (*Command) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *Command) GetOperation() string {
-	if x != nil {
-		return x.Operation
-	}
-	return ""
-}
-
-func (x *Command) GetKey() string {
-	if x != nil {
-		return x.Key
-	}
-	return ""
-}
-
-func (x *Command) GetValue() string {
-	if x != nil {
-		return x.Value
-	}
-	return ""
-}
-
-type LogEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Term          int32                  `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
-	Command       *Command               `protobuf:"bytes,2,opt,name=command,proto3" json:"command,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LogEntry) Reset() {
-	*x = LogEntry{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LogEntry) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LogEntry) ProtoMessage() {}
-
-func (x *LogEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LogEntry.ProtoReflect.Descriptor instead.
-func (*LogEntry) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *LogEntry) GetTerm() int32 {
-	if x != nil {
-		return x.Term
-	}
-	return 0
-}
-
-func (x *LogEntry) GetCommand() *Command {
-	if x != nil {
-		return x.Command
-	}
-	return nil
-}
-
 type LogRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LeaderId      string                 `protobuf:"bytes,1,opt,name=leaderId,proto3" json:"leaderId,omitempty"`
@@ -470,7 +223,7 @@ type LogRequest struct {
 
 func (x *LogRequest) Reset() {
 	*x = LogRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[5]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -482,7 +235,7 @@ func (x *LogRequest) String() string {
 func (*LogRequest) ProtoMessage() {}
 
 func (x *LogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[5]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -495,7 +248,7 @@ func (x *LogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogRequest.ProtoReflect.Descriptor instead.
 func (*LogRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{5}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *LogRequest) GetLeaderId() string {
@@ -552,7 +305,7 @@ type LogResponse struct {
 
 func (x *LogResponse) Reset() {
 	*x = LogResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[6]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -564,7 +317,7 @@ func (x *LogResponse) String() string {
 func (*LogResponse) ProtoMessage() {}
 
 func (x *LogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[6]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,7 +330,7 @@ func (x *LogResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogResponse.ProtoReflect.Descriptor instead.
 func (*LogResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{6}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *LogResponse) GetFollowerId() string {
@@ -616,7 +369,7 @@ type NodeStatusRequest struct {
 
 func (x *NodeStatusRequest) Reset() {
 	*x = NodeStatusRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[7]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -628,7 +381,7 @@ func (x *NodeStatusRequest) String() string {
 func (*NodeStatusRequest) ProtoMessage() {}
 
 func (x *NodeStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[7]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -641,7 +394,7 @@ func (x *NodeStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeStatusRequest.ProtoReflect.Descriptor instead.
 func (*NodeStatusRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{7}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{4}
 }
 
 type NodeStatusResponse struct {
@@ -659,7 +412,7 @@ type NodeStatusResponse struct {
 
 func (x *NodeStatusResponse) Reset() {
 	*x = NodeStatusResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[8]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -671,7 +424,7 @@ func (x *NodeStatusResponse) String() string {
 func (*NodeStatusResponse) ProtoMessage() {}
 
 func (x *NodeStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[8]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +437,7 @@ func (x *NodeStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeStatusResponse.ProtoReflect.Descriptor instead.
 func (*NodeStatusResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{8}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *NodeStatusResponse) GetNodeId() string {
@@ -736,6 +489,194 @@ func (x *NodeStatusResponse) GetLogEntries() []*LogEntry {
 	return nil
 }
 
+// Log Entry
+type LogEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Term          int32                  `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	Uuid          string                 `protobuf:"bytes,2,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	Command       *Command               `protobuf:"bytes,3,opt,name=command,proto3" json:"command,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogEntry) Reset() {
+	*x = LogEntry{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogEntry) ProtoMessage() {}
+
+func (x *LogEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogEntry.ProtoReflect.Descriptor instead.
+func (*LogEntry) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *LogEntry) GetTerm() int32 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *LogEntry) GetUuid() string {
+	if x != nil {
+		return x.Uuid
+	}
+	return ""
+}
+
+func (x *LogEntry) GetCommand() *Command {
+	if x != nil {
+		return x.Command
+	}
+	return nil
+}
+
+type Command struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Operation CommandOperation       `protobuf:"varint,1,opt,name=operation,proto3,enum=dto.CommandOperation" json:"operation,omitempty"`
+	// Types that are valid to be assigned to Args:
+	//
+	//	*Command_SetCommand
+	Args          isCommand_Args `protobuf_oneof:"args"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Command) Reset() {
+	*x = Command{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Command) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command) ProtoMessage() {}
+
+func (x *Command) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command.ProtoReflect.Descriptor instead.
+func (*Command) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Command) GetOperation() CommandOperation {
+	if x != nil {
+		return x.Operation
+	}
+	return CommandOperation_SET
+}
+
+func (x *Command) GetArgs() isCommand_Args {
+	if x != nil {
+		return x.Args
+	}
+	return nil
+}
+
+func (x *Command) GetSetCommand() *SetCommand {
+	if x != nil {
+		if x, ok := x.Args.(*Command_SetCommand); ok {
+			return x.SetCommand
+		}
+	}
+	return nil
+}
+
+type isCommand_Args interface {
+	isCommand_Args()
+}
+
+type Command_SetCommand struct {
+	SetCommand *SetCommand `protobuf:"bytes,2,opt,name=setCommand,proto3,oneof"`
+}
+
+func (*Command_SetCommand) isCommand_Args() {}
+
+type SetCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetCommand) Reset() {
+	*x = SetCommand{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetCommand) ProtoMessage() {}
+
+func (x *SetCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetCommand.ProtoReflect.Descriptor instead.
+func (*SetCommand) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SetCommand) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *SetCommand) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+// Application
 type SetCommandRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -832,26 +773,199 @@ func (x *OkResponse) GetOk() bool {
 	return false
 }
 
+// Raft RPC
+// All the messages that are received from outside in TCP
+type RaftRPC struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Type  string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// Types that are valid to be assigned to Args:
+	//
+	//	*RaftRPC_VoteRequest
+	//	*RaftRPC_VoteResponse
+	//	*RaftRPC_LogRequest
+	//	*RaftRPC_LogResponse
+	//	*RaftRPC_NodeStatusRequest
+	//	*RaftRPC_NodeStatusResponse
+	//	*RaftRPC_OkResponse
+	//	*RaftRPC_SetCommandRequest
+	Args          isRaftRPC_Args `protobuf_oneof:"args"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RaftRPC) Reset() {
+	*x = RaftRPC{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RaftRPC) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RaftRPC) ProtoMessage() {}
+
+func (x *RaftRPC) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RaftRPC.ProtoReflect.Descriptor instead.
+func (*RaftRPC) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RaftRPC) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *RaftRPC) GetArgs() isRaftRPC_Args {
+	if x != nil {
+		return x.Args
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetVoteRequest() *VoteRequest {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_VoteRequest); ok {
+			return x.VoteRequest
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetVoteResponse() *VoteResponse {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_VoteResponse); ok {
+			return x.VoteResponse
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetLogRequest() *LogRequest {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_LogRequest); ok {
+			return x.LogRequest
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetLogResponse() *LogResponse {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_LogResponse); ok {
+			return x.LogResponse
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetNodeStatusRequest() *NodeStatusRequest {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_NodeStatusRequest); ok {
+			return x.NodeStatusRequest
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetNodeStatusResponse() *NodeStatusResponse {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_NodeStatusResponse); ok {
+			return x.NodeStatusResponse
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetOkResponse() *OkResponse {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_OkResponse); ok {
+			return x.OkResponse
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetSetCommandRequest() *SetCommandRequest {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_SetCommandRequest); ok {
+			return x.SetCommandRequest
+		}
+	}
+	return nil
+}
+
+type isRaftRPC_Args interface {
+	isRaftRPC_Args()
+}
+
+type RaftRPC_VoteRequest struct {
+	VoteRequest *VoteRequest `protobuf:"bytes,2,opt,name=voteRequest,proto3,oneof"`
+}
+
+type RaftRPC_VoteResponse struct {
+	VoteResponse *VoteResponse `protobuf:"bytes,3,opt,name=voteResponse,proto3,oneof"`
+}
+
+type RaftRPC_LogRequest struct {
+	LogRequest *LogRequest `protobuf:"bytes,4,opt,name=logRequest,proto3,oneof"`
+}
+
+type RaftRPC_LogResponse struct {
+	LogResponse *LogResponse `protobuf:"bytes,5,opt,name=logResponse,proto3,oneof"`
+}
+
+type RaftRPC_NodeStatusRequest struct {
+	NodeStatusRequest *NodeStatusRequest `protobuf:"bytes,6,opt,name=nodeStatusRequest,proto3,oneof"`
+}
+
+type RaftRPC_NodeStatusResponse struct {
+	NodeStatusResponse *NodeStatusResponse `protobuf:"bytes,7,opt,name=nodeStatusResponse,proto3,oneof"`
+}
+
+type RaftRPC_OkResponse struct {
+	OkResponse *OkResponse `protobuf:"bytes,8,opt,name=okResponse,proto3,oneof"`
+}
+
+type RaftRPC_SetCommandRequest struct {
+	SetCommandRequest *SetCommandRequest `protobuf:"bytes,9,opt,name=setCommandRequest,proto3,oneof"`
+}
+
+func (*RaftRPC_VoteRequest) isRaftRPC_Args() {}
+
+func (*RaftRPC_VoteResponse) isRaftRPC_Args() {}
+
+func (*RaftRPC_LogRequest) isRaftRPC_Args() {}
+
+func (*RaftRPC_LogResponse) isRaftRPC_Args() {}
+
+func (*RaftRPC_NodeStatusRequest) isRaftRPC_Args() {}
+
+func (*RaftRPC_NodeStatusResponse) isRaftRPC_Args() {}
+
+func (*RaftRPC_OkResponse) isRaftRPC_Args() {}
+
+func (*RaftRPC_SetCommandRequest) isRaftRPC_Args() {}
+
 var File_pkgs_dto_raft_proto protoreflect.FileDescriptor
 
 const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\n" +
-	"\x13pkgs/dto/raft.proto\x12\x03dto\"\x8b\x04\n" +
-	"\aRaftRPC\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x124\n" +
-	"\vvoteRequest\x18\x02 \x01(\v2\x10.dto.VoteRequestH\x00R\vvoteRequest\x127\n" +
-	"\fvoteResponse\x18\x03 \x01(\v2\x11.dto.VoteResponseH\x00R\fvoteResponse\x121\n" +
-	"\n" +
-	"logRequest\x18\x04 \x01(\v2\x0f.dto.LogRequestH\x00R\n" +
-	"logRequest\x124\n" +
-	"\vlogResponse\x18\x05 \x01(\v2\x10.dto.LogResponseH\x00R\vlogResponse\x12F\n" +
-	"\x11nodeStatusRequest\x18\x06 \x01(\v2\x16.dto.NodeStatusRequestH\x00R\x11nodeStatusRequest\x12I\n" +
-	"\x12nodeStatusResponse\x18\a \x01(\v2\x17.dto.NodeStatusResponseH\x00R\x12nodeStatusResponse\x12F\n" +
-	"\x11setCommandRequest\x18\b \x01(\v2\x16.dto.SetCommandRequestH\x00R\x11setCommandRequest\x121\n" +
-	"\n" +
-	"okResponse\x18\t \x01(\v2\x0f.dto.OkResponseH\x00R\n" +
-	"okResponseB\x06\n" +
-	"\x04args\"\xa1\x01\n" +
+	"\x13pkgs/dto/raft.proto\x12\x03dto\"\xa1\x01\n" +
 	"\vVoteRequest\x12\x16\n" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x05R\x04term\x12 \n" +
@@ -861,14 +975,7 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\fVoteResponse\x12\x16\n" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x05R\x04term\x12 \n" +
-	"\vvoteGranted\x18\x03 \x01(\bR\vvoteGranted\"O\n" +
-	"\aCommand\x12\x1c\n" +
-	"\toperation\x18\x01 \x01(\tR\toperation\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05value\"F\n" +
-	"\bLogEntry\x12\x12\n" +
-	"\x04term\x18\x01 \x01(\x05R\x04term\x12&\n" +
-	"\acommand\x18\x02 \x01(\v2\f.dto.CommandR\acommand\"\xcb\x01\n" +
+	"\vvoteGranted\x18\x03 \x01(\bR\vvoteGranted\"\xcb\x01\n" +
 	"\n" +
 	"LogRequest\x12\x1a\n" +
 	"\bleaderId\x18\x01 \x01(\tR\bleaderId\x12\x12\n" +
@@ -896,13 +1003,48 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\fcommitLength\x18\x06 \x01(\x05R\fcommitLength\x12-\n" +
 	"\n" +
 	"logEntries\x18\a \x03(\v2\r.dto.LogEntryR\n" +
-	"logEntries\";\n" +
+	"logEntries\"Z\n" +
+	"\bLogEntry\x12\x12\n" +
+	"\x04term\x18\x01 \x01(\x05R\x04term\x12\x12\n" +
+	"\x04uuid\x18\x02 \x01(\tR\x04uuid\x12&\n" +
+	"\acommand\x18\x03 \x01(\v2\f.dto.CommandR\acommand\"y\n" +
+	"\aCommand\x123\n" +
+	"\toperation\x18\x01 \x01(\x0e2\x15.dto.CommandOperationR\toperation\x121\n" +
+	"\n" +
+	"setCommand\x18\x02 \x01(\v2\x0f.dto.SetCommandH\x00R\n" +
+	"setCommandB\x06\n" +
+	"\x04args\"4\n" +
+	"\n" +
+	"SetCommand\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\";\n" +
 	"\x11SetCommandRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"\x1c\n" +
 	"\n" +
 	"OkResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02okB\fZ\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x8b\x04\n" +
+	"\aRaftRPC\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x124\n" +
+	"\vvoteRequest\x18\x02 \x01(\v2\x10.dto.VoteRequestH\x00R\vvoteRequest\x127\n" +
+	"\fvoteResponse\x18\x03 \x01(\v2\x11.dto.VoteResponseH\x00R\fvoteResponse\x121\n" +
+	"\n" +
+	"logRequest\x18\x04 \x01(\v2\x0f.dto.LogRequestH\x00R\n" +
+	"logRequest\x124\n" +
+	"\vlogResponse\x18\x05 \x01(\v2\x10.dto.LogResponseH\x00R\vlogResponse\x12F\n" +
+	"\x11nodeStatusRequest\x18\x06 \x01(\v2\x16.dto.NodeStatusRequestH\x00R\x11nodeStatusRequest\x12I\n" +
+	"\x12nodeStatusResponse\x18\a \x01(\v2\x17.dto.NodeStatusResponseH\x00R\x12nodeStatusResponse\x121\n" +
+	"\n" +
+	"okResponse\x18\b \x01(\v2\x0f.dto.OkResponseH\x00R\n" +
+	"okResponse\x12F\n" +
+	"\x11setCommandRequest\x18\t \x01(\v2\x16.dto.SetCommandRequestH\x00R\x11setCommandRequestB\x06\n" +
+	"\x04args*E\n" +
+	"\x10CommandOperation\x12\a\n" +
+	"\x03SET\x10\x00\x12\n" +
+	"\n" +
+	"\x06DELETE\x10\x01\x12\r\n" +
+	"\tINCREMENT\x10\x02\x12\r\n" +
+	"\tDECREMENT\x10\x03B\fZ\n" +
 	"./pkgs/dtob\x06proto3"
 
 var (
@@ -917,37 +1059,42 @@ func file_pkgs_dto_raft_proto_rawDescGZIP() []byte {
 	return file_pkgs_dto_raft_proto_rawDescData
 }
 
-var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_pkgs_dto_raft_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_pkgs_dto_raft_proto_goTypes = []any{
-	(*RaftRPC)(nil),            // 0: dto.RaftRPC
+	(CommandOperation)(0),      // 0: dto.CommandOperation
 	(*VoteRequest)(nil),        // 1: dto.VoteRequest
 	(*VoteResponse)(nil),       // 2: dto.VoteResponse
-	(*Command)(nil),            // 3: dto.Command
-	(*LogEntry)(nil),           // 4: dto.LogEntry
-	(*LogRequest)(nil),         // 5: dto.LogRequest
-	(*LogResponse)(nil),        // 6: dto.LogResponse
-	(*NodeStatusRequest)(nil),  // 7: dto.NodeStatusRequest
-	(*NodeStatusResponse)(nil), // 8: dto.NodeStatusResponse
-	(*SetCommandRequest)(nil),  // 9: dto.SetCommandRequest
-	(*OkResponse)(nil),         // 10: dto.OkResponse
+	(*LogRequest)(nil),         // 3: dto.LogRequest
+	(*LogResponse)(nil),        // 4: dto.LogResponse
+	(*NodeStatusRequest)(nil),  // 5: dto.NodeStatusRequest
+	(*NodeStatusResponse)(nil), // 6: dto.NodeStatusResponse
+	(*LogEntry)(nil),           // 7: dto.LogEntry
+	(*Command)(nil),            // 8: dto.Command
+	(*SetCommand)(nil),         // 9: dto.SetCommand
+	(*SetCommandRequest)(nil),  // 10: dto.SetCommandRequest
+	(*OkResponse)(nil),         // 11: dto.OkResponse
+	(*RaftRPC)(nil),            // 12: dto.RaftRPC
 }
 var file_pkgs_dto_raft_proto_depIdxs = []int32{
-	1,  // 0: dto.RaftRPC.voteRequest:type_name -> dto.VoteRequest
-	2,  // 1: dto.RaftRPC.voteResponse:type_name -> dto.VoteResponse
-	5,  // 2: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
-	6,  // 3: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
-	7,  // 4: dto.RaftRPC.nodeStatusRequest:type_name -> dto.NodeStatusRequest
-	8,  // 5: dto.RaftRPC.nodeStatusResponse:type_name -> dto.NodeStatusResponse
-	9,  // 6: dto.RaftRPC.setCommandRequest:type_name -> dto.SetCommandRequest
-	10, // 7: dto.RaftRPC.okResponse:type_name -> dto.OkResponse
-	3,  // 8: dto.LogEntry.command:type_name -> dto.Command
-	4,  // 9: dto.LogRequest.suffix:type_name -> dto.LogEntry
-	4,  // 10: dto.NodeStatusResponse.logEntries:type_name -> dto.LogEntry
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	7,  // 0: dto.LogRequest.suffix:type_name -> dto.LogEntry
+	7,  // 1: dto.NodeStatusResponse.logEntries:type_name -> dto.LogEntry
+	8,  // 2: dto.LogEntry.command:type_name -> dto.Command
+	0,  // 3: dto.Command.operation:type_name -> dto.CommandOperation
+	9,  // 4: dto.Command.setCommand:type_name -> dto.SetCommand
+	1,  // 5: dto.RaftRPC.voteRequest:type_name -> dto.VoteRequest
+	2,  // 6: dto.RaftRPC.voteResponse:type_name -> dto.VoteResponse
+	3,  // 7: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
+	4,  // 8: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
+	5,  // 9: dto.RaftRPC.nodeStatusRequest:type_name -> dto.NodeStatusRequest
+	6,  // 10: dto.RaftRPC.nodeStatusResponse:type_name -> dto.NodeStatusResponse
+	11, // 11: dto.RaftRPC.okResponse:type_name -> dto.OkResponse
+	10, // 12: dto.RaftRPC.setCommandRequest:type_name -> dto.SetCommandRequest
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_pkgs_dto_raft_proto_init() }
@@ -955,28 +1102,32 @@ func file_pkgs_dto_raft_proto_init() {
 	if File_pkgs_dto_raft_proto != nil {
 		return
 	}
-	file_pkgs_dto_raft_proto_msgTypes[0].OneofWrappers = []any{
+	file_pkgs_dto_raft_proto_msgTypes[7].OneofWrappers = []any{
+		(*Command_SetCommand)(nil),
+	}
+	file_pkgs_dto_raft_proto_msgTypes[11].OneofWrappers = []any{
 		(*RaftRPC_VoteRequest)(nil),
 		(*RaftRPC_VoteResponse)(nil),
 		(*RaftRPC_LogRequest)(nil),
 		(*RaftRPC_LogResponse)(nil),
 		(*RaftRPC_NodeStatusRequest)(nil),
 		(*RaftRPC_NodeStatusResponse)(nil),
-		(*RaftRPC_SetCommandRequest)(nil),
 		(*RaftRPC_OkResponse)(nil),
+		(*RaftRPC_SetCommandRequest)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkgs_dto_raft_proto_rawDesc), len(file_pkgs_dto_raft_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   11,
+			NumEnums:      1,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_pkgs_dto_raft_proto_goTypes,
 		DependencyIndexes: file_pkgs_dto_raft_proto_depIdxs,
+		EnumInfos:         file_pkgs_dto_raft_proto_enumTypes,
 		MessageInfos:      file_pkgs_dto_raft_proto_msgTypes,
 	}.Build()
 	File_pkgs_dto_raft_proto = out.File

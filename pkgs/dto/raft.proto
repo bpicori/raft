@@ -4,20 +4,6 @@ package dto;
 
 option go_package = "./pkgs/dto";
 
-// Define RPC messages
-message RaftRPC {
-  string type = 1;
-  oneof args {
-    VoteRequest voteRequest = 2;
-    VoteResponse voteResponse = 3;
-    LogRequest logRequest = 4;
-    LogResponse logResponse = 5;
-    NodeStatusRequest nodeStatusRequest = 6;
-    NodeStatusResponse nodeStatusResponse = 7;
-    SetCommandRequest setCommandRequest = 8;
-    OkResponse okResponse = 9;
-  }
-}
 
 message VoteRequest {
   string nodeId = 1;
@@ -33,16 +19,6 @@ message VoteResponse {
   bool voteGranted = 3;
 }
 
-message Command {
-  string operation = 1;
-  string key = 2;
-  string value = 3;
-}
-
-message LogEntry {
-  int32 term = 1;
-  Command command = 2;
-}
 
 message LogRequest {
   string leaderId = 1;
@@ -72,6 +48,33 @@ message NodeStatusResponse {
   repeated LogEntry logEntries = 7;
 }
 
+/* Log Entry */
+message LogEntry {
+  int32 term = 1;
+  string uuid = 2;
+  Command command = 3;
+}
+
+enum CommandOperation {
+  SET = 0;
+  DELETE = 1;
+  INCREMENT = 2;
+  DECREMENT = 3;
+}
+
+message Command {
+  CommandOperation operation = 1;
+  oneof args {
+    SetCommand setCommand = 2;
+  }
+}
+
+message SetCommand {
+  string key = 1;
+  string value = 2;
+}
+
+/* Application */
 message SetCommandRequest {
   string key = 1;
   string value = 2;
@@ -79,4 +82,21 @@ message SetCommandRequest {
 
 message OkResponse {
   bool ok = 1;
+}
+
+/* Raft RPC
+  All the messages that are received from outside in TCP
+*/
+message RaftRPC {
+  string type = 1;
+  oneof args {
+    VoteRequest voteRequest = 2;
+    VoteResponse voteResponse = 3;
+    LogRequest logRequest = 4;
+    LogResponse logResponse = 5;
+    NodeStatusRequest nodeStatusRequest = 6;
+    NodeStatusResponse nodeStatusResponse = 7;
+    OkResponse okResponse = 8;
+    SetCommandRequest setCommandRequest = 9;
+  }
 }

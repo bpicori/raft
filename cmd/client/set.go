@@ -27,7 +27,7 @@ func SetCommand(cfg *config.Config, key string, value string) {
 		},
 	}
 
-	_, err := tcp.SendSyncRPC(leader, setCommand)
+	resp, err := tcp.SendSyncRPC(leader, setCommand)
 
 	if err != nil {
 		slog.Error("Error sending set command", "error", err)
@@ -35,7 +35,7 @@ func SetCommand(cfg *config.Config, key string, value string) {
 		return
 	}
 
-	slog.Info("Set command sent to leader", "key", key, "value", value)
+	slog.Info("Response from leader", "response", resp)
 }
 
 func findLeader(cfg *config.Config) string {

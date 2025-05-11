@@ -23,6 +23,13 @@ var (
 	Leader    = consts.Leader
 )
 
+var replyMap = struct {
+	mu        sync.Mutex
+	responses map[string]chan bool
+}{
+	responses: make(map[string]chan bool),
+}
+
 type Raft struct {
 	mu sync.RWMutex // lock when changing server state
 
@@ -127,7 +134,7 @@ func (s *Raft) runFollower() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			slog.Debug("[FOLLOWER] Context done, shutting down follower, persisting state")
+			slog.Debug("[FOLLOWER] Context done, shutting down follower")
 			return
 
 		case requestVoteReq := <-s.eventManager.VoteRequestChan:
@@ -222,7 +229,7 @@ func (s *Raft) runCandidate() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			slog.Debug("[CANDIDATE] Context done, shutting down candidate, persisting state")
+			slog.Debug("[CANDIDATE] Context done, shutting down candidate")
 			return
 		case <-s.eventManager.ElectionTimerChan():
 			slog.Info("[CANDIDATE] Election timeout, starting new election")
@@ -280,7 +287,7 @@ func (s *Raft) runLeader() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			slog.Debug("[LEADER] Context done, shutting down leader, persisting state")
+			slog.Debug("[LEADER] Context done, shutting down leader")
 			return
 		case <-s.eventManager.HeartbeatTimerChan():
 			slog.Debug("[LEADER] Heartbeat timer triggered. Sending updates to followers.")
@@ -312,16 +319,19 @@ func (s *Raft) runLeader() {
 			if s.currentRole != Leader {
 				return
 			}
-		case setCommand := <-s.eventManager.SetCommandChan:
-			slog.Info("[LEADER] Received {SetCommand}", "key", setCommand.Key, "value", setCommand.Value)
-			s.logEntry = append(s.logEntry, &dto.LogEntry{
-				Term: s.currentTerm,
-				Command: &dto.Command{
-					Operation: "set",
-					Key:       setCommand.Key,
-					Value:     setCommand.Value,
-				},
-			})
+		case appendLogEntry := <-s.eventManager.AppendLogEntryChan:
+			slog.Info("[LEADER] Received {AppendLogEntry}", "command", appendLogEntry.Command, "uuid", appendLogEntry.Uuid)
+
+			logEntry := dto.LogEntry{
+				Term:    s.currentTerm,
+				Command: appendLogEntry.Command,
+			}
+			s.logEntry = append(s.logEntry, &logEntry)
+
+			replyMap.mu.Lock()
+			replyMap.responses[appendLogEntry.Uuid] = appendLogEntry.Reply
+			replyMap.mu.Unlock()
+
 			s.ackedLength[s.config.SelfID] = int32(len(s.logEntry))
 			for _, follower := range s.otherServers() {
 				go s.replicateLog(s.config.SelfID, follower.ID)
@@ -570,6 +580,18 @@ func (s *Raft) commitLogEntries() {
 
 		if acks >= majority {
 			// TODO: deliver log entries to application
+			slog.Info("[LEADER] Commiting log entry", "logEntry", s.logEntry[s.commitLength])
+
+			logEntry := s.logEntry[s.commitLength]
+			replyMap.mu.Lock()
+			ch := replyMap.responses[logEntry.Uuid]
+
+			if ch != nil {
+				ch <- true
+			} else {
+				slog.Warn("No channel found for log entry", "logEntry", logEntry, "uuid", logEntry.Uuid)
+			}
+			replyMap.mu.Unlock()
 			s.commitLength = s.commitLength + 1
 		} else {
 			break
