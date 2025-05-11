@@ -1,4 +1,4 @@
-package core
+package raft
 
 import (
 	"context"
@@ -23,7 +23,7 @@ var (
 	Leader    = consts.Leader
 )
 
-type Server struct {
+type Raft struct {
 	mu sync.RWMutex // lock when changing server state
 
 	/* Fields that need to be persisted */
@@ -42,30 +42,27 @@ type Server struct {
 	/* End of volatile fields */
 
 	config       config.Config        // cluster configuration
-	eventManager *events.EventManager // event loop
+	eventManager *events.EventManager // event manager
 
-	/* Server lifecycle */
-	wg     sync.WaitGroup
-	ctx    context.Context
-	cancel context.CancelFunc
-	/* End of server lifecycle */
+	/* Lifecycle */
+	ctx context.Context
+	wg  *sync.WaitGroup
+	/* End of lifecycle */
 }
 
-// NewServer creates a new server with a random election timeout.
-func NewServer() *Server {
-	config, err := config.LoadConfig(false)
-	if err != nil {
-		panic(fmt.Sprintf("Error loading config %v", err))
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
+// NewRaft creates a new server with a random election timeout.
+func NewRaft(
+	eventManager *events.EventManager,
+	config config.Config,
+	ctx context.Context,
+	wg *sync.WaitGroup,
+) *Raft {
 	state, err := storage.LoadStateMachine(config.SelfID, config.PersistentFilePath)
 	if err != nil {
 		panic(fmt.Sprintf("Error loading state machine %v", err))
 	}
-	eventManager := events.NewEventManager()
 
-	s := &Server{
+	s := &Raft{
 		config:           config,
 		eventManager:     eventManager,
 		currentTerm:      state.CurrentTerm,  // should be fetched from persistent storage
@@ -78,35 +75,13 @@ func NewServer() *Server {
 		sentLength:       make(map[string]int32),
 		ackedLength:      make(map[string]int32),
 		ctx:              ctx,
-		cancel:           cancel,
+		wg:               wg,
 	}
 	s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	return s
 }
 
-func (s *Server) Start() error {
-	s.wg.Add(2)
-
-	go tcp.RunTCPServer(tcp.RunTCPServerParams{
-		Wg:           &s.wg,
-		Ctx:          s.ctx,
-		ListenAddr:   s.config.SelfServer.Addr,
-		EventManager: s.eventManager,
-	})
-
-	go s.RunStateMachine()
-
-	return nil
-}
-
-func (s *Server) Stop() {
-	s.cancel()
-	s.PersistState()
-	s.eventManager.Close()
-	s.wg.Wait()
-}
-
-func (s *Server) PersistState() {
+func (s *Raft) PersistState() {
 	persistedState := storage.StateMachineState{
 		ServerId:     s.config.SelfID,
 		Path:         s.config.PersistentFilePath,
@@ -124,13 +99,13 @@ func (s *Server) PersistState() {
 	slog.Info("State saved to file", "term", s.currentTerm, "votedFor", s.votedFor, "commitLength", s.commitLength)
 }
 
-func (s *Server) RunStateMachine() {
-	defer s.wg.Done()
-
+func (s *Raft) Start() {
 	for {
 		select {
 		case <-s.ctx.Done():
 			slog.Info("[STATE_MACHINE] Gracefully shutting down state machine")
+			s.PersistState()
+			s.wg.Done()
 			return
 		default:
 			switch s.currentRole {
@@ -148,10 +123,11 @@ func (s *Server) RunStateMachine() {
 	}
 }
 
-func (s *Server) runFollower() {
+func (s *Raft) runFollower() {
 	for {
 		select {
 		case <-s.ctx.Done():
+			slog.Debug("[FOLLOWER] Context done, shutting down follower, persisting state")
 			return
 
 		case requestVoteReq := <-s.eventManager.VoteRequestChan:
@@ -211,15 +187,7 @@ func (s *Server) runFollower() {
 	}
 }
 
-func (s *Server) startElection() {
-	s.currentRole = Candidate
-	s.currentTerm += 1
-	s.votedFor = s.config.SelfID
-	s.votesReceivedMap.Clear()
-	s.votesReceivedMap.Store(s.config.SelfID, true)
-}
-
-func (s *Server) runCandidate() {
+func (s *Raft) runCandidate() {
 	votes := 1
 	majority := len(s.config.Servers)/2 + 1
 	lastTerm := int32(0)
@@ -254,6 +222,7 @@ func (s *Server) runCandidate() {
 	for {
 		select {
 		case <-s.ctx.Done():
+			slog.Debug("[CANDIDATE] Context done, shutting down candidate, persisting state")
 			return
 		case <-s.eventManager.ElectionTimerChan():
 			slog.Info("[CANDIDATE] Election timeout, starting new election")
@@ -301,87 +270,7 @@ func (s *Server) runCandidate() {
 	}
 }
 
-func (s *Server) onVoteRequest(requestVoteArgs *dto.VoteRequest) {
-	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateId)
-	cID := requestVoteArgs.CandidateId
-	cTerm := requestVoteArgs.Term
-	cLastLogIndex := requestVoteArgs.LastLogIndex
-	cLastLogTerm := requestVoteArgs.LastLogTerm
-
-	if cTerm > s.currentTerm {
-		s.currentTerm = cTerm
-		s.currentRole = Follower
-		s.votedFor = ""
-	}
-
-	lastTerm := int32(0)
-
-	if len(s.logEntry) > 0 {
-		lastTerm = s.logEntry[len(s.logEntry)-1].Term
-	}
-
-	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= int32(len(s.logEntry)))
-
-	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
-		s.votedFor = cID
-		rpc := &dto.RaftRPC{
-			Type: consts.VoteResponse.String(),
-			Args: &dto.RaftRPC_VoteResponse{
-				VoteResponse: &dto.VoteResponse{
-					NodeId:      s.config.SelfID,
-					Term:        s.currentTerm,
-					VoteGranted: true,
-				},
-			}}
-		go tcp.SendAsyncRPC(cID, rpc)
-	} else {
-		rpc := &dto.RaftRPC{
-			Type: consts.VoteResponse.String(),
-			Args: &dto.RaftRPC_VoteResponse{
-				VoteResponse: &dto.VoteResponse{
-					NodeId:      s.config.SelfID,
-					Term:        s.currentTerm,
-					VoteGranted: false,
-				},
-			},
-		}
-		go tcp.SendAsyncRPC(cID, rpc)
-	}
-}
-
-func (s *Server) onVoteResponse(requestVoteReply *dto.VoteResponse) {
-	voterId := requestVoteReply.NodeId
-	voterTerm := requestVoteReply.Term
-	voterVoteGranted := requestVoteReply.VoteGranted
-
-	if s.currentRole == Candidate && voterTerm == s.currentTerm && voterVoteGranted {
-		s.votesReceivedMap.Store(voterId, true)
-		votesReceived := 0
-		s.votesReceivedMap.Range(func(_, _ interface{}) bool {
-			votesReceived++
-			return true
-		})
-		majority := len(s.config.Servers)/2 + 1
-		if votesReceived >= majority {
-			s.currentRole = Leader
-			s.currentLeader = s.config.SelfID
-			s.eventManager.StopElectionTimer()
-
-			for _, follower := range s.otherServers() {
-				s.sentLength[follower.ID] = int32(len(s.logEntry))
-				s.ackedLength[follower.ID] = 0
-				go s.replicateLog(s.config.SelfID, follower.ID)
-			}
-		}
-	} else if voterTerm > s.currentTerm {
-		s.currentTerm = voterTerm
-		s.currentRole = Follower
-		s.votedFor = ""
-		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
-	}
-}
-
-func (s *Server) runLeader() {
+func (s *Raft) runLeader() {
 	for _, follower := range s.otherServers() {
 		go s.replicateLog(s.config.SelfID, follower.ID)
 	}
@@ -391,6 +280,7 @@ func (s *Server) runLeader() {
 	for {
 		select {
 		case <-s.ctx.Done():
+			slog.Debug("[LEADER] Context done, shutting down leader, persisting state")
 			return
 		case <-s.eventManager.HeartbeatTimerChan():
 			slog.Debug("[LEADER] Heartbeat timer triggered. Sending updates to followers.")
@@ -451,7 +341,96 @@ func (s *Server) runLeader() {
 	}
 }
 
-func (s *Server) onLogRequest(logRequest *dto.LogRequest) {
+func (s *Raft) startElection() {
+	s.currentRole = Candidate
+	s.currentTerm += 1
+	s.votedFor = s.config.SelfID
+	s.votesReceivedMap.Clear()
+	s.votesReceivedMap.Store(s.config.SelfID, true)
+}
+
+func (s *Raft) onVoteRequest(requestVoteArgs *dto.VoteRequest) {
+	slog.Info("Received vote request from candidate", "candidate", requestVoteArgs.CandidateId)
+	cID := requestVoteArgs.CandidateId
+	cTerm := requestVoteArgs.Term
+	cLastLogIndex := requestVoteArgs.LastLogIndex
+	cLastLogTerm := requestVoteArgs.LastLogTerm
+
+	if cTerm > s.currentTerm {
+		s.currentTerm = cTerm
+		s.currentRole = Follower
+		s.votedFor = ""
+	}
+
+	lastTerm := int32(0)
+
+	if len(s.logEntry) > 0 {
+		lastTerm = s.logEntry[len(s.logEntry)-1].Term
+	}
+
+	logOk := cLastLogTerm > lastTerm || (cLastLogTerm == lastTerm && cLastLogIndex >= int32(len(s.logEntry)))
+
+	if cTerm == s.currentTerm && logOk && (s.votedFor == "" || s.votedFor == cID) {
+		s.votedFor = cID
+		rpc := &dto.RaftRPC{
+			Type: consts.VoteResponse.String(),
+			Args: &dto.RaftRPC_VoteResponse{
+				VoteResponse: &dto.VoteResponse{
+					NodeId:      s.config.SelfID,
+					Term:        s.currentTerm,
+					VoteGranted: true,
+				},
+			},
+		}
+		go tcp.SendAsyncRPC(cID, rpc)
+	} else {
+		rpc := &dto.RaftRPC{
+			Type: consts.VoteResponse.String(),
+			Args: &dto.RaftRPC_VoteResponse{
+				VoteResponse: &dto.VoteResponse{
+					NodeId:      s.config.SelfID,
+					Term:        s.currentTerm,
+					VoteGranted: false,
+				},
+			},
+		}
+		go tcp.SendAsyncRPC(cID, rpc)
+	}
+}
+
+func (s *Raft) onVoteResponse(requestVoteReply *dto.VoteResponse) {
+	voterId := requestVoteReply.NodeId
+	voterTerm := requestVoteReply.Term
+	voterVoteGranted := requestVoteReply.VoteGranted
+
+	if s.currentRole == Candidate && voterTerm == s.currentTerm && voterVoteGranted {
+		s.votesReceivedMap.Store(voterId, true)
+		votesReceived := 0
+		s.votesReceivedMap.Range(func(_, _ interface{}) bool {
+			votesReceived++
+			return true
+		})
+		majority := len(s.config.Servers)/2 + 1
+		if votesReceived >= majority {
+			s.currentRole = Leader
+			s.currentLeader = s.config.SelfID
+			s.eventManager.StopElectionTimer()
+
+			for _, follower := range s.otherServers() {
+				s.sentLength[follower.ID] = int32(len(s.logEntry))
+				s.ackedLength[follower.ID] = 0
+				go s.replicateLog(s.config.SelfID, follower.ID)
+			}
+		}
+	} else if voterTerm > s.currentTerm {
+		s.currentTerm = voterTerm
+		s.currentRole = Follower
+		s.votedFor = ""
+		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+	}
+}
+
+func (s *Raft) onLogRequest(logRequest *dto.LogRequest) {
 	leaderId := logRequest.LeaderId
 	term := logRequest.Term
 	prefixLength := logRequest.PrefixLength
@@ -504,7 +483,7 @@ func (s *Server) onLogRequest(logRequest *dto.LogRequest) {
 	}
 }
 
-func (s *Server) onLogResponse(logResponse *dto.LogResponse) {
+func (s *Raft) onLogResponse(logResponse *dto.LogResponse) {
 	followerId := logResponse.FollowerId
 	term := logResponse.Term
 	ack := logResponse.Ack
@@ -527,7 +506,7 @@ func (s *Server) onLogResponse(logResponse *dto.LogResponse) {
 	}
 }
 
-func (s *Server) replicateLog(leaderId string, followerId string) {
+func (s *Raft) replicateLog(leaderId string, followerId string) {
 	prefixLength := s.sentLength[followerId]
 	suffix := s.logEntry[prefixLength:]
 
@@ -552,7 +531,7 @@ func (s *Server) replicateLog(leaderId string, followerId string) {
 	go tcp.SendAsyncRPC(followerId, rpc)
 }
 
-func (s *Server) appendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
+func (s *Raft) appendEntries(prefixLength int32, leaderCommit int32, suffix []*dto.LogEntry) {
 	suffixLength := int32(len(suffix))
 	logLength := int32(len(s.logEntry))
 
@@ -578,8 +557,7 @@ func (s *Server) appendEntries(prefixLength int32, leaderCommit int32, suffix []
 	}
 }
 
-func (s *Server) commitLogEntries() {
-
+func (s *Raft) commitLogEntries() {
 	majority := len(s.config.Servers)/2 + 1
 
 	for s.commitLength < int32(len(s.logEntry)) {
@@ -603,7 +581,7 @@ func randomTimeout(from int, to int) time.Duration {
 	return time.Duration(rand.Intn(to-from)+from) * time.Millisecond
 }
 
-func (s *Server) otherServers() []config.ServerConfig {
+func (s *Raft) otherServers() []config.ServerConfig {
 	others := make([]config.ServerConfig, 0, len(s.config.Servers)-1)
 	for _, server := range s.config.Servers {
 		if server.ID != s.config.SelfID {

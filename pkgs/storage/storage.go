@@ -22,7 +22,7 @@ func PersistStateMachine(state *StateMachineState) error {
 	fileName := fmt.Sprintf("%s.json", state.ServerId)
 	filePath := fmt.Sprintf("%s/%s", state.Path, fileName)
 
-	slog.Info("Saving state to file", "path", filePath)
+	slog.Debug("[STORAGE] Saving state to file", "path", filePath)
 
 	// Check if file already exists and overwrite
 	file, err := os.Create(filePath)
@@ -32,7 +32,14 @@ func PersistStateMachine(state *StateMachineState) error {
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
-	return encoder.Encode(state)
+	err = encoder.Encode(state)
+	if err != nil {
+		slog.Error("[STORAGE] Error encoding state", "error", err)
+		return err
+	}
+
+	slog.Debug("[STORAGE] State saved to file", "path", filePath)
+	return nil
 }
 
 func LoadStateMachine(serverId string, path string) (*StateMachineState, error) {

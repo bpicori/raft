@@ -2,7 +2,7 @@ PHONY: install-tools install run srv1 srv2 srv3 srv4 srv5 clean client
 
 SERVERS = "localhost:8080,localhost:8081,localhost:8082,localhost:8083,localhost:8084"
 PERSISTENT_PATH = ./ignore
-DEBUG = DEBUG=false
+DEBUG = DEBUG=true
 GO = go run
 SRC = cmd/server/main.go
 SRC_CLIENT = cmd/client/*.go

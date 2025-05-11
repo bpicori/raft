@@ -10,8 +10,50 @@ import (
 	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
+
 	"google.golang.org/protobuf/proto"
 )
+
+// Start starts and manages the TCP server lifecycle.
+func Start(addr string, eventManager *events.EventManager, ctx context.Context, wg *sync.WaitGroup) {
+
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		slog.Error("[TCP_SERVER] Error starting TCP server", "error", err, "address", addr)
+		panic(fmt.Errorf("cannot start tcp server on %s: %w", addr, err))
+	}
+	defer listener.Close()
+
+	go func() {
+		<-ctx.Done()
+		slog.Info("[TCP_SERVER] Context done, shutting down TCP listener", "address", addr)
+		listener.Close() // This will cause listener.Accept() to return an error.
+		wg.Done()
+	}()
+
+	slog.Info("[TCP_SERVER] Server started", "address", addr)
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("[TCP_SERVER] Context cancelled, server loop shutting down", "address", addr)
+			wg.Done()
+			return
+		default:
+			conn, err := listener.Accept() // Accept will block until a new connection or an error
+			if err != nil {
+				select {
+				case <-ctx.Done():
+					slog.Info("[TCP_SERVER] Listener closed as part of shutdown", "address", addr)
+				default:
+					slog.Error("[TCP_SERVER] Error accepting connection", "error", err, "address", addr)
+				}
+				return
+			}
+			go HandleConnection(conn, eventManager)
+		}
+	}
+}
 
 func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 	defer conn.Close()
@@ -85,7 +127,7 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		} else {
 			slog.Warn("Received NodeStatus with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
-	
+
 	case consts.SetCommand:
 		if args := rpc.GetSetCommandRequest(); args != nil {
 			eventManager.SetCommandChan <- args
@@ -114,56 +156,6 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		}
 	default:
 		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())
-	}
-}
-
-// RunTCPServerParams holds parameters for RunTCPServer.
-type RunTCPServerParams struct {
-	Wg           *sync.WaitGroup
-	Ctx          context.Context
-	ListenAddr   string
-	EventManager *events.EventManager
-}
-
-// RunTCPServer starts and manages the TCP server lifecycle.
-func RunTCPServer(params RunTCPServerParams) {
-	if params.Wg != nil {
-		defer params.Wg.Done()
-	}
-
-	listener, err := net.Listen("tcp", params.ListenAddr)
-	if err != nil {
-		slog.Error("[TCP_SERVER] Error starting TCP server", "error", err, "address", params.ListenAddr)
-		panic(fmt.Errorf("cannot start tcp server on %s: %w", params.ListenAddr, err))
-	}
-	defer listener.Close()
-
-	go func() {
-		<-params.Ctx.Done()
-		slog.Info("[TCP_SERVER] Context done, shutting down TCP listener", "address", params.ListenAddr)
-		listener.Close() // This will cause listener.Accept() to return an error.
-	}()
-
-	slog.Info("[TCP_SERVER] Server started", "address", params.ListenAddr)
-
-	for {
-		select {
-		case <-params.Ctx.Done():
-			slog.Info("[TCP_SERVER] Context cancelled, server loop shutting down", "address", params.ListenAddr)
-			return
-		default:
-			conn, err := listener.Accept() // Accept will block until a new connection or an error
-			if err != nil {
-				select {
-				case <-params.Ctx.Done():
-					slog.Info("[TCP_SERVER] Listener closed as part of shutdown", "address", params.ListenAddr)
-				default:
-					slog.Error("[TCP_SERVER] Error accepting connection", "error", err, "address", params.ListenAddr)
-				}
-				return
-			}
-			go HandleConnection(conn, params.EventManager)
-		}
 	}
 }
 
