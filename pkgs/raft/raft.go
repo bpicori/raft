@@ -566,14 +566,10 @@ func (s *Raft) appendEntries(prefixLength int32, leaderCommit int32, suffix []*d
 		// deliver log entries to application
 		for i := s.CommitLength; i < leaderCommit; i++ {
 			slog.Debug("[FOLLOWER] Delivering log entry to application", "logEntry", s.LogEntry[i])
-			replyMap.mu.Lock()
-			ch := replyMap.responses[s.LogEntry[i].Uuid]
-			if ch != nil {
-				ch <- true
-			} else {
-				slog.Warn("[FOLLOWER] No channel found for log entry", "logEntry", s.LogEntry[i], "uuid", s.LogEntry[i].Uuid)
+
+			s.eventManager.SyncCommandRequestChan <- events.SyncCommandEvent{
+				LogEntry: s.LogEntry[i],
 			}
-			replyMap.mu.Unlock()
 		}
 
 		s.CommitLength = leaderCommit

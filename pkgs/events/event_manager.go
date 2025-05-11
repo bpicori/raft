@@ -18,8 +18,9 @@ type EventManager struct {
 	HeartbeatTimer *time.Timer
 
 	/* Application */
-	SetCommandRequestChan chan SetCommandEvent
-	GetCommandRequestChan chan GetCommandEvent
+	SetCommandRequestChan  chan SetCommandEvent
+	GetCommandRequestChan  chan GetCommandEvent
+	SyncCommandRequestChan chan SyncCommandEvent
 }
 
 type SetCommandEvent struct {
@@ -30,6 +31,10 @@ type SetCommandEvent struct {
 type GetCommandEvent struct {
 	Payload *dto.GetCommandRequest
 	Reply   chan *dto.GetCommandResponse
+}
+
+type SyncCommandEvent struct {
+	LogEntry *dto.LogEntry
 }
 
 type AppendLogEntryEvent struct {
@@ -59,8 +64,9 @@ func NewEventManager() *EventManager {
 		HeartbeatTimer:     heartbeatTimer,
 
 		/* Application */
-		SetCommandRequestChan: make(chan SetCommandEvent),
-		GetCommandRequestChan: make(chan GetCommandEvent),
+		SetCommandRequestChan:  make(chan SetCommandEvent),
+		GetCommandRequestChan:  make(chan GetCommandEvent),
+		SyncCommandRequestChan: make(chan SyncCommandEvent),
 	}
 }
 
@@ -108,7 +114,8 @@ func (el *EventManager) Close() {
 	close(el.NodeStatusChan)
 	close(el.AppendLogEntryChan)
 	close(el.SetCommandRequestChan)
-
+	close(el.GetCommandRequestChan)
+	close(el.SyncCommandRequestChan)
 	if el.ElectionTimer != nil {
 		el.ElectionTimer.Stop()
 	}

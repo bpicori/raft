@@ -29,7 +29,7 @@ func Start(param *ApplicationParam) {
 	logEntry := param.LogEntry
 	commitLength := param.CommitLength
 
-	replicateLogEntry(logEntry, commitLength)
+	replicateLogEntries(logEntry, commitLength)
 
 	slog.Info("[APPLICATION] Starting application")
 
@@ -81,21 +81,27 @@ func Start(param *ApplicationParam) {
 			}
 
 			getCommandEvent.Reply <- &dto.GetCommandResponse{Value: value.(string)}
+		case syncCommandEvent := <-eventManager.SyncCommandRequestChan:
+			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
+
+			replicateLogEntry(syncCommandEvent.LogEntry)
 		}
 	}
 }
 
-func replicateLogEntry(logEntry []*dto.LogEntry, commitLength int32) {
-
+func replicateLogEntries(logEntry []*dto.LogEntry, commitLength int32) {
 	for i := 0; i < int(commitLength); i++ {
-		command := logEntry[i].Command
-		operation := command.Operation
-
-		switch operation {
-		case dto.CommandOperation_SET:
-			args := command.GetSetCommand()
-			hashMap.Store(args.Key, args.Value)
-		}
+		replicateLogEntry(logEntry[i])
 	}
+}
 
+func replicateLogEntry(logEntry *dto.LogEntry) {
+	command := logEntry.Command
+	operation := command.Operation
+
+	switch operation {
+	case dto.CommandOperation_SET:
+		args := command.GetSetCommand()
+		hashMap.Store(args.Key, args.Value)
+	}
 }
