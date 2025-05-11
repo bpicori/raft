@@ -1,40 +1,30 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 
 	"bpicori/raft/pkgs/dto"
+
+	"google.golang.org/protobuf/proto"
 )
 
-type StateMachineState struct {
-	ServerId     string
-	Path         string
-	CurrentTerm  int32           `json:"currentTerm"`
-	VotedFor     string          `json:"votedFor"`
-	LogEntry     []*dto.LogEntry `json:"logEntry"`
-	CommitLength int32           `json:"commitLength"`
-}
-
-func PersistStateMachine(state *StateMachineState) error {
-	fileName := fmt.Sprintf("%s.json", state.ServerId)
-	filePath := fmt.Sprintf("%s/%s", state.Path, fileName)
+func PersistStateMachine(serverId string, path string, state *dto.StateMachineState) error {
+	fileName := fmt.Sprintf("%s.pb", serverId)
+	filePath := fmt.Sprintf("%s/%s", path, fileName)
 
 	slog.Debug("[STORAGE] Saving state to file", "path", filePath)
 
-	// Check if file already exists and overwrite
-	file, err := os.Create(filePath)
+	data, err := proto.Marshal(state)
 	if err != nil {
+		slog.Error("[STORAGE] Error marshaling state to proto", "error", err)
 		return err
 	}
-	defer file.Close()
 
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(state)
+	err = os.WriteFile(filePath, data, 0644)
 	if err != nil {
-		slog.Error("[STORAGE] Error encoding state", "error", err)
+		slog.Error("[STORAGE] Error writing state to file", "error", err)
 		return err
 	}
 
@@ -42,27 +32,26 @@ func PersistStateMachine(state *StateMachineState) error {
 	return nil
 }
 
-func LoadStateMachine(serverId string, path string) (*StateMachineState, error) {
-	fileName := fmt.Sprintf("%s.json", serverId)
+func LoadStateMachine(serverId string, path string) (*dto.StateMachineState, error) {
+	fileName := fmt.Sprintf("%s.pb", serverId)
 	filePath := fmt.Sprintf("%s/%s", path, fileName)
 
-	var state StateMachineState
-	file, err := os.Open(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		// if file doesn't exist, first time running
-		return &state, nil
-	}
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&state)
-	if err != nil {
+		if os.IsNotExist(err) {
+			// file does not exist, first time running the application
+			return &dto.StateMachineState{}, nil
+		}
 		return nil, err
 	}
 
-	if state.LogEntry == nil {
-		state.LogEntry = make([]*dto.LogEntry, 0)
+	var state dto.StateMachineState
+	err = proto.Unmarshal(data, &state)
+	if err != nil {
+		slog.Error("[STORAGE] Error unmarshaling state from proto", "error", err)
+		return nil, err
 	}
 
+	slog.Debug("[STORAGE] State loaded from file", "path", filePath)
 	return &state, nil
 }

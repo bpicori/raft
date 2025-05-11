@@ -100,3 +100,10 @@ message RaftRPC {
     SetCommandRequest setCommandRequest = 9;
   }
 }
+
+message StateMachineState {
+  int32 current_term = 1;
+  string voted_for = 2;
+  repeated LogEntry log_entry = 3;
+  int32 commit_length = 4;
+} 

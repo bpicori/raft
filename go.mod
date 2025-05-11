@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/jedib0t/go-pretty/v6 v6.6.7
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.36.6
 )
 
 require (

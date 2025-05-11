@@ -89,16 +89,14 @@ func NewRaft(
 }
 
 func (s *Raft) PersistState() {
-	persistedState := storage.StateMachineState{
-		ServerId:     s.config.SelfID,
-		Path:         s.config.PersistentFilePath,
+	persistedState := dto.StateMachineState{
 		CurrentTerm:  s.currentTerm,
 		VotedFor:     s.votedFor,
 		LogEntry:     s.logEntry,
 		CommitLength: s.commitLength,
 	}
 
-	err := storage.PersistStateMachine(&persistedState)
+	err := storage.PersistStateMachine(s.config.SelfID, s.config.PersistentFilePath, &persistedState)
 	if err != nil {
 		slog.Error("Error saving state to file", "error", err)
 	}
@@ -580,7 +578,7 @@ func (s *Raft) commitLogEntries() {
 
 		if acks >= majority {
 			// TODO: deliver log entries to application
-			slog.Info("[LEADER] Commiting log entry", "logEntry", s.logEntry[s.commitLength])
+			slog.Info("[LEADER] Committing log entry", "logEntry", s.logEntry[s.commitLength])
 
 			logEntry := s.logEntry[s.commitLength]
 			replyMap.mu.Lock()
@@ -591,6 +589,7 @@ func (s *Raft) commitLogEntries() {
 			} else {
 				slog.Warn("No channel found for log entry", "logEntry", logEntry, "uuid", logEntry.Uuid)
 			}
+			delete(replyMap.responses, logEntry.Uuid)
 			replyMap.mu.Unlock()
 			s.commitLength = s.commitLength + 1
 		} else {
