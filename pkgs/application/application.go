@@ -85,6 +85,41 @@ func Start(param *ApplicationParam) {
 			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
 
 			replicateLogEntry(syncCommandEvent.LogEntry)
+		case incrCommandEvent := <-eventManager.IncrCommandRequestChan:
+			slog.Debug("[APPLICATION] Received incr command", "command", incrCommandEvent.Payload)
+
+			uuid := uuid.New().String()
+			ch := make(chan bool)
+
+			appendLogEntryEvent := events.AppendLogEntryEvent{
+				Command: &dto.Command{
+					Operation: dto.CommandOperation_INCREMENT,
+					Args: &dto.Command_IncrCommand{
+						IncrCommand: &dto.IncrCommand{
+							Key: incrCommandEvent.Payload.Key,
+						},
+					},
+				},
+				Uuid:  uuid,
+				Reply: ch,
+			}
+			eventManager.AppendLogEntryChan <- appendLogEntryEvent
+
+			go func() {
+				select {
+				case <-ch:
+					slog.Debug("[APPLICATION] Received response from append log entry", "uuid", uuid)
+					value, ok := hashMap.Load(incrCommandEvent.Payload.Key)
+					if !ok {
+						incrCommandEvent.Reply <- &dto.IncrCommandResponse{Value: 0}
+					}
+
+					incrCommandEvent.Reply <- &dto.IncrCommandResponse{Value: value.(int32)}
+				case <-time.After(5 * time.Second):
+					slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
+					incrCommandEvent.Reply <- &dto.IncrCommandResponse{Value: 0}
+				}
+			}()
 		}
 	}
 }

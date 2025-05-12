@@ -24,6 +24,9 @@ const (
 	SetCommand
 	GetCommand
 	OkResponse
+	IncrCommand
+	DecrCommand
+	RemoveCommand
 )
 
 // String method for RaftRPCType for logging/debugging
@@ -45,6 +48,12 @@ func (rt RaftRPCType) String() string {
 		return "GetCommand"
 	case OkResponse:
 		return "OkResponse"
+	case IncrCommand:
+		return "IncrCommand"
+	case DecrCommand:
+		return "DecrCommand"
+	case RemoveCommand:
+		return "RemoveCommand"
 	default:
 		return "Unknown"
 	}
@@ -67,6 +76,12 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return SetCommand, nil
 	case "GetCommand":
 		return GetCommand, nil
+	case "IncrCommand":
+		return IncrCommand, nil
+	case "DecrCommand":
+		return DecrCommand, nil
+	case "RemoveCommand":
+		return RemoveCommand, nil
 	case "OkResponse":
 		return OkResponse, nil
 	default:
