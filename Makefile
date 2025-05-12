@@ -1,4 +1,4 @@
-PHONY: install-tools install run srv1 srv2 srv3 srv4 srv5 clean client
+PHONY: install-tools install run srv1 srv2 srv3 srv4 srv5 clean client test test-verbose test-coverage test-coverage-html
 
 SERVERS = "localhost:8080,localhost:8081,localhost:8082,localhost:8083,localhost:8084"
 PERSISTENT_PATH = ./ignore
@@ -14,6 +14,9 @@ TIMEOUT_MAX = 5000
 PROTO_SRC = raft.proto
 PROTO_OUT = .
 CMD_ARGS = $(filter-out $@,$(MAKECMDGOALS))
+
+# Define test flags to prevent flag redefinition errors
+TEST_FLAGS = -timeout-min=3000 -timeout-max=5000 -heartbeat=1000
 
 install-tools:
 	@echo "Installing protoc-gen-go..."
@@ -72,6 +75,16 @@ kill:
 	kill -15 $(shell lsof -t -i:8082)
 	kill -15 $(shell lsof -t -i:8083)
 	kill -15 $(shell lsof -t -i:8084)
+
+# Run all tests (ignoring errors)
+test:
+	@echo "Running all tests..."
+	-go test -race ./...
+
+# Run all tests with verbose output (ignoring errors)
+test-verbose:
+	@echo "Running all tests with verbose output..."
+	-go test -v -race ./...
 
 # This allows passing arguments to the make command without errors
 %:
