@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
 	"errors"
@@ -25,7 +26,7 @@ func Remove(eventManager *events.EventManager, removeCommandEvent *events.Remove
 
 	appendLogEntryEvent := events.AppendLogEntryEvent{
 		Command: &dto.Command{
-			Operation: dto.CommandOperation_DELETE,
+			Operation: consts.DeleteOp.String(),
 			Args: &dto.Command_RemoveCommand{
 				RemoveCommand: &dto.RemoveCommand{
 					Key: removeCommandEvent.Payload.Key,

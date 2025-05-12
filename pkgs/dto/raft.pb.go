@@ -21,59 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// remove this enum and move to constants package
-type CommandOperation int32
-
-const (
-	CommandOperation_SET       CommandOperation = 0
-	CommandOperation_DELETE    CommandOperation = 1
-	CommandOperation_INCREMENT CommandOperation = 2
-	CommandOperation_DECREMENT CommandOperation = 3
-)
-
-// Enum value maps for CommandOperation.
-var (
-	CommandOperation_name = map[int32]string{
-		0: "SET",
-		1: "DELETE",
-		2: "INCREMENT",
-		3: "DECREMENT",
-	}
-	CommandOperation_value = map[string]int32{
-		"SET":       0,
-		"DELETE":    1,
-		"INCREMENT": 2,
-		"DECREMENT": 3,
-	}
-)
-
-func (x CommandOperation) Enum() *CommandOperation {
-	p := new(CommandOperation)
-	*p = x
-	return p
-}
-
-func (x CommandOperation) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (CommandOperation) Descriptor() protoreflect.EnumDescriptor {
-	return file_pkgs_dto_raft_proto_enumTypes[0].Descriptor()
-}
-
-func (CommandOperation) Type() protoreflect.EnumType {
-	return &file_pkgs_dto_raft_proto_enumTypes[0]
-}
-
-func (x CommandOperation) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use CommandOperation.Descriptor instead.
-func (CommandOperation) EnumDescriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{0}
-}
-
 type VoteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NodeId        string                 `protobuf:"bytes,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
@@ -553,7 +500,7 @@ func (x *LogEntry) GetCommand() *Command {
 
 type Command struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
-	Operation CommandOperation       `protobuf:"varint,1,opt,name=operation,proto3,enum=dto.CommandOperation" json:"operation,omitempty"`
+	Operation string                 `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
 	// Types that are valid to be assigned to Args:
 	//
 	//	*Command_SetCommand
@@ -595,11 +542,11 @@ func (*Command) Descriptor() ([]byte, []int) {
 	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *Command) GetOperation() CommandOperation {
+func (x *Command) GetOperation() string {
 	if x != nil {
 		return x.Operation
 	}
-	return CommandOperation_SET
+	return ""
 }
 
 func (x *Command) GetArgs() isCommand_Args {
@@ -1700,9 +1647,9 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\bLogEntry\x12\x12\n" +
 	"\x04term\x18\x01 \x01(\x05R\x04term\x12\x12\n" +
 	"\x04uuid\x18\x02 \x01(\tR\x04uuid\x12&\n" +
-	"\acommand\x18\x03 \x01(\v2\f.dto.CommandR\acommand\"\xa1\x02\n" +
-	"\aCommand\x123\n" +
-	"\toperation\x18\x01 \x01(\x0e2\x15.dto.CommandOperationR\toperation\x121\n" +
+	"\acommand\x18\x03 \x01(\v2\f.dto.CommandR\acommand\"\x8a\x02\n" +
+	"\aCommand\x12\x1c\n" +
+	"\toperation\x18\x01 \x01(\tR\toperation\x121\n" +
 	"\n" +
 	"setCommand\x18\x02 \x01(\v2\x0f.dto.SetCommandH\x00R\n" +
 	"setCommand\x124\n" +
@@ -1770,13 +1717,7 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\x05error\x18\x02 \x01(\tR\x05error\">\n" +
 	"\x14RemoveCommandRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error*E\n" +
-	"\x10CommandOperation\x12\a\n" +
-	"\x03SET\x10\x00\x12\n" +
-	"\n" +
-	"\x06DELETE\x10\x01\x12\r\n" +
-	"\tINCREMENT\x10\x02\x12\r\n" +
-	"\tDECREMENT\x10\x03B\fZ\n" +
+	"\x05error\x18\x02 \x01(\tR\x05errorB\fZ\n" +
 	"./pkgs/dtob\x06proto3"
 
 var (
@@ -1791,64 +1732,61 @@ func file_pkgs_dto_raft_proto_rawDescGZIP() []byte {
 	return file_pkgs_dto_raft_proto_rawDescData
 }
 
-var file_pkgs_dto_raft_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_pkgs_dto_raft_proto_goTypes = []any{
-	(CommandOperation)(0),        // 0: dto.CommandOperation
-	(*VoteRequest)(nil),          // 1: dto.VoteRequest
-	(*VoteResponse)(nil),         // 2: dto.VoteResponse
-	(*LogRequest)(nil),           // 3: dto.LogRequest
-	(*LogResponse)(nil),          // 4: dto.LogResponse
-	(*NodeStatusRequest)(nil),    // 5: dto.NodeStatusRequest
-	(*NodeStatusResponse)(nil),   // 6: dto.NodeStatusResponse
-	(*LogEntry)(nil),             // 7: dto.LogEntry
-	(*Command)(nil),              // 8: dto.Command
-	(*SetCommand)(nil),           // 9: dto.SetCommand
-	(*IncrCommand)(nil),          // 10: dto.IncrCommand
-	(*DecrCommand)(nil),          // 11: dto.DecrCommand
-	(*RemoveCommand)(nil),        // 12: dto.RemoveCommand
-	(*SetCommandRequest)(nil),    // 13: dto.SetCommandRequest
-	(*OkResponse)(nil),           // 14: dto.OkResponse
-	(*RaftRPC)(nil),              // 15: dto.RaftRPC
-	(*StateMachineState)(nil),    // 16: dto.StateMachineState
-	(*GetCommandRequest)(nil),    // 17: dto.GetCommandRequest
-	(*GetCommandResponse)(nil),   // 18: dto.GetCommandResponse
-	(*IncrCommandRequest)(nil),   // 19: dto.IncrCommandRequest
-	(*IncrCommandResponse)(nil),  // 20: dto.IncrCommandResponse
-	(*DecrCommandRequest)(nil),   // 21: dto.DecrCommandRequest
-	(*DecrCommandResponse)(nil),  // 22: dto.DecrCommandResponse
-	(*RemoveCommandRequest)(nil), // 23: dto.RemoveCommandRequest
+	(*VoteRequest)(nil),          // 0: dto.VoteRequest
+	(*VoteResponse)(nil),         // 1: dto.VoteResponse
+	(*LogRequest)(nil),           // 2: dto.LogRequest
+	(*LogResponse)(nil),          // 3: dto.LogResponse
+	(*NodeStatusRequest)(nil),    // 4: dto.NodeStatusRequest
+	(*NodeStatusResponse)(nil),   // 5: dto.NodeStatusResponse
+	(*LogEntry)(nil),             // 6: dto.LogEntry
+	(*Command)(nil),              // 7: dto.Command
+	(*SetCommand)(nil),           // 8: dto.SetCommand
+	(*IncrCommand)(nil),          // 9: dto.IncrCommand
+	(*DecrCommand)(nil),          // 10: dto.DecrCommand
+	(*RemoveCommand)(nil),        // 11: dto.RemoveCommand
+	(*SetCommandRequest)(nil),    // 12: dto.SetCommandRequest
+	(*OkResponse)(nil),           // 13: dto.OkResponse
+	(*RaftRPC)(nil),              // 14: dto.RaftRPC
+	(*StateMachineState)(nil),    // 15: dto.StateMachineState
+	(*GetCommandRequest)(nil),    // 16: dto.GetCommandRequest
+	(*GetCommandResponse)(nil),   // 17: dto.GetCommandResponse
+	(*IncrCommandRequest)(nil),   // 18: dto.IncrCommandRequest
+	(*IncrCommandResponse)(nil),  // 19: dto.IncrCommandResponse
+	(*DecrCommandRequest)(nil),   // 20: dto.DecrCommandRequest
+	(*DecrCommandResponse)(nil),  // 21: dto.DecrCommandResponse
+	(*RemoveCommandRequest)(nil), // 22: dto.RemoveCommandRequest
 }
 var file_pkgs_dto_raft_proto_depIdxs = []int32{
-	7,  // 0: dto.LogRequest.suffix:type_name -> dto.LogEntry
-	7,  // 1: dto.NodeStatusResponse.logEntries:type_name -> dto.LogEntry
-	8,  // 2: dto.LogEntry.command:type_name -> dto.Command
-	0,  // 3: dto.Command.operation:type_name -> dto.CommandOperation
-	9,  // 4: dto.Command.setCommand:type_name -> dto.SetCommand
-	10, // 5: dto.Command.incrCommand:type_name -> dto.IncrCommand
-	11, // 6: dto.Command.decrCommand:type_name -> dto.DecrCommand
-	12, // 7: dto.Command.removeCommand:type_name -> dto.RemoveCommand
-	1,  // 8: dto.RaftRPC.voteRequest:type_name -> dto.VoteRequest
-	2,  // 9: dto.RaftRPC.voteResponse:type_name -> dto.VoteResponse
-	3,  // 10: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
-	4,  // 11: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
-	5,  // 12: dto.RaftRPC.nodeStatusRequest:type_name -> dto.NodeStatusRequest
-	6,  // 13: dto.RaftRPC.nodeStatusResponse:type_name -> dto.NodeStatusResponse
-	14, // 14: dto.RaftRPC.okResponse:type_name -> dto.OkResponse
-	13, // 15: dto.RaftRPC.setCommandRequest:type_name -> dto.SetCommandRequest
-	17, // 16: dto.RaftRPC.getCommandRequest:type_name -> dto.GetCommandRequest
-	18, // 17: dto.RaftRPC.getCommandResponse:type_name -> dto.GetCommandResponse
-	19, // 18: dto.RaftRPC.incrCommandRequest:type_name -> dto.IncrCommandRequest
-	20, // 19: dto.RaftRPC.incrCommandResponse:type_name -> dto.IncrCommandResponse
-	21, // 20: dto.RaftRPC.decrCommandRequest:type_name -> dto.DecrCommandRequest
-	22, // 21: dto.RaftRPC.decrCommandResponse:type_name -> dto.DecrCommandResponse
-	23, // 22: dto.RaftRPC.removeCommandRequest:type_name -> dto.RemoveCommandRequest
-	7,  // 23: dto.StateMachineState.log_entry:type_name -> dto.LogEntry
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	6,  // 0: dto.LogRequest.suffix:type_name -> dto.LogEntry
+	6,  // 1: dto.NodeStatusResponse.logEntries:type_name -> dto.LogEntry
+	7,  // 2: dto.LogEntry.command:type_name -> dto.Command
+	8,  // 3: dto.Command.setCommand:type_name -> dto.SetCommand
+	9,  // 4: dto.Command.incrCommand:type_name -> dto.IncrCommand
+	10, // 5: dto.Command.decrCommand:type_name -> dto.DecrCommand
+	11, // 6: dto.Command.removeCommand:type_name -> dto.RemoveCommand
+	0,  // 7: dto.RaftRPC.voteRequest:type_name -> dto.VoteRequest
+	1,  // 8: dto.RaftRPC.voteResponse:type_name -> dto.VoteResponse
+	2,  // 9: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
+	3,  // 10: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
+	4,  // 11: dto.RaftRPC.nodeStatusRequest:type_name -> dto.NodeStatusRequest
+	5,  // 12: dto.RaftRPC.nodeStatusResponse:type_name -> dto.NodeStatusResponse
+	13, // 13: dto.RaftRPC.okResponse:type_name -> dto.OkResponse
+	12, // 14: dto.RaftRPC.setCommandRequest:type_name -> dto.SetCommandRequest
+	16, // 15: dto.RaftRPC.getCommandRequest:type_name -> dto.GetCommandRequest
+	17, // 16: dto.RaftRPC.getCommandResponse:type_name -> dto.GetCommandResponse
+	18, // 17: dto.RaftRPC.incrCommandRequest:type_name -> dto.IncrCommandRequest
+	19, // 18: dto.RaftRPC.incrCommandResponse:type_name -> dto.IncrCommandResponse
+	20, // 19: dto.RaftRPC.decrCommandRequest:type_name -> dto.DecrCommandRequest
+	21, // 20: dto.RaftRPC.decrCommandResponse:type_name -> dto.DecrCommandResponse
+	22, // 21: dto.RaftRPC.removeCommandRequest:type_name -> dto.RemoveCommandRequest
+	6,  // 22: dto.StateMachineState.log_entry:type_name -> dto.LogEntry
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_pkgs_dto_raft_proto_init() }
@@ -1884,14 +1822,13 @@ func file_pkgs_dto_raft_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkgs_dto_raft_proto_rawDesc), len(file_pkgs_dto_raft_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      0,
 			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_pkgs_dto_raft_proto_goTypes,
 		DependencyIndexes: file_pkgs_dto_raft_proto_depIdxs,
-		EnumInfos:         file_pkgs_dto_raft_proto_enumTypes,
 		MessageInfos:      file_pkgs_dto_raft_proto_msgTypes,
 	}.Build()
 	File_pkgs_dto_raft_proto = out.File

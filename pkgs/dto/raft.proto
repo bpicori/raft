@@ -55,16 +55,8 @@ message LogEntry {
   Command command = 3;
 }
 
-// remove this enum and move to constants package
-enum CommandOperation {
-  SET = 0;
-  DELETE = 1;
-  INCREMENT = 2;
-  DECREMENT = 3;
-}
-
 message Command {
-  CommandOperation operation = 1;
+  string operation = 1;
   oneof args {
     SetCommand setCommand = 2;
     IncrCommand incrCommand = 3;

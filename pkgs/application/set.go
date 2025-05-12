@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
 	"errors"
@@ -27,7 +28,7 @@ func Set(eventManager *events.EventManager, setCommandEvent *events.SetCommandEv
 
 	appendLogEntryEvent := events.AppendLogEntryEvent{
 		Command: &dto.Command{
-			Operation: dto.CommandOperation_SET,
+			Operation: consts.SetOp.String(),
 			Args: &dto.Command_SetCommand{
 				SetCommand: &dto.SetCommand{
 					Key:   setCommandEvent.Payload.Key,

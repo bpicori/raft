@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
 	"context"
@@ -62,16 +63,16 @@ func replicateLogEntries(logEntry []*dto.LogEntry, commitLength int32) {
 
 func replicateLogEntry(logEntry *dto.LogEntry) {
 	command := logEntry.Command
-	operation := command.Operation
+	operation := consts.MapStringToCommandType(command.Operation)
 
 	switch operation {
-	case dto.CommandOperation_SET:
+	case consts.SetOp:
 		replicateSetCommand(command.GetSetCommand())
-	case dto.CommandOperation_INCREMENT:
+	case consts.IncrementOp:
 		replicateIncrCommand(command.GetIncrCommand())
-	case dto.CommandOperation_DECREMENT:
+	case consts.DecrementOp:
 		replicateDecrCommand(command.GetDecrCommand())
-	case dto.CommandOperation_DELETE:
+	case consts.DeleteOp:
 		replicateRemoveCommand(command.GetRemoveCommand())
 	}
 }

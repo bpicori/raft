@@ -8,6 +8,9 @@ type RaftRPCType int
 // Role defines the role of a server in the cluster using an iota enum pattern.
 type Role int
 
+// CommandType defines the type of command operations using an iota enum pattern.
+type CommandType int
+
 const (
 	Follower Role = iota
 	Candidate
@@ -28,6 +31,14 @@ const (
 	DecrCommand
 	RemoveCommand
 )
+
+const (
+	SetOp CommandType = iota
+	DeleteOp
+	IncrementOp
+	DecrementOp
+)
+
 
 // String method for RaftRPCType for logging/debugging
 func (rt RaftRPCType) String() string {
@@ -54,6 +65,22 @@ func (rt RaftRPCType) String() string {
 		return "DecrCommand"
 	case RemoveCommand:
 		return "RemoveCommand"
+	default:
+		return "Unknown"
+	}
+}
+
+// String method for CommandType for logging/debugging
+func (ct CommandType) String() string {
+	switch ct {
+	case SetOp:
+		return "SET"
+	case DeleteOp:
+		return "DELETE"
+	case IncrementOp:
+		return "INCREMENT"
+	case DecrementOp:
+		return "DECREMENT"
 	default:
 		return "Unknown"
 	}
@@ -103,4 +130,23 @@ func MapRoleToString(role Role) string {
 	}
 }
 
+// MapCommandTypeToString converts our internal CommandType to the proto string value.
+func MapCommandTypeToString(ct CommandType) string {
+	return ct.String()
+}
 
+// MapStringToCommandType converts the proto string to our internal CommandType.
+func MapStringToCommandType(opString string) CommandType {
+	switch opString {
+	case "SET":
+		return SetOp
+	case "DELETE":
+		return DeleteOp
+	case "INCREMENT":
+		return IncrementOp
+	case "DECREMENT":
+		return DecrementOp
+	default:
+		return SetOp
+	}
+}

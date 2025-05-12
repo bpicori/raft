@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
 	"errors"
@@ -13,7 +14,7 @@ import (
 
 var (
 	ErrKeyRequired = errors.New("key is required")
-	ErrValueInt = errors.New("value is not an integer")
+	ErrValueInt    = errors.New("value is not an integer")
 )
 
 func Decr(eventManager *events.EventManager, decrCommandEvent *events.DecrCommandEvent) {
@@ -31,7 +32,7 @@ func Decr(eventManager *events.EventManager, decrCommandEvent *events.DecrComman
 
 	appendLogEntryEvent := events.AppendLogEntryEvent{
 		Command: &dto.Command{
-			Operation: dto.CommandOperation_DECREMENT,
+			Operation: consts.DecrementOp.String(),
 			Args: &dto.Command_DecrCommand{
 				DecrCommand: &dto.DecrCommand{
 					Key: decrCommandEvent.Payload.Key,

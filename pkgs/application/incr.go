@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
 	"bpicori/raft/pkgs/events"
 	"log/slog"
@@ -25,7 +26,7 @@ func Incr(eventManager *events.EventManager, incrCommandEvent *events.IncrComman
 
 	appendLogEntryEvent := events.AppendLogEntryEvent{
 		Command: &dto.Command{
-			Operation: dto.CommandOperation_INCREMENT,
+			Operation: consts.IncrementOp.String(),
 			Args: &dto.Command_IncrCommand{
 				IncrCommand: &dto.IncrCommand{
 					Key: incrCommandEvent.Payload.Key,
