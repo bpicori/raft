@@ -6,11 +6,9 @@ import (
 	"context"
 	"log/slog"
 	"sync"
-	"time"
-
-	"github.com/google/uuid"
 )
 
+// global hashmap to store the key-value pairs
 var hashMap = sync.Map{}
 
 type ApplicationParam struct {
@@ -40,50 +38,17 @@ func Start(param *ApplicationParam) {
 			wg.Done()
 			return
 		case setCommandEvent := <-eventManager.SetCommandRequestChan:
-			slog.Debug("[APPLICATION] Received set command", "command", setCommandEvent.Payload)
-
-			uuid := uuid.New().String()
-			ch := make(chan bool)
-
-			appendLogEntryEvent := events.AppendLogEntryEvent{
-				Command: &dto.Command{
-					Operation: dto.CommandOperation_SET,
-					Args: &dto.Command_SetCommand{
-						SetCommand: &dto.SetCommand{
-							Key:   setCommandEvent.Payload.Key,
-							Value: setCommandEvent.Payload.Value,
-						},
-					},
-				},
-				Uuid:  uuid,
-				Reply: ch,
-			}
-			eventManager.AppendLogEntryChan <- appendLogEntryEvent
-
-			go func() {
-				select {
-				case <-ch:
-					slog.Debug("[APPLICATION] Received response from append log entry", "uuid", uuid)
-					setCommandEvent.Reply <- &dto.OkResponse{Ok: true}
-					hashMap.Store(setCommandEvent.Payload.Key, setCommandEvent.Payload.Value)
-				case <-time.After(5 * time.Second):
-					slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
-					setCommandEvent.Reply <- &dto.OkResponse{Ok: false}
-				}
-			}()
+			go Set(eventManager, &setCommandEvent)
 		case getCommandEvent := <-eventManager.GetCommandRequestChan:
-			slog.Debug("[APPLICATION] Received get command", "command", getCommandEvent.Payload)
-
-			value, ok := hashMap.Load(getCommandEvent.Payload.Key)
-			if !ok {
-				getCommandEvent.Reply <- &dto.GetCommandResponse{Value: ""}
-				continue
-			}
-
-			getCommandEvent.Reply <- &dto.GetCommandResponse{Value: value.(string)}
+			go Get(eventManager, &getCommandEvent)
+		case incrCommandEvent := <-eventManager.IncrCommandRequestChan:
+			go Incr(eventManager, &incrCommandEvent)
+		case decrCommandEvent := <-eventManager.DecrCommandRequestChan:
+			go Decr(eventManager, &decrCommandEvent)
+		case removeCommandEvent := <-eventManager.RemoveCommandRequestChan:
+			go Remove(eventManager, &removeCommandEvent)
 		case syncCommandEvent := <-eventManager.SyncCommandRequestChan:
 			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
-
 			replicateLogEntry(syncCommandEvent.LogEntry)
 		}
 	}
@@ -101,7 +66,12 @@ func replicateLogEntry(logEntry *dto.LogEntry) {
 
 	switch operation {
 	case dto.CommandOperation_SET:
-		args := command.GetSetCommand()
-		hashMap.Store(args.Key, args.Value)
+		replicateSetCommand(command.GetSetCommand())
+	case dto.CommandOperation_INCREMENT:
+		replicateIncrCommand(command.GetIncrCommand())
+	case dto.CommandOperation_DECREMENT:
+		replicateDecrCommand(command.GetDecrCommand())
+	case dto.CommandOperation_DELETE:
+		replicateRemoveCommand(command.GetRemoveCommand())
 	}
 }

@@ -162,6 +162,71 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		} else {
 			slog.Warn("Received GetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
+	case consts.IncrCommand:
+		// TODO: Implement IncrCommand
+		if args := rpc.GetIncrCommandRequest(); args != nil {
+			replyCh := make(chan *dto.IncrCommandResponse)
+			eventManager.IncrCommandRequestChan <- events.IncrCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				fmt.Println("Received IncrCommandResponse", response)
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.IncrCommand.String(),
+					Args: &dto.RaftRPC_IncrCommandResponse{
+						IncrCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			}
+		} else {
+			slog.Warn("Received IncrCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.DecrCommand:
+		if args := rpc.GetDecrCommandRequest(); args != nil {
+			replyCh := make(chan *dto.DecrCommandResponse)
+			eventManager.DecrCommandRequestChan <- events.DecrCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.DecrCommand.String(),
+					Args: &dto.RaftRPC_DecrCommandResponse{
+						DecrCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			}
+		} else {
+			slog.Warn("Received DecrCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.RemoveCommand:
+		if args := rpc.GetRemoveCommandRequest(); args != nil {
+			replyCh := make(chan *dto.OkResponse)
+			eventManager.RemoveCommandRequestChan <- events.RemoveCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.RemoveCommand.String(),
+					Args: &dto.RaftRPC_OkResponse{
+						OkResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			}
+		} else {
+			slog.Warn("Received RemoveCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
 	default:
 		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())
 	}

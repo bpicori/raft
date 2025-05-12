@@ -90,6 +90,22 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 		}
 		key := args[0]
 		GetCommand(cfg, key)
+	case "incr":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for incr operation\n")
+			showUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		Incr(cfg, key)
+	case "decr":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for decr operation\n")
+			showUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		Decr(cfg, key)
 	case "rm":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")
@@ -97,7 +113,7 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 			os.Exit(1)
 		}
 		key := args[0]
-		fmt.Printf("Removing key '%s' (not implemented)\n", key)
+		Rm(cfg, key)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
 		showUsage()
@@ -132,13 +148,27 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		}
 		key := args[0]
 		GetCommand(cfg, key)
+	case "incr":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for incr operation\n")
+			return
+		}
+		key := args[0]
+		Incr(cfg, key)
+	case "decr":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for decr operation\n")
+			return
+		}
+		key := args[0]
+		Decr(cfg, key)
 	case "rm":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")
 			return
 		}
 		key := args[0]
-		fmt.Printf("Removing key '%s' (not implemented)\n", key)
+		Rm(cfg, key)
 	case "clear", "cls":
 		clearScreen()
 	case "help":

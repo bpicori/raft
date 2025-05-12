@@ -18,27 +18,12 @@ type EventManager struct {
 	HeartbeatTimer *time.Timer
 
 	/* Application */
-	SetCommandRequestChan  chan SetCommandEvent
-	GetCommandRequestChan  chan GetCommandEvent
-	SyncCommandRequestChan chan SyncCommandEvent
-}
-
-type SetCommandEvent struct {
-	Payload *dto.SetCommandRequest
-	Reply   chan *dto.OkResponse
-}
-
-type GetCommandEvent struct {
-	Payload *dto.GetCommandRequest
-	Reply   chan *dto.GetCommandResponse
-}
-
-type SyncCommandEvent struct {
-	LogEntry *dto.LogEntry
-}
-
-type NodeStatusEvent struct {
-	Reply chan *dto.NodeStatusResponse
+	SetCommandRequestChan    chan SetCommandEvent
+	GetCommandRequestChan    chan GetCommandEvent
+	SyncCommandRequestChan   chan SyncCommandEvent
+	IncrCommandRequestChan   chan IncrCommandEvent
+	DecrCommandRequestChan   chan DecrCommandEvent
+	RemoveCommandRequestChan chan RemoveCommandEvent
 }
 
 type AppendLogEntryEvent struct {
@@ -68,9 +53,12 @@ func NewEventManager() *EventManager {
 		HeartbeatTimer:     heartbeatTimer,
 
 		/* Application */
-		SetCommandRequestChan:  make(chan SetCommandEvent),
-		GetCommandRequestChan:  make(chan GetCommandEvent),
-		SyncCommandRequestChan: make(chan SyncCommandEvent),
+		SetCommandRequestChan:    make(chan SetCommandEvent),
+		GetCommandRequestChan:    make(chan GetCommandEvent),
+		SyncCommandRequestChan:   make(chan SyncCommandEvent),
+		IncrCommandRequestChan:   make(chan IncrCommandEvent),
+		DecrCommandRequestChan:   make(chan DecrCommandEvent),
+		RemoveCommandRequestChan: make(chan RemoveCommandEvent),
 	}
 }
 
@@ -108,22 +96,4 @@ func (el *EventManager) StopHeartbeatTimer() bool {
 
 func (el *EventManager) HeartbeatTimerChan() <-chan time.Time {
 	return el.HeartbeatTimer.C
-}
-
-func (el *EventManager) Close() {
-	close(el.VoteRequestChan)
-	close(el.VoteResponseChan)
-	close(el.LogRequestChan)
-	close(el.LogResponseChan)
-	close(el.NodeStatusChan)
-	close(el.AppendLogEntryChan)
-	close(el.SetCommandRequestChan)
-	close(el.GetCommandRequestChan)
-	close(el.SyncCommandRequestChan)
-	if el.ElectionTimer != nil {
-		el.ElectionTimer.Stop()
-	}
-	if el.HeartbeatTimer != nil {
-		el.HeartbeatTimer.Stop()
-	}
 }
