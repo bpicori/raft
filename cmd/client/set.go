@@ -35,7 +35,14 @@ func SetCommand(cfg *config.Config, key string, value string) {
 		return
 	}
 
-	slog.Info("Response from leader", "response", resp)
+	setResponse := resp.GetOkResponse()
+	if setResponse == nil {
+		slog.Error("Error getting set command response", "error", err)
+		fmt.Printf("Error: Failed to set key '%s': %v\n", key, err)
+		return
+	}
+
+	fmt.Println(setResponse.Ok)
 }
 
 func findLeader(cfg *config.Config) string {

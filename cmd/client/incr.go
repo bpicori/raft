@@ -10,7 +10,6 @@ import (
 	"bpicori/raft/pkgs/tcp"
 )
 
-
 func Incr(cfg *config.Config, key string) {
 	leader := findLeader(cfg)
 	if leader == "" {
@@ -36,6 +35,12 @@ func Incr(cfg *config.Config, key string) {
 		return
 	}
 
-	slog.Info("Response from leader", "response", resp)
-	
+	incrResponse := resp.GetIncrCommandResponse()
+	if incrResponse == nil {
+		slog.Error("Error getting incr command response", "error", err)
+		fmt.Printf("Error: Failed to increment key '%s': %v\n", key, err)
+		return
+	}
+
+	fmt.Println(incrResponse.Value)
 }

@@ -173,6 +173,7 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 
 			select {
 			case response := <-replyCh:
+				fmt.Println("Received IncrCommandResponse", response)
 				rpcResponse := &dto.RaftRPC{
 					Type: consts.IncrCommand.String(),
 					Args: &dto.RaftRPC_IncrCommandResponse{

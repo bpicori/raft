@@ -34,6 +34,17 @@ func Decr(cfg *config.Config, key string) {
 		return
 	}
 
-	slog.Info("Response from leader", "response", resp)
+	decrResponse := resp.GetDecrCommandResponse()
+	if decrResponse == nil {
+		slog.Error("Error getting decr command response", "error", err)
+		fmt.Printf("Error: Failed to decrement key '%s': %v\n", key, err)
+		return
+	}
 
+	if decrResponse.Error != "" {
+		fmt.Println(decrResponse.Error)
+		return
+	}
+
+	fmt.Println(decrResponse.Value)
 }

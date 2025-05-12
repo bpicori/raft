@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// remove this enum and move to constants package
 type CommandOperation int32
 
 const (
@@ -1456,6 +1457,7 @@ func (x *IncrCommandRequest) GetKey() string {
 type IncrCommandResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Value         int32                  `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1495,6 +1497,13 @@ func (x *IncrCommandResponse) GetValue() int32 {
 		return x.Value
 	}
 	return 0
+}
+
+func (x *IncrCommandResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
 }
 
 type DecrCommandRequest struct {
@@ -1544,6 +1553,7 @@ func (x *DecrCommandRequest) GetKey() string {
 type DecrCommandResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Value         int32                  `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1585,9 +1595,17 @@ func (x *DecrCommandResponse) GetValue() int32 {
 	return 0
 }
 
+func (x *DecrCommandResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type RemoveCommandRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1625,6 +1643,13 @@ func (*RemoveCommandRequest) Descriptor() ([]byte, []int) {
 func (x *RemoveCommandRequest) GetKey() string {
 	if x != nil {
 		return x.Key
+	}
+	return ""
+}
+
+func (x *RemoveCommandRequest) GetError() string {
+	if x != nil {
+		return x.Error
 	}
 	return ""
 }
@@ -1734,15 +1759,18 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\x12GetCommandResponse\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\"&\n" +
 	"\x12IncrCommandRequest\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\"+\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\"A\n" +
 	"\x13IncrCommandResponse\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\x05R\x05value\"&\n" +
+	"\x05value\x18\x01 \x01(\x05R\x05value\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"&\n" +
 	"\x12DecrCommandRequest\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\"+\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\"A\n" +
 	"\x13DecrCommandResponse\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\x05R\x05value\"(\n" +
+	"\x05value\x18\x01 \x01(\x05R\x05value\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\">\n" +
 	"\x14RemoveCommandRequest\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key*E\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error*E\n" +
 	"\x10CommandOperation\x12\a\n" +
 	"\x03SET\x10\x00\x12\n" +
 	"\n" +

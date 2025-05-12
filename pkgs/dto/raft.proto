@@ -55,6 +55,7 @@ message LogEntry {
   Command command = 3;
 }
 
+// remove this enum and move to constants package
 enum CommandOperation {
   SET = 0;
   DELETE = 1;
@@ -145,6 +146,7 @@ message IncrCommandRequest {
 
 message IncrCommandResponse {
   int32 value = 1;
+  string error = 2;
 }
 
 message DecrCommandRequest {
@@ -153,8 +155,10 @@ message DecrCommandRequest {
 
 message DecrCommandResponse {
   int32 value = 1;
+  string error = 2;
 }
 
 message RemoveCommandRequest {
   string key = 1;
+  string error = 2;
 }
