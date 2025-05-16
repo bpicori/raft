@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"bpicori/raft/pkgs/config"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bpicori/raft/cmd/client/commands"
 	"bpicori/raft/pkgs/config"
 	"bpicori/raft/pkgs/logger"
 	"bufio"
@@ -52,7 +53,7 @@ func runInteractiveMode(cfg *config.Config) {
 		}
 
 		if input == "help" {
-			printHelp()
+			commands.PrintHelp()
 			continue
 		}
 
@@ -71,52 +72,52 @@ func runInteractiveMode(cfg *config.Config) {
 func executeCommand(cfg *config.Config, operation string, args []string) {
 	switch operation {
 	case "status":
-		GetClusterStatus(cfg)
+		commands.GetClusterStatus(cfg)
 	case "set":
 		if len(args) < 2 {
 			fmt.Fprintf(os.Stderr, "Key and value are required for set operation\n")
-			showUsage()
+			commands.ShowUsage()
 			os.Exit(1)
 		}
 		key := args[0]
 		value := args[1]
 
-		SetCommand(cfg, key, value)
+		commands.SetCommand(cfg, key, value)
 	case "get":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for get operation\n")
-			showUsage()
+			commands.ShowUsage()
 			os.Exit(1)
 		}
 		key := args[0]
-		GetCommand(cfg, key)
+		commands.GetCommand(cfg, key)
 	case "incr":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for incr operation\n")
-			showUsage()
+			commands.ShowUsage()
 			os.Exit(1)
 		}
 		key := args[0]
-		Incr(cfg, key)
+		commands.Incr(cfg, key)
 	case "decr":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for decr operation\n")
-			showUsage()
+			commands.ShowUsage()
 			os.Exit(1)
 		}
 		key := args[0]
-		Decr(cfg, key)
+		commands.Decr(cfg, key)
 	case "rm":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")
-			showUsage()
+			commands.ShowUsage()
 			os.Exit(1)
 		}
 		key := args[0]
-		Rm(cfg, key)
+		commands.Rm(cfg, key)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
-		showUsage()
+		commands.ShowUsage()
 		os.Exit(1)
 	}
 }
@@ -132,7 +133,7 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 	// Don't exit the program on errors in interactive mode
 	switch operation {
 	case "status":
-		GetClusterStatus(cfg)
+		commands.GetClusterStatus(cfg)
 	case "set":
 		if len(args) < 2 {
 			fmt.Fprintf(os.Stderr, "Key and value are required for set operation\n")
@@ -140,39 +141,39 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		}
 		key := args[0]
 		value := args[1]
-		SetCommand(cfg, key, value)
+		commands.SetCommand(cfg, key, value)
 	case "get":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for get operation\n")
 			return
 		}
 		key := args[0]
-		GetCommand(cfg, key)
+		commands.GetCommand(cfg, key)
 	case "incr":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for incr operation\n")
 			return
 		}
 		key := args[0]
-		Incr(cfg, key)
+		commands.Incr(cfg, key)
 	case "decr":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for decr operation\n")
 			return
 		}
 		key := args[0]
-		Decr(cfg, key)
+		commands.Decr(cfg, key)
 	case "rm":
 		if len(args) < 1 {
 			fmt.Fprintf(os.Stderr, "Key is required for rm operation\n")
 			return
 		}
 		key := args[0]
-		Rm(cfg, key)
+		commands.Rm(cfg, key)
 	case "clear", "cls":
-		clearScreen()
+		commands.ClearScreen()
 	case "help":
-		printHelp()
+		commands.PrintHelp()
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s (type 'help' for available commands)\n", operation)
 	}
@@ -182,13 +183,13 @@ func parseFlags() (flagValues, string, []string) {
 	servers := flag.String("servers", "", "Comma-separated list of servers in format host:port")
 
 	// Define custom usage function
-	flag.Usage = showUsage
+	flag.Usage = commands.ShowUsage
 
 	flag.Parse()
 
 	if *servers == "" {
 		fmt.Fprintf(os.Stderr, "Servers list is required\n")
-		showUsage()
+		commands.ShowUsage()
 		os.Exit(1)
 	}
 

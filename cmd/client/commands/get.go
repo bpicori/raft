@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"bpicori/raft/pkgs/config"
@@ -12,7 +12,7 @@ import (
 )
 
 func GetCommand(cfg *config.Config, key string) {
-	leader := randomServer(cfg)
+	leader := RandomServer(cfg)
 	if leader == "" {
 		slog.Error("No leader found")
 		fmt.Println("Error: No leader found in the cluster. Try again later.")
@@ -46,7 +46,7 @@ func GetCommand(cfg *config.Config, key string) {
 	fmt.Println(getResponse.Value)
 }
 
-func randomServer(cfg *config.Config) string {
+func RandomServer(cfg *config.Config) string {
 	rand.Seed(time.Now().UnixNano())
 
 	servers := make([]string, 0, len(cfg.Servers))

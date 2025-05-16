@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"bpicori/raft/pkgs/config"
@@ -10,7 +10,7 @@ import (
 )
 
 func SetCommand(cfg *config.Config, key string, value string) {
-	leader := findLeader(cfg)
+	leader := FindLeader(cfg)
 	if leader == "" {
 		slog.Error("No leader found")
 		fmt.Println("Error: No leader found in the cluster. Try again later.")
@@ -45,7 +45,7 @@ func SetCommand(cfg *config.Config, key string, value string) {
 	fmt.Println(setResponse.Ok)
 }
 
-func findLeader(cfg *config.Config) string {
+func FindLeader(cfg *config.Config) string {
 	for _, server := range cfg.Servers {
 
 		nodeStatusReq := &dto.RaftRPC{

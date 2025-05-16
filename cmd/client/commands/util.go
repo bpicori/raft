@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"flag"
@@ -6,11 +6,11 @@ import (
 	"os"
 )
 
-func clearScreen() {
+func ClearScreen() {
 	fmt.Print("\033[H\033[2J")
 }
 
-func printHelp() {
+func PrintHelp() {
 	fmt.Println("\nAvailable commands:")
 	fmt.Println("  status            - Get the cluster status")
 	fmt.Println("  set <key> <value> - Add a key to the storage")
@@ -21,7 +21,7 @@ func printHelp() {
 	fmt.Println()
 }
 
-func showUsage() {
+func ShowUsage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s -servers=host1:port1,host2:port2,... [operation] [arguments...]\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "Operations:\n")
 	fmt.Fprintf(os.Stderr, "  status            - Get the cluster status\n")
