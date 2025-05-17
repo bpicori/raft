@@ -88,7 +88,7 @@ test-verbose:
 
 test-raft:
 	@echo "Running raft tests..."
-	-go test -race ./pkgs/raft/...
+	-go test -race -v -timeout=10s ./pkgs/raft/...
 
 # This allows passing arguments to the make command without errors
 %:
