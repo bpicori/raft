@@ -15,7 +15,6 @@ var hashMap = sync.Map{}
 type ApplicationParam struct {
 	EventManager *events.EventManager
 	Context      context.Context
-	WaitGroup    *sync.WaitGroup
 	LogEntry     []*dto.LogEntry
 	CommitLength int32
 }
@@ -23,7 +22,6 @@ type ApplicationParam struct {
 func Start(param *ApplicationParam) {
 	eventManager := param.EventManager
 	ctx := param.Context
-	wg := param.WaitGroup
 
 	logEntry := param.LogEntry
 	commitLength := param.CommitLength
@@ -36,7 +34,6 @@ func Start(param *ApplicationParam) {
 		select {
 		case <-ctx.Done():
 			slog.Info("[APPLICATION] Context done, shutting down application")
-			wg.Done()
 			return
 		case setCommandEvent := <-eventManager.SetCommandRequestChan:
 			go Set(eventManager, &setCommandEvent)

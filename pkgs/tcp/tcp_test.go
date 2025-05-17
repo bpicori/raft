@@ -21,7 +21,10 @@ func TestStartAndShutdown(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
-	go Start(addr, eventManager, ctx, wg)
+	go func() {
+		defer wg.Done()
+		Start(addr, eventManager, ctx)
+	}()
 	time.Sleep(100 * time.Millisecond) // Allow server to start
 
 	conn, err := net.Dial("tcp", addr)
@@ -60,8 +63,11 @@ func TestSendAsyncRPC(t *testing.T) {
 	defer cancel()
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		Start(addr, eventManager, ctx)
+	}()
 
-	go Start(addr, eventManager, ctx, wg)
 	time.Sleep(100 * time.Millisecond) // Allow server to start
 
 	voteRequestReceived := make(chan bool, 1)
@@ -103,7 +109,10 @@ func TestSendSyncRPC(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
-	go Start(addr, eventManager, ctx, wg)
+	go func() {
+		defer wg.Done()
+		Start(addr, eventManager, ctx)
+	}()
 	time.Sleep(100 * time.Millisecond) // Allow server to start
 
 	// Handle NodeStatus requests in a goroutine

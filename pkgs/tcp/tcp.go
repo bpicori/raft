@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"sync"
 
 	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
@@ -15,7 +14,7 @@ import (
 )
 
 // Start starts and manages the TCP server lifecycle.
-func Start(addr string, eventManager *events.EventManager, ctx context.Context, wg *sync.WaitGroup) {
+func Start(addr string, eventManager *events.EventManager, ctx context.Context) {
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -28,7 +27,6 @@ func Start(addr string, eventManager *events.EventManager, ctx context.Context, 
 		<-ctx.Done()
 		slog.Info("[TCP_SERVER] Context done, shutting down TCP listener", "address", addr)
 		listener.Close() // This will cause listener.Accept() to return an error.
-		wg.Done()
 	}()
 
 	slog.Info("[TCP_SERVER] Server started", "address", addr)
@@ -37,7 +35,6 @@ func Start(addr string, eventManager *events.EventManager, ctx context.Context, 
 		select {
 		case <-ctx.Done():
 			slog.Info("[TCP_SERVER] Context cancelled, server loop shutting down", "address", addr)
-			wg.Done()
 			return
 		default:
 			conn, err := listener.Accept() // Accept will block until a new connection or an error

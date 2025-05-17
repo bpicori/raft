@@ -53,7 +53,6 @@ type Raft struct {
 
 	/* Lifecycle */
 	ctx context.Context
-	wg  *sync.WaitGroup
 	/* End of lifecycle */
 }
 
@@ -82,9 +81,8 @@ func NewRaft(
 		sentLength:       make(map[string]int32),
 		ackedLength:      make(map[string]int32),
 		ctx:              ctx,
-		wg:               wg,
 	}
-	s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+
 	return s
 }
 
@@ -105,12 +103,13 @@ func (s *Raft) PersistState() {
 }
 
 func (s *Raft) Start() {
+	s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
+
 	for {
 		select {
 		case <-s.ctx.Done():
 			slog.Info("[STATE_MACHINE] Gracefully shutting down state machine")
 			s.PersistState()
-			s.wg.Done()
 			return
 		default:
 			switch s.currentRole {

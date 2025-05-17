@@ -43,22 +43,30 @@ func main() {
 		&wg,
 	)
 	wg.Add(1)
-	go server.Start()
+	go func() {
+		defer wg.Done()
+		server.Start()
+	}()
 
 	// initialize tcp server
 	wg.Add(1)
-	go tcp.Start(config.SelfServer.Addr, eventManager, ctx, &wg)
+	go func() {
+		defer wg.Done()
+		tcp.Start(config.SelfServer.Addr, eventManager, ctx)
+	}()
 
 	// initialize application
 	wg.Add(1)
 	applicationParam := &application.ApplicationParam{
 		EventManager: eventManager,
 		Context:      ctx,
-		WaitGroup:    &wg,
 		LogEntry:     server.LogEntry,
 		CommitLength: server.CommitLength,
 	}
-	go application.Start(applicationParam)
+	go func() {
+		defer wg.Done()
+		application.Start(applicationParam)
+	}()
 
 	// set up signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -69,6 +77,7 @@ func main() {
 
 	slog.Info("[MAIN] Received termination signal, shutting down...")
 	cancel()
+	slog.Info("[MAIN] Waiting for all goroutines to stop...")
 	wg.Wait()
-	slog.Info("[MAIN] Server stopped")
+	slog.Info("[MAIN] All goroutines stopped")
 }
