@@ -19,7 +19,7 @@ func Set(eventManager *events.EventManager, setCommandEvent *events.SetCommandEv
 	err := validateSetCommand(setCommandEvent)
 	if err != nil {
 		slog.Error("[APPLICATION][SET] Failed to validate command", "error", err)
-		setCommandEvent.Reply <- &dto.OkResponse{Ok: false}
+		setCommandEvent.Reply <- &dto.GenericResponse{Ok: false}
 		return
 	}
 
@@ -46,11 +46,11 @@ func Set(eventManager *events.EventManager, setCommandEvent *events.SetCommandEv
 		select {
 		case <-ch:
 			slog.Debug("[APPLICATION] Received response from append log entry", "uuid", uuid)
-			setCommandEvent.Reply <- &dto.OkResponse{Ok: true}
+			setCommandEvent.Reply <- &dto.GenericResponse{Ok: true}
 			hashMap.Store(setCommandEvent.Payload.Key, setCommandEvent.Payload.Value)
 		case <-time.After(TIMEOUT):
 			slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
-			setCommandEvent.Reply <- &dto.OkResponse{Ok: false}
+			setCommandEvent.Reply <- &dto.GenericResponse{Ok: false}
 		}
 	}()
 }

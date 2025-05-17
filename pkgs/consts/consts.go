@@ -26,7 +26,7 @@ const (
 	NodeStatus
 	SetCommand
 	GetCommand
-	OkResponse
+	GenericResponse
 	IncrCommand
 	DecrCommand
 	RemoveCommand
@@ -57,8 +57,8 @@ func (rt RaftRPCType) String() string {
 		return "SetCommand"
 	case GetCommand:
 		return "GetCommand"
-	case OkResponse:
-		return "OkResponse"
+	case GenericResponse:
+		return "GenericResponse"
 	case IncrCommand:
 		return "IncrCommand"
 	case DecrCommand:
@@ -109,8 +109,8 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return DecrCommand, nil
 	case "RemoveCommand":
 		return RemoveCommand, nil
-	case "OkResponse":
-		return OkResponse, nil
+	case "GenericResponse":
+		return GenericResponse, nil
 	default:
 		return UnknownRPCType, fmt.Errorf("unknown RPC type string: %s", rpcTypeStr)
 	}

@@ -17,7 +17,7 @@ func Remove(eventManager *events.EventManager, removeCommandEvent *events.Remove
 	err := validateRemoveCommand(removeCommandEvent)
 	if err != nil {
 		slog.Error("[APPLICATION][REMOVE] Failed to validate command", "error", err)
-		removeCommandEvent.Reply <- &dto.OkResponse{Ok: false}
+		removeCommandEvent.Reply <- &dto.GenericResponse{Ok: false}
 		return
 	}
 
@@ -42,10 +42,10 @@ func Remove(eventManager *events.EventManager, removeCommandEvent *events.Remove
 		select {
 		case <-ch:
 			slog.Debug("[APPLICATION][REMOVE] Received response from append log entry", "uuid", uuid)
-			removeCommandEvent.Reply <- &dto.OkResponse{Ok: true}
+			removeCommandEvent.Reply <- &dto.GenericResponse{Ok: true}
 		case <-time.After(TIMEOUT):
 			slog.Error("[APPLICATION][REMOVE] No response from append log entry", "uuid", uuid)
-			removeCommandEvent.Reply <- &dto.OkResponse{Ok: false}
+			removeCommandEvent.Reply <- &dto.GenericResponse{Ok: false}
 		}
 	}()
 }

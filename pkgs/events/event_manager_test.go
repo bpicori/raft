@@ -194,7 +194,7 @@ func TestEventChannels(t *testing.T) {
 				Key:   "test-key",
 				Value: "test-value",
 			},
-			Reply: make(chan *dto.OkResponse),
+			Reply: make(chan *dto.GenericResponse),
 		}
 		em.SetCommandRequestChan <- setEvent
 	}()

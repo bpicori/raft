@@ -427,7 +427,7 @@ func TestHandleConnection_SetCommand(t *testing.T) {
 			assert.Equal(t, setCommandRequest.Value, event.Payload.Value)
 
 			// Send a success response
-			event.Reply <- &dto.OkResponse{
+			event.Reply <- &dto.GenericResponse{
 				Ok: true,
 			}
 		case <-time.After(500 * time.Millisecond):
@@ -449,9 +449,9 @@ func TestHandleConnection_SetCommand(t *testing.T) {
 	err = proto.Unmarshal(buffer[:n], &response)
 	assert.NoError(t, err)
 
-	okResponse := response.GetOkResponse()
-	assert.NotNil(t, okResponse)
-	assert.True(t, okResponse.Ok)
+	genericResponse := response.GetGenericResponse()
+	assert.NotNil(t, genericResponse)
+	assert.True(t, genericResponse.Ok)
 }
 
 func TestHandleConnection_GetCommand(t *testing.T) {
@@ -655,7 +655,7 @@ func TestHandleConnection_RemoveCommand(t *testing.T) {
 			assert.Equal(t, removeCommandRequest.Key, event.Payload.Key)
 
 			// Send a success response
-			event.Reply <- &dto.OkResponse{
+			event.Reply <- &dto.GenericResponse{
 				Ok: true,
 			}
 		case <-time.After(500 * time.Millisecond):
@@ -677,7 +677,7 @@ func TestHandleConnection_RemoveCommand(t *testing.T) {
 	err = proto.Unmarshal(buffer[:n], &response)
 	assert.NoError(t, err)
 
-	okResponse := response.GetOkResponse()
-	assert.NotNil(t, okResponse)
-	assert.True(t, okResponse.Ok)
+	genericResponse := response.GetGenericResponse()
+	assert.NotNil(t, genericResponse)
+	assert.True(t, genericResponse.Ok)
 }

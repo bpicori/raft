@@ -108,7 +108,7 @@ func (s *HttpServer) handleRoot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if s.raftNode.GetCurrentRole() == consts.Leader {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "Raft Leader (id: ` + s.config.SelfID + `) answering"}`))
+		w.Write([]byte(`{"status": "Raft Leader answering"}`))
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Write([]byte(`{"status": "Not a Raft Leader"}`))

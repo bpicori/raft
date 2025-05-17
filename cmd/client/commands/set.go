@@ -35,7 +35,7 @@ func SetCommand(cfg *config.Config, key string, value string) {
 		return
 	}
 
-	setResponse := resp.GetOkResponse()
+	setResponse := resp.GetGenericResponse()
 	if setResponse == nil {
 		slog.Error("Error getting set command response", "error", err)
 		fmt.Printf("Error: Failed to set key '%s': %v\n", key, err)

@@ -89,7 +89,7 @@ message SetCommandRequest {
   string value = 2;
 }
 
-message OkResponse {
+message GenericResponse {
   bool ok = 1;
 }
 
@@ -105,7 +105,7 @@ message RaftRPC {
     LogResponse logResponse = 5;
     NodeStatusRequest nodeStatusRequest = 6;
     NodeStatusResponse nodeStatusResponse = 7;
-    OkResponse okResponse = 8;
+    GenericResponse genericResponse = 8;
     SetCommandRequest setCommandRequest = 9;
     GetCommandRequest getCommandRequest = 10;
     GetCommandResponse getCommandResponse = 11;
@@ -130,6 +130,7 @@ message GetCommandRequest {
 
 message GetCommandResponse {
   string value = 1;
+  string error = 2;
 }
 
 message IncrCommandRequest {
@@ -152,5 +153,4 @@ message DecrCommandResponse {
 
 message RemoveCommandRequest {
   string key = 1;
-  string error = 2;
 }

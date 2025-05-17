@@ -5,7 +5,7 @@ import "bpicori/raft/pkgs/dto"
 
 type SetCommandEvent struct {
 	Payload *dto.SetCommandRequest
-	Reply   chan *dto.OkResponse
+	Reply   chan *dto.GenericResponse
 }
 
 type GetCommandEvent struct {
@@ -33,5 +33,5 @@ type DecrCommandEvent struct {
 
 type RemoveCommandEvent struct {
 	Payload *dto.RemoveCommandRequest
-	Reply   chan *dto.OkResponse
+	Reply   chan *dto.GenericResponse
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"time"
 
 	"bpicori/raft/pkgs/consts"
 	"bpicori/raft/pkgs/dto"
@@ -12,6 +13,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 )
+
+var TCP_TIMEOUT = 5 * time.Second
 
 // Start starts and manages the TCP server lifecycle.
 func Start(addr string, eventManager *events.EventManager, ctx context.Context) {
@@ -119,7 +122,7 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		}
 	case consts.SetCommand:
 		if args := rpc.GetSetCommandRequest(); args != nil {
-			replyCh := make(chan *dto.OkResponse)
+			replyCh := make(chan *dto.GenericResponse)
 			eventManager.SetCommandRequestChan <- events.SetCommandEvent{
 				Payload: args,
 				Reply:   replyCh,
@@ -128,9 +131,9 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 			select {
 			case response := <-replyCh:
 				rpcResponse := &dto.RaftRPC{
-					Type: consts.OkResponse.String(),
-					Args: &dto.RaftRPC_OkResponse{
-						OkResponse: response,
+					Type: consts.GenericResponse.String(),
+					Args: &dto.RaftRPC_GenericResponse{
+						GenericResponse: response,
 					},
 				}
 				sendResponse(conn, rpcResponse)
@@ -155,12 +158,22 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 					},
 				}
 				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Received GetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.GetCommand.String(),
+					Args: &dto.RaftRPC_GetCommandResponse{
+						GetCommandResponse: &dto.GetCommandResponse{
+							Value: "",
+							Error: "Timeout",
+						},
+					},
+				})
 			}
 		} else {
 			slog.Warn("Received GetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.IncrCommand:
-		// TODO: Implement IncrCommand
 		if args := rpc.GetIncrCommandRequest(); args != nil {
 			replyCh := make(chan *dto.IncrCommandResponse)
 			eventManager.IncrCommandRequestChan <- events.IncrCommandEvent{
@@ -170,7 +183,6 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 
 			select {
 			case response := <-replyCh:
-				fmt.Println("Received IncrCommandResponse", response)
 				rpcResponse := &dto.RaftRPC{
 					Type: consts.IncrCommand.String(),
 					Args: &dto.RaftRPC_IncrCommandResponse{
@@ -178,6 +190,17 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 					},
 				}
 				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Received IncrCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.IncrCommand.String(),
+					Args: &dto.RaftRPC_IncrCommandResponse{
+						IncrCommandResponse: &dto.IncrCommandResponse{
+							Value: 0,
+							Error: "Timeout",
+						},
+					},
+				})
 			}
 		} else {
 			slog.Warn("Received IncrCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
@@ -199,13 +222,24 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 					},
 				}
 				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Received DecrCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.DecrCommand.String(),
+					Args: &dto.RaftRPC_DecrCommandResponse{
+						DecrCommandResponse: &dto.DecrCommandResponse{
+							Value: 0,
+							Error: "Timeout",
+						},
+					},
+				})
 			}
 		} else {
 			slog.Warn("Received DecrCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
 	case consts.RemoveCommand:
 		if args := rpc.GetRemoveCommandRequest(); args != nil {
-			replyCh := make(chan *dto.OkResponse)
+			replyCh := make(chan *dto.GenericResponse)
 			eventManager.RemoveCommandRequestChan <- events.RemoveCommandEvent{
 				Payload: args,
 				Reply:   replyCh,
@@ -215,11 +249,21 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 			case response := <-replyCh:
 				rpcResponse := &dto.RaftRPC{
 					Type: consts.RemoveCommand.String(),
-					Args: &dto.RaftRPC_OkResponse{
-						OkResponse: response,
+					Args: &dto.RaftRPC_GenericResponse{
+						GenericResponse: response,
 					},
 				}
 				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Received RemoveCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.RemoveCommand.String(),
+					Args: &dto.RaftRPC_GenericResponse{
+						GenericResponse: &dto.GenericResponse{
+							Ok: false,
+						},
+					},
+				})
 			}
 		} else {
 			slog.Warn("Received RemoveCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
