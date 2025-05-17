@@ -39,13 +39,17 @@ func TestPersistAndLoadStateMachine(t *testing.T) {
 		},
 	}
 
+	storage := &StorageImpl{
+		ServerId:             "test-server",
+		StateMachineFilePath: tempDir,
+	}
+
 	// Test persisting state
-	serverId := "test-server"
-	err = PersistStateMachine(serverId, tempDir, state)
+	err = storage.PersistStateMachine(state)
 	assert.NoError(t, err)
 
 	// Verify the file was created
-	expectedFilePath := filepath.Join(tempDir, serverId+".pb")
+	expectedFilePath := filepath.Join(tempDir, "test-server.pb")
 	_, err = os.Stat(expectedFilePath)
 	assert.NoError(t, err)
 
@@ -62,7 +66,7 @@ func TestPersistAndLoadStateMachine(t *testing.T) {
 	assert.Equal(t, 1, len(loadedStateDirectly.LogEntry))
 
 	// Test loading state
-	loadedState, err := LoadStateMachine(serverId, tempDir)
+	loadedState, err := storage.LoadStateMachine()
 	assert.NoError(t, err)
 	assert.Equal(t, state.CurrentTerm, loadedState.CurrentTerm)
 	assert.Equal(t, state.VotedFor, loadedState.VotedFor)
@@ -82,8 +86,11 @@ func TestLoadStateMachineNonExistent(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Test loading a state that doesn't exist
-	serverId := "nonexistent-server"
-	state, err := LoadStateMachine(serverId, tempDir)
+	storage := &StorageImpl{
+		ServerId:             "nonexistent-server",
+		StateMachineFilePath: tempDir,
+	}
+	state, err := storage.LoadStateMachine()
 	assert.NoError(t, err)
 	assert.NotNil(t, state)
 	assert.Equal(t, int32(0), state.CurrentTerm)
@@ -100,7 +107,11 @@ func TestPersistStateMachineError(t *testing.T) {
 	}
 
 	// Test persisting to a non-existent directory
-	err := PersistStateMachine("server1", "/nonexistent/dir", state)
+	storage := &StorageImpl{
+		ServerId:             "server1",
+		StateMachineFilePath: "/nonexistent/dir",
+	}
+	err := storage.PersistStateMachine(state)
 	assert.Error(t, err)
 }
 
@@ -111,14 +122,17 @@ func TestLoadStateMachineCorruptedData(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Create a file with corrupted (non-proto) data
-	serverId := "corrupted-server"
-	filePath := filepath.Join(tempDir, serverId+".pb")
+	storage := &StorageImpl{
+		ServerId:             "corrupted-server",
+		StateMachineFilePath: tempDir,
+	}
+	filePath := filepath.Join(tempDir, "corrupted-server.pb")
 	corruptedData := []byte("this is not a valid protobuf message")
 	err = os.WriteFile(filePath, corruptedData, 0644)
 	assert.NoError(t, err)
 
 	// Try to load the corrupted state
-	_, err = LoadStateMachine(serverId, tempDir)
+	_, err = storage.LoadStateMachine()
 	assert.Error(t, err)
 }
 
@@ -138,13 +152,21 @@ func TestPersistAndLoadMultipleStates(t *testing.T) {
 			VotedFor:     "voter" + serverId,
 			CommitLength: int32(i * 5),
 		}
-		err = PersistStateMachine(serverId, tempDir, states[i])
+		storage := &StorageImpl{
+			ServerId:             serverId,
+			StateMachineFilePath: tempDir,
+		}
+		err = storage.PersistStateMachine(states[i])
 		assert.NoError(t, err)
 	}
 
 	// Verify each state can be loaded correctly
 	for i, serverId := range serverIds {
-		loadedState, err := LoadStateMachine(serverId, tempDir)
+		storage := &StorageImpl{
+			ServerId:             serverId,
+			StateMachineFilePath: tempDir,
+		}
+		loadedState, err := storage.LoadStateMachine()
 		assert.NoError(t, err)
 		assert.Equal(t, states[i].CurrentTerm, loadedState.CurrentTerm)
 		assert.Equal(t, states[i].VotedFor, loadedState.VotedFor)
@@ -174,7 +196,11 @@ func TestFilePermissionErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Try to persist to the read-only directory
-	err = PersistStateMachine("server1", readOnlyDir, state)
+	storage := &StorageImpl{
+		ServerId:             "server1",
+		StateMachineFilePath: readOnlyDir,
+	}
+	err = storage.PersistStateMachine(state)
 	assert.Error(t, err, "Should fail to write to read-only directory")
 
 	// Create a file and make it read-only
@@ -182,7 +208,11 @@ func TestFilePermissionErrors(t *testing.T) {
 	filePath := filepath.Join(tempDir, serverId+".pb")
 
 	// First create and write with normal permissions
-	err = PersistStateMachine(serverId, tempDir, state)
+	storage = &StorageImpl{
+		ServerId:             serverId,
+		StateMachineFilePath: tempDir,
+	}
+	err = storage.PersistStateMachine(state)
 	assert.NoError(t, err)
 
 	// Now make it read-only
@@ -190,6 +220,8 @@ func TestFilePermissionErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Try to overwrite the read-only file
-	err = PersistStateMachine(serverId, tempDir, state)
+	err = storage.PersistStateMachine(state)
 	assert.Error(t, err, "Should fail to overwrite read-only file")
 }
+
+

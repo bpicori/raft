@@ -14,6 +14,7 @@ import (
 	"bpicori/raft/pkgs/events"
 	"bpicori/raft/pkgs/logger"
 	"bpicori/raft/pkgs/raft"
+	"bpicori/raft/pkgs/storage"
 	"bpicori/raft/pkgs/tcp"
 )
 
@@ -35,12 +36,14 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
 
+	storage := storage.NewStorage(config.SelfID, config.PersistentFilePath)
+
 	// initialize raft server
 	server := raft.NewRaft(
 		eventManager,
+		storage,
 		config,
 		ctx,
-		&wg,
 	)
 	wg.Add(1)
 	go func() {

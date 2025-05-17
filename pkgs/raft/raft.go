@@ -50,6 +50,7 @@ type Raft struct {
 
 	config       config.Config        // cluster configuration
 	eventManager *events.EventManager // event manager
+	storage      storage.Storage     // storage
 
 	/* Lifecycle */
 	ctx context.Context
@@ -59,11 +60,11 @@ type Raft struct {
 // NewRaft creates a new server with a random election timeout.
 func NewRaft(
 	eventManager *events.EventManager,
+	storage storage.Storage,
 	config config.Config,
 	ctx context.Context,
-	wg *sync.WaitGroup,
 ) *Raft {
-	state, err := storage.LoadStateMachine(config.SelfID, config.PersistentFilePath)
+	state, err := storage.LoadStateMachine()
 	if err != nil {
 		panic(fmt.Sprintf("Error loading state machine %v", err))
 	}
@@ -71,6 +72,7 @@ func NewRaft(
 	s := &Raft{
 		config:           config,
 		eventManager:     eventManager,
+		storage:          storage,
 		currentTerm:      state.CurrentTerm,  // should be fetched from persistent storage
 		votedFor:         state.VotedFor,     // should be fetched from persistent storage
 		LogEntry:         state.LogEntry,     // should be fetched from persistent storage
@@ -94,7 +96,7 @@ func (s *Raft) PersistState() {
 		CommitLength: s.CommitLength,
 	}
 
-	err := storage.PersistStateMachine(s.config.SelfID, s.config.PersistentFilePath, &persistedState)
+	err := s.storage.PersistStateMachine(&persistedState)
 	if err != nil {
 		slog.Error("Error saving state to file", "error", err)
 	}

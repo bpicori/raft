@@ -10,9 +10,26 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func PersistStateMachine(serverId string, path string, state *dto.StateMachineState) error {
-	fileName := fmt.Sprintf("%s.pb", serverId)
-	filePath := fmt.Sprintf("%s/%s", path, fileName)
+type Storage interface {
+	PersistStateMachine(state *dto.StateMachineState) error
+	LoadStateMachine() (*dto.StateMachineState, error)
+}
+
+type StorageImpl struct {
+	ServerId string
+	StateMachineFilePath string
+}
+
+func NewStorage(serverId string, stateMachineFilePath string) Storage {
+	return &StorageImpl{
+		ServerId:             serverId,
+		StateMachineFilePath: stateMachineFilePath,
+	}
+}
+
+func (s *StorageImpl) PersistStateMachine(state *dto.StateMachineState) error {
+	fileName := fmt.Sprintf("%s.pb", s.ServerId)
+	filePath := fmt.Sprintf("%s/%s", s.StateMachineFilePath, fileName)
 
 	slog.Debug("[STORAGE] Saving state to file", "path", filePath)
 
@@ -32,9 +49,9 @@ func PersistStateMachine(serverId string, path string, state *dto.StateMachineSt
 	return nil
 }
 
-func LoadStateMachine(serverId string, path string) (*dto.StateMachineState, error) {
-	fileName := fmt.Sprintf("%s.pb", serverId)
-	filePath := fmt.Sprintf("%s/%s", path, fileName)
+func (s *StorageImpl) LoadStateMachine() (*dto.StateMachineState, error) {
+	fileName := fmt.Sprintf("%s.pb", s.ServerId)
+	filePath := fmt.Sprintf("%s/%s", s.StateMachineFilePath, fileName)
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
