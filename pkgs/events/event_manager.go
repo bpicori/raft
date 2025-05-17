@@ -14,8 +14,8 @@ type EventManager struct {
 	NodeStatusChan     chan NodeStatusEvent
 	AppendLogEntryChan chan AppendLogEntryEvent
 	/* Raft Timers */
-	ElectionTimer  *time.Timer
-	HeartbeatTimer *time.Timer
+	ElectionTimer  Timer
+	HeartbeatTimer Timer
 
 	/* Application */
 	SetCommandRequestChan    chan SetCommandEvent
@@ -33,14 +33,8 @@ type AppendLogEntryEvent struct {
 }
 
 func NewEventManager() *EventManager {
-	electionTimer := time.NewTimer(1 * time.Second)
-	if !electionTimer.Stop() {
-		<-electionTimer.C
-	}
-	heartbeatTimer := time.NewTimer(1 * time.Second)
-	if !heartbeatTimer.Stop() {
-		<-heartbeatTimer.C
-	}
+	electionTimer := NewRealTimer(1 * time.Second)
+	heartbeatTimer := NewRealTimer(1 * time.Second)
 
 	return &EventManager{
 		VoteRequestChan:    make(chan *dto.VoteRequest),
@@ -65,7 +59,7 @@ func NewEventManager() *EventManager {
 func (el *EventManager) ResetElectionTimer(d time.Duration) {
 	if !el.ElectionTimer.Stop() {
 		select {
-		case <-el.ElectionTimer.C:
+		case <-el.ElectionTimer.C():
 		default:
 		}
 	}
@@ -77,13 +71,13 @@ func (el *EventManager) StopElectionTimer() bool {
 }
 
 func (el *EventManager) ElectionTimerChan() <-chan time.Time {
-	return el.ElectionTimer.C
+	return el.ElectionTimer.C()
 }
 
 func (el *EventManager) ResetHeartbeatTimer(d time.Duration) {
 	if !el.HeartbeatTimer.Stop() {
 		select {
-		case <-el.HeartbeatTimer.C:
+		case <-el.HeartbeatTimer.C():
 		default:
 		}
 	}
@@ -95,5 +89,5 @@ func (el *EventManager) StopHeartbeatTimer() bool {
 }
 
 func (el *EventManager) HeartbeatTimerChan() <-chan time.Time {
-	return el.HeartbeatTimer.C
+	return el.HeartbeatTimer.C()
 }

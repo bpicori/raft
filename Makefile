@@ -86,6 +86,10 @@ test-verbose:
 	@echo "Running all tests with verbose output..."
 	-go test -v -race ./...
 
+test-raft:
+	@echo "Running raft tests..."
+	-go test -race ./pkgs/raft/...
+
 # This allows passing arguments to the make command without errors
 %:
 	@:
