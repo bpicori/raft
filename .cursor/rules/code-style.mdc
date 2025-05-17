@@ -5,7 +5,7 @@ alwaysApply: false
 ---
 * Code Style Guidelines
 
-- Write code without comments. Make the code self-explanatory and explicit through clear naming and structure.
+- Write code WITHOUT COMMENTS. Make the code self-explanatory and explicit through clear naming and structure.
 - Use descriptive variable and function names that explain their purpose
 - Keep functions small and focused on a single responsibility
 - Use explicit type declarations rather than type inference when it improves clarity

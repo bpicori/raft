@@ -23,6 +23,7 @@ type Config struct {
 	TimeoutMin         int
 	TimeoutMax         int
 	Heartbeat          int
+	HTTPPort           string
 }
 
 func LoadConfig(isClient bool) (Config, error) {
@@ -33,6 +34,7 @@ func LoadConfig(isClient bool) (Config, error) {
 		timeoutMin     string
 		timeoutMax     string
 		heartbeat      string
+		httpPort       string
 	)
 
 	flag.StringVar(&raftServers, "servers", "", "Comma-separated list of Raft server addresses, e.g. localhost:8080,localhost:8081")
@@ -41,6 +43,7 @@ func LoadConfig(isClient bool) (Config, error) {
 	flag.StringVar(&timeoutMin, "timeout-min", "", "Minimum timeout for election")
 	flag.StringVar(&timeoutMax, "timeout-max", "", "Maximum timeout for election")
 	flag.StringVar(&heartbeat, "heartbeat", "", "Heartbeat interval")
+	flag.StringVar(&httpPort, "http-port", "", "HTTP port")
 	flag.Parse()
 
 	// If not provided try to get from environment variables
@@ -62,6 +65,9 @@ func LoadConfig(isClient bool) (Config, error) {
 	if heartbeat == "" {
 		heartbeat = os.Getenv("HEARTBEAT")
 	}
+	if httpPort == "" {
+		httpPort = os.Getenv("HTTP_PORT")
+	}
 
 	if isClient {
 		if raftServers == "" {
@@ -77,7 +83,7 @@ func LoadConfig(isClient bool) (Config, error) {
 
 	}
 
-	if raftServers == "" || currentServer == "" || persistentPath == "" || timeoutMin == "" || timeoutMax == "" || heartbeat == "" {
+	if raftServers == "" || currentServer == "" || persistentPath == "" || timeoutMin == "" || timeoutMax == "" || heartbeat == "" || httpPort == "" {
 		missingFlags := []string{}
 		if raftServers == "" {
 			missingFlags = append(missingFlags, "servers")
@@ -96,6 +102,9 @@ func LoadConfig(isClient bool) (Config, error) {
 		}
 		if heartbeat == "" {
 			missingFlags = append(missingFlags, "heartbeat")
+		}
+		if httpPort == "" {
+			missingFlags = append(missingFlags, "http-port")
 		}
 		slog.Error("Missing required flags", "flags", missingFlags)
 
@@ -135,6 +144,7 @@ func LoadConfig(isClient bool) (Config, error) {
 		TimeoutMin:         timeoutMinInt,
 		TimeoutMax:         timeoutMaxInt,
 		Heartbeat:          heartbeatInt,
+		HTTPPort:           httpPort,
 	}, nil
 }
 
