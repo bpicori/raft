@@ -13,7 +13,22 @@ import (
 	"bpicori/raft/pkgs/events"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+type MockStorage struct {
+	mock.Mock
+}
+
+func (ms *MockStorage) PersistStateMachine(state *dto.StateMachineState) error {
+	args := ms.Called(state)
+	return args.Error(0)
+}
+
+func (ms *MockStorage) LoadStateMachine() (*dto.StateMachineState, error) {
+	args := ms.Called()
+	return args.Get(0).(*dto.StateMachineState), args.Error(1)
+}
 
 func mockedEventManager() *events.EventManager {
 	return &events.EventManager{
@@ -40,37 +55,37 @@ func mockedConfig(nodeID string) config.Config {
 	}
 }
 
-func mockedRaft(nodeID string, context context.Context, wg *sync.WaitGroup) *Raft {
-	return NewRaft(mockedEventManager(), mockedConfig(nodeID), context, wg)
-}
-
 func TestClusterStartAsFollowers(t *testing.T) {
-	// test timeout
-	go func() {
-		time.Sleep(5 * time.Second)
-		panic("test timeout")
-	}()
-
-	// Create a context and wait group
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 
-	// Create a cluster of 3 nodes
-	nodes := make(map[string]*Raft)
-	for i := 0; i < 3; i++ {
-		nodes[fmt.Sprintf("node%d", i)] = mockedRaft(fmt.Sprintf("node%d", i), ctx, wg)
-	}
+	mockStorage := new(MockStorage)
+	mockStorage.On("PersistStateMachine", mock.Anything).Return(nil)
+	mockStorage.On("LoadStateMachine").Return(&dto.StateMachineState{}, nil)
 
-	// Start all nodes
-	for _, node := range nodes {
-		go node.Start()
-	}
+	node := NewRaft(mockedEventManager(), mockStorage, mockedConfig("node0"), ctx)
 
-	// expect all nodes to be followers
-	for _, node := range nodes {
-		assert.Equal(t, consts.Follower, node.currentRole)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		node.Start()
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, consts.Follower, node.currentRole)
+
+	mockStorage.AssertCalled(t, "LoadStateMachine")
 
 	cancel()
+	fmt.Println("Waiting for all goroutines to stop...")
 	wg.Wait()
+	mockStorage.AssertCalled(t, "PersistStateMachine", mock.Anything)
+	fmt.Println("All goroutines stopped")
 }
+
+// func TestClusterCandidateStartsElection(t *testing.T) {
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	wg := &sync.WaitGroup{}
+
+// }
