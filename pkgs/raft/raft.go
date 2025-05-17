@@ -50,7 +50,7 @@ type Raft struct {
 
 	config       config.Config        // cluster configuration
 	eventManager *events.EventManager // event manager
-	storage      storage.Storage     // storage
+	storage      storage.Storage      // storage
 
 	/* Lifecycle */
 	ctx context.Context
@@ -114,7 +114,7 @@ func (s *Raft) Start() {
 			s.PersistState()
 			return
 		default:
-			switch s.currentRole {
+			switch s.GetCurrentRole() {
 			case Follower:
 				slog.Debug("[STATE_MACHINE] Current role is Follower")
 				s.runFollower()
@@ -144,7 +144,7 @@ func (s *Raft) runFollower() {
 				"lastLogIndex", requestVoteReq.LastLogIndex,
 				"lastLogTerm", requestVoteReq.LastLogTerm)
 			s.onVoteRequest(requestVoteReq)
-			if s.currentRole != Follower {
+			if s.GetCurrentRole() != Follower {
 				return
 			}
 
@@ -154,14 +154,14 @@ func (s *Raft) runFollower() {
 				"granted", requestVoteRes.VoteGranted,
 				"term", requestVoteRes.Term)
 			s.onVoteResponse(requestVoteRes)
-			if s.currentRole != Follower {
+			if s.GetCurrentRole() != Follower {
 				return
 			}
 
 		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Debug("[FOLLOWER] Received {LogRequest}", "leader", logRequest.LeaderId)
 			s.onLogRequest(logRequest)
-			if s.currentRole != Follower {
+			if s.GetCurrentRole() != Follower {
 				return
 			}
 
@@ -172,7 +172,7 @@ func (s *Raft) runFollower() {
 				"ack", logResponse.Ack,
 				"success", logResponse.Success)
 			s.onLogResponse(logResponse)
-			if s.currentRole != Follower {
+			if s.GetCurrentRole() != Follower {
 				return
 			}
 		case <-s.eventManager.ElectionTimerChan():
@@ -184,7 +184,7 @@ func (s *Raft) runFollower() {
 				NodeId:        s.config.SelfID,
 				CurrentTerm:   s.currentTerm,
 				VotedFor:      s.votedFor,
-				CurrentRole:   consts.MapRoleToString(s.currentRole),
+				CurrentRole:   consts.MapRoleToString(s.GetCurrentRole()),
 				CurrentLeader: s.currentLeader,
 				CommitLength:  s.CommitLength,
 				LogEntries:    s.LogEntry,
@@ -242,7 +242,7 @@ func (s *Raft) runCandidate() {
 				"lastLogIndex", requestVoteReq.LastLogIndex,
 				"lastLogTerm", requestVoteReq.LastLogTerm)
 			s.onVoteRequest(requestVoteReq)
-			if s.currentRole != Candidate {
+			if s.GetCurrentRole() != Candidate {
 				return
 			}
 
@@ -252,13 +252,13 @@ func (s *Raft) runCandidate() {
 				"granted", requestVoteResp.VoteGranted,
 				"term", requestVoteResp.Term)
 			s.onVoteResponse(requestVoteResp)
-			if s.currentRole != Candidate {
+			if s.GetCurrentRole() != Candidate {
 				return
 			}
 		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Info("[CANDIDATE] Received heartbeat from leader", "leader", logRequest.LeaderId)
 			s.onLogRequest(logRequest)
-			if s.currentRole != Candidate {
+			if s.GetCurrentRole() != Candidate {
 				return
 			}
 
@@ -267,7 +267,7 @@ func (s *Raft) runCandidate() {
 				NodeId:        s.config.SelfID,
 				CurrentTerm:   s.currentTerm,
 				VotedFor:      s.votedFor,
-				CurrentRole:   consts.MapRoleToString(s.currentRole),
+				CurrentRole:   consts.MapRoleToString(s.GetCurrentRole()),
 				CurrentLeader: s.currentLeader,
 				CommitLength:  s.CommitLength,
 				LogEntries:    s.LogEntry,
@@ -297,25 +297,25 @@ func (s *Raft) runLeader() {
 		case voteRequest := <-s.eventManager.VoteRequestChan:
 			slog.Debug("[LEADER] Received {VoteRequest} from", "candidate", voteRequest.CandidateId)
 			s.onVoteRequest(voteRequest)
-			if s.currentRole != Leader {
+			if s.GetCurrentRole() != Leader {
 				return
 			}
 		case voteResponse := <-s.eventManager.VoteResponseChan:
 			slog.Debug("[LEADER] Received {VoteResponse} from", "peer", voteResponse.NodeId)
 			s.onVoteResponse(voteResponse)
-			if s.currentRole != Leader {
+			if s.GetCurrentRole() != Leader {
 				return
 			}
 		case logRequest := <-s.eventManager.LogRequestChan:
 			slog.Debug("[LEADER] Received {LogRequest} from", "leader", logRequest.LeaderId)
 			s.onLogRequest(logRequest)
-			if s.currentRole != Leader {
+			if s.GetCurrentRole() != Leader {
 				return
 			}
 		case logResponse := <-s.eventManager.LogResponseChan:
 			slog.Debug("[LEADER] Received {LogResponse} from", "peer", logResponse.FollowerId)
 			s.onLogResponse(logResponse)
-			if s.currentRole != Leader {
+			if s.GetCurrentRole() != Leader {
 				return
 			}
 		case appendLogEntry := <-s.eventManager.AppendLogEntryChan:
@@ -342,7 +342,7 @@ func (s *Raft) runLeader() {
 				NodeId:        s.config.SelfID,
 				CurrentTerm:   s.currentTerm,
 				VotedFor:      s.votedFor,
-				CurrentRole:   consts.MapRoleToString(s.currentRole),
+				CurrentRole:   consts.MapRoleToString(s.GetCurrentRole()),
 				CurrentLeader: s.currentLeader,
 				CommitLength:  s.CommitLength,
 				LogEntries:    s.LogEntry,
@@ -352,9 +352,11 @@ func (s *Raft) runLeader() {
 }
 
 func (s *Raft) startElection() {
-	s.currentRole = Candidate
+	s.setCurrentRole(Candidate)
+	s.mu.Lock() // Lock for currentTerm and votedFor
 	s.currentTerm += 1
 	s.votedFor = s.config.SelfID
+	s.mu.Unlock()
 	s.votesReceivedMap.Clear()
 	s.votesReceivedMap.Store(s.config.SelfID, true)
 }
@@ -368,7 +370,7 @@ func (s *Raft) onVoteRequest(requestVoteArgs *dto.VoteRequest) {
 
 	if cTerm > s.currentTerm {
 		s.currentTerm = cTerm
-		s.currentRole = Follower
+		s.setCurrentRole(Follower) // setCurrentRole handles its own lock for currentRole
 		s.votedFor = ""
 	}
 
@@ -413,7 +415,7 @@ func (s *Raft) onVoteResponse(requestVoteReply *dto.VoteResponse) {
 	voterTerm := requestVoteReply.Term
 	voterVoteGranted := requestVoteReply.VoteGranted
 
-	if s.currentRole == Candidate && voterTerm == s.currentTerm && voterVoteGranted {
+	if s.GetCurrentRole() == Candidate && voterTerm == s.currentTerm && voterVoteGranted {
 		s.votesReceivedMap.Store(voterId, true)
 		votesReceived := 0
 		s.votesReceivedMap.Range(func(_, _ interface{}) bool {
@@ -422,7 +424,7 @@ func (s *Raft) onVoteResponse(requestVoteReply *dto.VoteResponse) {
 		})
 		majority := len(s.config.Servers)/2 + 1
 		if votesReceived >= majority {
-			s.currentRole = Leader
+			s.setCurrentRole(Leader)
 			s.currentLeader = s.config.SelfID
 			s.eventManager.StopElectionTimer()
 
@@ -434,7 +436,7 @@ func (s *Raft) onVoteResponse(requestVoteReply *dto.VoteResponse) {
 		}
 	} else if voterTerm > s.currentTerm {
 		s.currentTerm = voterTerm
-		s.currentRole = Follower
+		s.setCurrentRole(Follower)
 		s.votedFor = ""
 		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
@@ -455,7 +457,7 @@ func (s *Raft) onLogRequest(logRequest *dto.LogRequest) {
 	}
 
 	if term == s.currentTerm {
-		s.currentRole = Follower
+		s.setCurrentRole(Follower)
 		s.currentLeader = leaderId
 		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
@@ -499,7 +501,7 @@ func (s *Raft) onLogResponse(logResponse *dto.LogResponse) {
 	ack := logResponse.Ack
 	success := logResponse.Success
 
-	if s.currentTerm == term && s.currentRole == Leader {
+	if s.currentTerm == term && s.GetCurrentRole() == Leader {
 		if success && ack >= int32(s.ackedLength[followerId]) {
 			s.sentLength[followerId] = ack
 			s.ackedLength[followerId] = ack
@@ -510,13 +512,16 @@ func (s *Raft) onLogResponse(logResponse *dto.LogResponse) {
 		}
 	} else if term > s.currentTerm {
 		s.currentTerm = term
-		s.currentRole = Follower
+		s.setCurrentRole(Follower)
 		s.votedFor = ""
 		s.eventManager.ResetElectionTimer(randomTimeout(s.config.TimeoutMin, s.config.TimeoutMax))
 	}
 }
 
 func (s *Raft) replicateLog(leaderId string, followerId string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	prefixLength := s.sentLength[followerId]
 	suffix := s.LogEntry[prefixLength:]
 
@@ -622,4 +627,15 @@ func (s *Raft) otherServers() []config.ServerConfig {
 		}
 	}
 	return others
+}
+func (s *Raft) GetCurrentRole() consts.Role {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.currentRole
+}
+
+func (s *Raft) setCurrentRole(role consts.Role) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.currentRole = role
 }
