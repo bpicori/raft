@@ -16,20 +16,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockStorage struct {
-	mock.Mock
-}
-
-func (ms *MockStorage) PersistStateMachine(state *dto.StateMachineState) error {
-	args := ms.Called(state)
-	return args.Error(0)
-}
-
-func (ms *MockStorage) LoadStateMachine() (*dto.StateMachineState, error) {
-	args := ms.Called()
-	return args.Get(0).(*dto.StateMachineState), args.Error(1)
-}
-
 func mockedEventManager() *events.EventManager {
 	return &events.EventManager{
 		ElectionTimer:      NewMockTimer(),
@@ -43,7 +29,7 @@ func mockedEventManager() *events.EventManager {
 	}
 }
 
-func mockedConfig(nodeID string) config.Config {
+func mockedSingleConfig(nodeID string) config.Config {
 	return config.Config{
 		Servers:            make(map[string]config.ServerConfig),
 		SelfID:             nodeID,
@@ -55,15 +41,53 @@ func mockedConfig(nodeID string) config.Config {
 	}
 }
 
+func mockedMultiConfig(nodeID string, servers map[string]config.ServerConfig) config.Config {
+	return config.Config{
+		Servers:            servers,
+		SelfID:             nodeID,
+		SelfServer:         config.ServerConfig{ID: nodeID, Addr: servers[nodeID].Addr},
+		PersistentFilePath: fmt.Sprintf("./test_raft_state_%s.json", nodeID),
+		TimeoutMin:         2000,
+		TimeoutMax:         3000,
+	}
+}
+
+func mockedStorage() *MockStorage {
+	mockStorage := new(MockStorage)
+	mockStorage.On("PersistStateMachine", mock.Anything).Return(nil)
+	mockStorage.On("LoadStateMachine").Return(&dto.StateMachineState{}, nil)
+	return mockStorage
+}
+
 func TestClusterStartAsFollowers(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 
-	mockStorage := new(MockStorage)
-	mockStorage.On("PersistStateMachine", mock.Anything).Return(nil)
-	mockStorage.On("LoadStateMachine").Return(&dto.StateMachineState{}, nil)
+	node := NewRaft(mockedEventManager(), mockedStorage(), mockedSingleConfig("node0"), ctx)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		node.Start()
+	}()
+	time.Sleep(100 * time.Millisecond)
 
-	node := NewRaft(mockedEventManager(), mockStorage, mockedConfig("node0"), ctx)
+	assert.Equal(t, consts.Follower, node.currentRole)
+
+	cancel()
+	wg.Wait()
+}
+
+func TestClusterCandidateStartsElection(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+
+	multiConfig := mockedMultiConfig("node0", map[string]config.ServerConfig{
+		"node0": {ID: "node0", Addr: "localhost:8080"},
+		"node1": {ID: "node1", Addr: "localhost:8081"},
+		"node2": {ID: "node2", Addr: "localhost:8082"},
+	})
+
+	node := NewRaft(mockedEventManager(), mockedStorage(), multiConfig, ctx)
 
 	wg.Add(1)
 	go func() {
@@ -73,19 +97,63 @@ func TestClusterStartAsFollowers(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, consts.Follower, node.currentRole)
+	electionTimeChan := node.eventManager.ElectionTimer.(*MockTimer).CChan
+	electionTimeChan <- time.Now()
 
-	mockStorage.AssertCalled(t, "LoadStateMachine")
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, consts.Candidate, node.GetCurrentRole())
 
 	cancel()
-	fmt.Println("Waiting for all goroutines to stop...")
 	wg.Wait()
-	mockStorage.AssertCalled(t, "PersistStateMachine", mock.Anything)
-	fmt.Println("All goroutines stopped")
 }
 
-// func TestClusterCandidateStartsElection(t *testing.T) {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	wg := &sync.WaitGroup{}
+func TestClusterLeaderElection(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
 
-// }
+	multiConfig := mockedMultiConfig("node0", map[string]config.ServerConfig{
+		"node0": {ID: "node0", Addr: "localhost:8080"},
+		"node1": {ID: "node1", Addr: "localhost:8081"},
+		"node2": {ID: "node2", Addr: "localhost:8082"},
+	})
+
+	node := NewRaft(mockedEventManager(), mockedStorage(), multiConfig, ctx)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		node.Start()
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	// start election
+	electionTimeChan := node.eventManager.ElectionTimer.(*MockTimer).CChan
+	electionTimeChan <- time.Now()
+
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, consts.Candidate, node.GetCurrentRole())
+
+
+	// receive vote response from node2
+	node.eventManager.VoteResponseChan <- &dto.VoteResponse{
+		NodeId:      "node1",
+		Term:        1,
+		VoteGranted: true,
+	}
+	
+	// receive vote response from node2
+	node.eventManager.VoteResponseChan <- &dto.VoteResponse{
+		NodeId:      "node2",
+		Term:        1,
+		VoteGranted: true,
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, consts.Leader, node.GetCurrentRole())
+
+	cancel()
+	wg.Wait()
+}
