@@ -60,48 +60,43 @@ TODO: LPUSH Command Implementation Plan
    - [x] Update storage and return new list length
    - [x] Implement replicateLpushCommand() for log replay
 
-- [ ] 10. STORAGE LAYER CONSIDERATIONS (pkgs/application/application.go)
-    - [ ] Current hashMap stores string key-value pairs
-    - [ ] Need to decide on list storage format:
+- [x] 10. STORAGE LAYER CONSIDERATIONS (pkgs/application/application.go)
+    - [x] Current hashMap stores string key-value pairs
+    - [x] Need to decide on list storage format:
       * Option A: JSON-encoded string arrays
       * Option B: Comma-separated values with escaping
       * Option C: Extend storage to support multiple data types
-    - [ ] For initial implementation, suggest JSON encoding for simplicity
-    - [ ] Update replicateLogEntry() to handle LpushOp case
+    - [x] For initial implementation, suggest JSON encoding for simplicity
+    - [x] Update replicateLogEntry() to handle LpushOp case
 
-- [ ] 11. TCP HANDLER UPDATE (pkgs/tcp/tcp.go)
-    - [ ] Add LpushCommand case to HandleConnection() switch statement
-    - [ ] Extract LpushCommandRequest from RPC
-    - [ ] Create LpushCommandEvent and send to event manager
-    - [ ] Wait for response and send LpushCommandResponse back to client
-    - [ ] Handle error cases and nil arguments
+- [x] 11. TCP HANDLER UPDATE (pkgs/tcp/tcp.go)
+    - [x] Add LpushCommand case to HandleConnection() switch statement
+    - [x] Extract LpushCommandRequest from RPC
+    - [x] Create LpushCommandEvent and send to event manager
+    - [x] Wait for response and send LpushCommandResponse back to client
+    - [x] Handle error cases and nil arguments
 
-- [ ] 12. APPLICATION MAIN LOOP UPDATE (pkgs/application/application.go)
-    - [ ] Add case for LpushCommandRequestChan in Start() function
-    - [ ] Launch Lpush() in goroutine when request received
+- [x] 12. APPLICATION MAIN LOOP UPDATE (pkgs/application/application.go)
+    - [x] Add case for LpushCommandRequestChan in Start() function
+    - [x] Launch Lpush() in goroutine when request received
 
-- [ ] 13. TESTING
-    - [ ] Create unit tests in cmd/client/commands/lpush_test.go (if test structure exists)
-    - [ ] Create integration tests in pkgs/tcp/tcp_test.go following existing patterns
-    - [ ] Test LPUSH with single element
-    - [ ] Test LPUSH with multiple elements
-    - [ ] Test LPUSH on non-existent key (should create new list)
-    - [ ] Test LPUSH on existing list (should prepend)
-    - [ ] Test error scenarios (empty key, network failures, etc.)
+- [x] 13. TESTING
+    - [x] Create unit tests in cmd/client/commands/lpush_test.go (if test structure exists)
+    - [x] Create integration tests in pkgs/tcp/tcp_test.go following existing patterns
+    - [x] Test LPUSH with single element
+    - [x] Test LPUSH with multiple elements
+    - [x] Test LPUSH on non-existent key (should create new list)
+    - [x] Test LPUSH on existing list (should prepend)
+    - [x] Test error scenarios (empty key, network failures, etc.)
 
-- [ ] 14. IMPLEMENTATION NOTES
-    - [ ] Redis LPUSH returns the length of the list after operation
-    - [ ] Redis LPUSH creates list if key doesn't exist
-    - [ ] Redis LPUSH accepts multiple elements: LPUSH key element [element ...]
-    - [ ] Elements are prepended left-to-right (first element becomes head)
-    - [ ] Consider atomic operations and consistency in distributed environment
-    - [ ] Ensure proper error handling and logging throughout
+- [x] 14. IMPLEMENTATION NOTES
+    - [x] Redis LPUSH returns the length of the list after operation
+    - [x] Redis LPUSH creates list if key doesn't exist
+    - [x] Redis LPUSH accepts multiple elements: LPUSH key element [element ...]
+    - [x] Elements are prepended left-to-right (first element becomes head)
+    - [x] Consider atomic operations and consistency in distributed environment
+    - [x] Ensure proper error handling and logging throughout
 
-- [ ] 15. DEPLOYMENT CONSIDERATIONS
-    - [ ] Backward compatibility: old nodes won't understand LPUSH commands
-    - [ ] Consider versioning strategy for protocol changes
-    - [ ] Test cluster behavior during rolling updates
-    - [ ] Document migration strategy for existing deployments
 
 This implementation follows the established patterns in the codebase:
 - Protocol-first design with protobuf
