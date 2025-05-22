@@ -1,15 +1,15 @@
 TODO: LPUSH Command Implementation Plan
 
-- [ ] 1. PROTOCOL BUFFER DEFINITIONS (pkgs/dto/raft.proto)
-   - [ ] Add new LpushCommand message struct with key and elements fields
-   - [ ] Add LpushCommandRequest message for client requests
-   - [ ] Add LpushCommandResponse message for server responses (should return list length)
-   - [ ] Add lpushCommand to Command oneof args
-   - [ ] Add lpushCommandRequest to RaftRPC oneof args  
-   - [ ] Add lpushCommandResponse to RaftRPC oneof args
-   - [ ] Add Command_LpushCommand type
-   - [ ] Add RaftRPC_LpushCommandRequest type
-   - [ ] Add RaftRPC_LpushCommandResponse type
+- [x] 1. PROTOCOL BUFFER DEFINITIONS (pkgs/dto/raft.proto)
+   - [x] Add new LpushCommand message struct with key and elements fields
+   - [x] Add LpushCommandRequest message for client requests
+   - [x] Add LpushCommandResponse message for server responses (should return list length)
+   - [x] Add lpushCommand to Command oneof args
+   - [x] Add lpushCommandRequest to RaftRPC oneof args  
+   - [x] Add lpushCommandResponse to RaftRPC oneof args
+   - [x] Add Command_LpushCommand type
+   - [x] Add RaftRPC_LpushCommandRequest type
+   - [x] Add RaftRPC_LpushCommandResponse type
 
 - [ ] 2. REGENERATE PROTOBUF CODE
    - [ ] Run protoc to regenerate pkgs/dto/raft.pb.go with new message types
