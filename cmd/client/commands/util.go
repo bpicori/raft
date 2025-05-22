@@ -35,6 +35,7 @@ func ShowUsage() {
 	fmt.Fprintf(os.Stderr, "  decr <key>                                  - Decrement a numeric value\n")
 	fmt.Fprintf(os.Stderr, "  rm <key>                                    - Remove a key from the storage\n")
 	fmt.Fprintf(os.Stderr, "  lpush <key> <element> [element2] [element3] - Prepend elements to list\n")
+	fmt.Fprintf(os.Stderr, "  lpop <key>                                  - Remove and return left element from list\n")
 	fmt.Fprintf(os.Stderr, "If no operation is provided, the CLI will start in interactive mode.\n")
 	flag.PrintDefaults()
 }

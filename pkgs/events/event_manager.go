@@ -25,6 +25,7 @@ type EventManager struct {
 	DecrCommandRequestChan   chan DecrCommandEvent
 	RemoveCommandRequestChan chan RemoveCommandEvent
 	LpushCommandRequestChan  chan LpushCommandEvent
+	LpopCommandRequestChan   chan LpopCommandEvent
 }
 
 type AppendLogEntryEvent struct {
@@ -55,6 +56,7 @@ func NewEventManager() *EventManager {
 		DecrCommandRequestChan:   make(chan DecrCommandEvent),
 		RemoveCommandRequestChan: make(chan RemoveCommandEvent),
 		LpushCommandRequestChan:  make(chan LpushCommandEvent),
+		LpopCommandRequestChan:   make(chan LpopCommandEvent),
 	}
 }
 

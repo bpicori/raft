@@ -39,3 +39,8 @@ type LpushCommandEvent struct {
 	Payload *dto.LpushCommandRequest
 	Reply   chan *dto.LpushCommandResponse
 }
+
+type LpopCommandEvent struct {
+	Payload *dto.LpopCommandRequest
+	Reply   chan *dto.LpopCommandResponse
+}

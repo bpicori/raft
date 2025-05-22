@@ -48,7 +48,6 @@ func printTable(results []*dto.NodeStatusResponse) {
 	// Add table header
 	t.AppendHeader(table.Row{"Node ID", "Term", "Voted For", "Role", "Leader", "Log Count", "Last Log Entry"})
 
-
 	// Add data rows
 	for _, result := range results {
 		lastLogEntry := &dto.LogEntry{}

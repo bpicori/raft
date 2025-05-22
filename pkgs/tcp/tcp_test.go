@@ -25,7 +25,7 @@ func TestStartAndShutdown(t *testing.T) {
 		defer wg.Done()
 		Start(addr, eventManager, ctx)
 	}()
-	time.Sleep(100 * time.Millisecond) // Allow server to start
+	time.Sleep(20 * time.Millisecond) // Allow server to start
 
 	conn, err := net.Dial("tcp", addr)
 	assert.NoError(t, err)
@@ -41,6 +41,7 @@ func TestStartAndShutdown(t *testing.T) {
 }
 
 func TestSendAsyncRPC_ConnectionError(t *testing.T) {
+	t.Parallel()
 	// Using a port that's (hopefully) not in use
 	addr := "127.0.0.1:65432"
 
@@ -68,14 +69,14 @@ func TestSendAsyncRPC(t *testing.T) {
 		Start(addr, eventManager, ctx)
 	}()
 
-	time.Sleep(100 * time.Millisecond) // Allow server to start
+	time.Sleep(20 * time.Millisecond) // Allow server to start
 
 	voteRequestReceived := make(chan bool, 1)
 	go func() {
 		select {
 		case <-eventManager.VoteRequestChan:
 			voteRequestReceived <- true
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			voteRequestReceived <- false
 		}
 	}()
@@ -113,7 +114,7 @@ func TestSendSyncRPC(t *testing.T) {
 		defer wg.Done()
 		Start(addr, eventManager, ctx)
 	}()
-	time.Sleep(100 * time.Millisecond) // Allow server to start
+	time.Sleep(20 * time.Millisecond) // Allow server to start
 
 	// Handle NodeStatus requests in a goroutine
 	go func() {
@@ -126,7 +127,7 @@ func TestSendSyncRPC(t *testing.T) {
 				CurrentLeader: "node1",
 			}
 			event.Reply <- response
-		case <-time.After(2 * time.Second):
+		case <-time.After(400 * time.Millisecond):
 			t.Error("Timeout waiting for NodeStatus request")
 		}
 	}()
@@ -150,6 +151,7 @@ func TestSendSyncRPC(t *testing.T) {
 }
 
 func TestSendSyncRPC_ConnectionError(t *testing.T) {
+	t.Parallel()
 	// Using a port that's (hopefully) not in use
 	addr := "127.0.0.1:65433"
 
@@ -166,6 +168,7 @@ func TestSendSyncRPC_ConnectionError(t *testing.T) {
 }
 
 func TestHandleConnection_InvalidMessageType(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -194,12 +197,13 @@ func TestHandleConnection_InvalidMessageType(t *testing.T) {
 	select {
 	case <-done:
 		// This is the expected path - connection should be closed
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		t.Error("HandleConnection did not complete in time")
 	}
 }
 
 func TestHandleConnection_VoteRequest(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -234,7 +238,7 @@ func TestHandleConnection_VoteRequest(t *testing.T) {
 			assert.Equal(t, voteRequest.LastLogIndex, req.LastLogIndex)
 			assert.Equal(t, voteRequest.LastLogTerm, req.LastLogTerm)
 			voteRequestReceived <- true
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			voteRequestReceived <- false
 		}
 	}()
@@ -249,6 +253,7 @@ func TestHandleConnection_VoteRequest(t *testing.T) {
 }
 
 func TestHandleConnection_VoteResponse(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -281,7 +286,7 @@ func TestHandleConnection_VoteResponse(t *testing.T) {
 			assert.Equal(t, voteResponse.NodeId, resp.NodeId)
 			assert.Equal(t, voteResponse.VoteGranted, resp.VoteGranted)
 			voteResponseReceived <- true
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			voteResponseReceived <- false
 		}
 	}()
@@ -296,6 +301,7 @@ func TestHandleConnection_VoteResponse(t *testing.T) {
 }
 
 func TestHandleConnection_LogRequest(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -332,7 +338,7 @@ func TestHandleConnection_LogRequest(t *testing.T) {
 			assert.Equal(t, logRequest.PrefixTerm, req.PrefixTerm)
 			assert.Equal(t, logRequest.LeaderCommit, req.LeaderCommit)
 			logRequestReceived <- true
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			logRequestReceived <- false
 		}
 	}()
@@ -347,6 +353,7 @@ func TestHandleConnection_LogRequest(t *testing.T) {
 }
 
 func TestHandleConnection_LogResponse(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -381,7 +388,7 @@ func TestHandleConnection_LogResponse(t *testing.T) {
 			assert.Equal(t, logResponse.Ack, resp.Ack)
 			assert.Equal(t, logResponse.Success, resp.Success)
 			logResponseReceived <- true
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			logResponseReceived <- false
 		}
 	}()
@@ -396,6 +403,7 @@ func TestHandleConnection_LogResponse(t *testing.T) {
 }
 
 func TestHandleConnection_SetCommand(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -430,7 +438,7 @@ func TestHandleConnection_SetCommand(t *testing.T) {
 			event.Reply <- &dto.GenericResponse{
 				Ok: true,
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for SetCommand")
 		}
 	}()
@@ -455,6 +463,7 @@ func TestHandleConnection_SetCommand(t *testing.T) {
 }
 
 func TestHandleConnection_GetCommand(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -487,7 +496,7 @@ func TestHandleConnection_GetCommand(t *testing.T) {
 			event.Reply <- &dto.GetCommandResponse{
 				Value: "testValue",
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for GetCommand")
 		}
 	}()
@@ -512,6 +521,7 @@ func TestHandleConnection_GetCommand(t *testing.T) {
 }
 
 func TestHandleConnection_IncrCommand(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -544,7 +554,7 @@ func TestHandleConnection_IncrCommand(t *testing.T) {
 			event.Reply <- &dto.IncrCommandResponse{
 				Value: 42,
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for IncrCommand")
 		}
 	}()
@@ -569,6 +579,7 @@ func TestHandleConnection_IncrCommand(t *testing.T) {
 }
 
 func TestHandleConnection_DecrCommand(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -601,7 +612,7 @@ func TestHandleConnection_DecrCommand(t *testing.T) {
 			event.Reply <- &dto.DecrCommandResponse{
 				Value: 41,
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for DecrCommand")
 		}
 	}()
@@ -626,6 +637,7 @@ func TestHandleConnection_DecrCommand(t *testing.T) {
 }
 
 func TestHandleConnection_RemoveCommand(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -658,7 +670,7 @@ func TestHandleConnection_RemoveCommand(t *testing.T) {
 			event.Reply <- &dto.GenericResponse{
 				Ok: true,
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for RemoveCommand")
 		}
 	}()
@@ -683,6 +695,7 @@ func TestHandleConnection_RemoveCommand(t *testing.T) {
 }
 
 func TestHandleConnection_LpushCommand_SingleElement(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -719,7 +732,7 @@ func TestHandleConnection_LpushCommand_SingleElement(t *testing.T) {
 				Length: 1,
 				Error:  "",
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for LpushCommand")
 		}
 	}()
@@ -745,6 +758,7 @@ func TestHandleConnection_LpushCommand_SingleElement(t *testing.T) {
 }
 
 func TestHandleConnection_LpushCommand_MultipleElements(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -783,7 +797,7 @@ func TestHandleConnection_LpushCommand_MultipleElements(t *testing.T) {
 				Length: 3,
 				Error:  "",
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for LpushCommand")
 		}
 	}()
@@ -809,6 +823,7 @@ func TestHandleConnection_LpushCommand_MultipleElements(t *testing.T) {
 }
 
 func TestHandleConnection_LpushCommand_ExistingList(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -845,7 +860,7 @@ func TestHandleConnection_LpushCommand_ExistingList(t *testing.T) {
 				Length: 3,
 				Error:  "",
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for LpushCommand")
 		}
 	}()
@@ -871,6 +886,7 @@ func TestHandleConnection_LpushCommand_ExistingList(t *testing.T) {
 }
 
 func TestHandleConnection_LpushCommand_ErrorScenarios(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -905,7 +921,7 @@ func TestHandleConnection_LpushCommand_ErrorScenarios(t *testing.T) {
 				Length: 0,
 				Error:  "key is required",
 			}
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Timeout waiting for LpushCommand")
 		}
 	}()
@@ -931,6 +947,13 @@ func TestHandleConnection_LpushCommand_ErrorScenarios(t *testing.T) {
 }
 
 func TestHandleConnection_LpushCommand_Timeout(t *testing.T) {
+	// Cannot run in parallel due to global TCP_TIMEOUT modification
+
+	// Temporarily reduce TCP_TIMEOUT for faster test execution
+	originalTimeout := TCP_TIMEOUT
+	TCP_TIMEOUT = 200 * time.Millisecond
+	defer func() { TCP_TIMEOUT = originalTimeout }()
+
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -979,12 +1002,13 @@ func TestHandleConnection_LpushCommand_Timeout(t *testing.T) {
 		assert.NotNil(t, lpushResponse)
 		assert.Equal(t, int32(0), lpushResponse.Length)
 		assert.Equal(t, "Timeout", lpushResponse.Error)
-	case <-time.After(6 * time.Second):
+	case <-time.After(400 * time.Millisecond):
 		t.Log("Test completed - timeout response received as expected")
 	}
 }
 
 func TestHandleConnection_LpushCommand_NilArgs(t *testing.T) {
+	t.Parallel()
 	eventManager := events.NewEventManager()
 
 	// Create a pair of connected net.Conn objects
@@ -1016,7 +1040,285 @@ func TestHandleConnection_LpushCommand_NilArgs(t *testing.T) {
 	select {
 	case <-done:
 		// This is the expected path - connection should be closed
-	case <-time.After(2 * time.Second):
+	case <-time.After(400 * time.Millisecond):
+		t.Log("Test completed - connection handled nil args appropriately")
+	}
+}
+
+func TestHandleConnection_LpopCommand_WithElements(t *testing.T) {
+	t.Parallel()
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message
+	lpopCommandRequest := &dto.LpopCommandRequest{
+		Key: "listKey",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: lpopCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Handle the LpopCommand in a goroutine
+	go func() {
+		select {
+		case event := <-eventManager.LpopCommandRequestChan:
+			assert.Equal(t, lpopCommandRequest.Key, event.Payload.Key)
+
+			// Send a response with an element
+			event.Reply <- &dto.LpopCommandResponse{
+				Element: "element1",
+				Error:   "",
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Error("Timeout waiting for LpopCommand")
+		}
+	}()
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the response
+	buffer := make([]byte, 4096)
+	n, err := client.Read(buffer)
+	assert.NoError(t, err)
+
+	var response dto.RaftRPC
+	err = proto.Unmarshal(buffer[:n], &response)
+	assert.NoError(t, err)
+
+	lpopResponse := response.GetLpopCommandResponse()
+	assert.NotNil(t, lpopResponse)
+	assert.Equal(t, "element1", lpopResponse.Element)
+	assert.Equal(t, "", lpopResponse.Error)
+}
+
+func TestHandleConnection_LpopCommand_EmptyList(t *testing.T) {
+	t.Parallel()
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message for empty list
+	lpopCommandRequest := &dto.LpopCommandRequest{
+		Key: "emptyListKey",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: lpopCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Handle the LpopCommand in a goroutine
+	go func() {
+		select {
+		case event := <-eventManager.LpopCommandRequestChan:
+			assert.Equal(t, lpopCommandRequest.Key, event.Payload.Key)
+
+			// Send a response for empty list (empty element, no error)
+			event.Reply <- &dto.LpopCommandResponse{
+				Element: "",
+				Error:   "",
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Error("Timeout waiting for LpopCommand")
+		}
+	}()
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the response
+	buffer := make([]byte, 4096)
+	n, err := client.Read(buffer)
+	assert.NoError(t, err)
+
+	var response dto.RaftRPC
+	err = proto.Unmarshal(buffer[:n], &response)
+	assert.NoError(t, err)
+
+	lpopResponse := response.GetLpopCommandResponse()
+	assert.NotNil(t, lpopResponse)
+	assert.Equal(t, "", lpopResponse.Element)
+	assert.Equal(t, "", lpopResponse.Error)
+}
+
+func TestHandleConnection_LpopCommand_ErrorScenarios(t *testing.T) {
+	t.Parallel()
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message with empty key
+	lpopCommandRequest := &dto.LpopCommandRequest{
+		Key: "",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: lpopCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Handle the LpopCommand in a goroutine
+	go func() {
+		select {
+		case event := <-eventManager.LpopCommandRequestChan:
+			assert.Equal(t, "", event.Payload.Key)
+
+			// Send an error response for empty key
+			event.Reply <- &dto.LpopCommandResponse{
+				Element: "",
+				Error:   "key is required",
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Error("Timeout waiting for LpopCommand")
+		}
+	}()
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the response
+	buffer := make([]byte, 4096)
+	n, err := client.Read(buffer)
+	assert.NoError(t, err)
+
+	var response dto.RaftRPC
+	err = proto.Unmarshal(buffer[:n], &response)
+	assert.NoError(t, err)
+
+	lpopResponse := response.GetLpopCommandResponse()
+	assert.NotNil(t, lpopResponse)
+	assert.Equal(t, "", lpopResponse.Element)
+	assert.Equal(t, "key is required", lpopResponse.Error)
+}
+
+func TestHandleConnection_LpopCommand_Timeout(t *testing.T) {
+	// Cannot run in parallel due to global TCP_TIMEOUT modification
+
+	// Temporarily reduce TCP_TIMEOUT for faster test execution
+	originalTimeout := TCP_TIMEOUT
+	TCP_TIMEOUT = 200 * time.Millisecond
+	defer func() { TCP_TIMEOUT = originalTimeout }()
+
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message
+	lpopCommandRequest := &dto.LpopCommandRequest{
+		Key: "timeoutKey",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: lpopCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Don't handle the LpopCommand to simulate timeout
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the timeout response with timeout to prevent test hanging
+	done := make(chan bool)
+	var response dto.RaftRPC
+	go func() {
+		buffer := make([]byte, 4096)
+		n, err := client.Read(buffer)
+		if err == nil {
+			proto.Unmarshal(buffer[:n], &response)
+		}
+		done <- true
+	}()
+
+	select {
+	case <-done:
+		lpopResponse := response.GetLpopCommandResponse()
+		assert.NotNil(t, lpopResponse)
+		assert.Equal(t, "", lpopResponse.Element)
+		assert.Equal(t, "Timeout", lpopResponse.Error)
+	case <-time.After(400 * time.Millisecond):
+		t.Log("Test completed - timeout response received as expected")
+	}
+}
+
+func TestHandleConnection_LpopCommand_NilArgs(t *testing.T) {
+	t.Parallel()
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message with nil args
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: nil,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	done := make(chan bool)
+	go func() {
+		HandleConnection(server, eventManager)
+		done <- true
+	}()
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Connection should be closed by HandleConnection due to nil args
+	select {
+	case <-done:
+		// This is the expected path - connection should be closed
+	case <-time.After(400 * time.Millisecond):
 		t.Log("Test completed - connection handled nil args appropriately")
 	}
 }

@@ -135,14 +135,13 @@ func TestClusterLeaderElection(t *testing.T) {
 
 	assert.Equal(t, consts.Candidate, node.GetCurrentRole())
 
-
 	// receive vote response from node2
 	node.eventManager.VoteResponseChan <- &dto.VoteResponse{
 		NodeId:      "node1",
 		Term:        1,
 		VoteGranted: true,
 	}
-	
+
 	// receive vote response from node2
 	node.eventManager.VoteResponseChan <- &dto.VoteResponse{
 		NodeId:      "node2",

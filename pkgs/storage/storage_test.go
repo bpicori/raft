@@ -223,5 +223,3 @@ func TestFilePermissionErrors(t *testing.T) {
 	err = storage.PersistStateMachine(state)
 	assert.Error(t, err, "Should fail to overwrite read-only file")
 }
-
-
