@@ -1,0 +1,112 @@
+TODO: LPUSH Command Implementation Plan
+
+- [ ] 1. PROTOCOL BUFFER DEFINITIONS (pkgs/dto/raft.proto)
+   - [ ] Add new LpushCommand message struct with key and elements fields
+   - [ ] Add LpushCommandRequest message for client requests
+   - [ ] Add LpushCommandResponse message for server responses (should return list length)
+   - [ ] Add lpushCommand to Command oneof args
+   - [ ] Add lpushCommandRequest to RaftRPC oneof args  
+   - [ ] Add lpushCommandResponse to RaftRPC oneof args
+   - [ ] Add Command_LpushCommand type
+   - [ ] Add RaftRPC_LpushCommandRequest type
+   - [ ] Add RaftRPC_LpushCommandResponse type
+
+- [ ] 2. REGENERATE PROTOBUF CODE
+   - [ ] Run protoc to regenerate pkgs/dto/raft.pb.go with new message types
+   - [ ] This will automatically generate getters and setters for new structs
+
+- [ ] 3. CONSTANTS UPDATE (pkgs/consts/consts.go)
+   - [ ] Add LpushCommand to RaftRPCType enum
+   - [ ] Add LpushOp to CommandType enum  
+   - [ ] Update String() method for RaftRPCType to handle LpushCommand
+   - [ ] Update String() method for CommandType to handle LpushOp
+   - [ ] Update MapStringToRPCType() to handle "LpushCommand"
+   - [ ] Update MapStringToCommandType() to handle "LPUSH"
+
+- [ ] 4. EVENT DEFINITIONS (pkgs/events/application_events.go)
+   - [ ] Add LpushCommandEvent struct with Payload and Reply channels
+   - [ ] Follow same pattern as SetCommandEvent, GetCommandEvent, etc.
+
+- [ ] 5. EVENT MANAGER UPDATE (pkgs/events/event_manager.go)
+   - [ ] Add LpushCommandRequestChan to EventManager struct
+   - [ ] Initialize channel in NewEventManager() constructor
+
+- [ ] 6. CLIENT COMMAND IMPLEMENTATION (cmd/client/commands/lpush.go)
+   - [ ] Create new file following the pattern of set.go
+   - [ ] Implement LpushCommand(cfg *config.Config, key string, elements []string) function
+   - [ ] Use FindLeader() to locate cluster leader
+   - [ ] Create LpushCommandRequest with key and elements
+   - [ ] Send RPC request and handle response
+   - [ ] Display the new list length to user
+   - [ ] Handle error cases (no leader, RPC failures, etc.)
+
+- [ ] 7. CLIENT MAIN INTEGRATION (cmd/client/main.go)
+   - [ ] Add "lpush" case to executeCommand() switch statement
+   - [ ] Add "lpush" case to handleCommandExecution() switch statement
+   - [ ] Add argument validation (require key + at least one element)
+   - [ ] Call commands.LpushCommand() with parsed arguments
+
+- [ ] 8. HELP AND USAGE UPDATE (cmd/client/commands/util.go)
+   - [ ] Add lpush command documentation to PrintHelp()
+   - [ ] Add lpush command documentation to ShowUsage()
+   - [ ] Format: "lpush <key> <element> [element2] [element3] ... - Prepend elements to list"
+
+- [ ] 9. APPLICATION LAYER IMPLEMENTATION (pkgs/application/lpush.go)
+   - [ ] Create new file following the pattern of set.go
+   - [ ] Implement Lpush(eventManager *events.EventManager, lpushCommandEvent *events.LpushCommandEvent)
+   - [ ] Add validation for key and elements (key required, at least one element)
+   - [ ] Create AppendLogEntryEvent with LpushCommand
+   - [ ] Handle timeout scenarios
+   - [ ] Update storage and return new list length
+   - [ ] Implement replicateLpushCommand() for log replay
+
+- [ ] 10. STORAGE LAYER CONSIDERATIONS (pkgs/application/application.go)
+    - [ ] Current hashMap stores string key-value pairs
+    - [ ] Need to decide on list storage format:
+      * Option A: JSON-encoded string arrays
+      * Option B: Comma-separated values with escaping
+      * Option C: Extend storage to support multiple data types
+    - [ ] For initial implementation, suggest JSON encoding for simplicity
+    - [ ] Update replicateLogEntry() to handle LpushOp case
+
+- [ ] 11. TCP HANDLER UPDATE (pkgs/tcp/tcp.go)
+    - [ ] Add LpushCommand case to HandleConnection() switch statement
+    - [ ] Extract LpushCommandRequest from RPC
+    - [ ] Create LpushCommandEvent and send to event manager
+    - [ ] Wait for response and send LpushCommandResponse back to client
+    - [ ] Handle error cases and nil arguments
+
+- [ ] 12. APPLICATION MAIN LOOP UPDATE (pkgs/application/application.go)
+    - [ ] Add case for LpushCommandRequestChan in Start() function
+    - [ ] Launch Lpush() in goroutine when request received
+
+- [ ] 13. TESTING
+    - [ ] Create unit tests in cmd/client/commands/lpush_test.go (if test structure exists)
+    - [ ] Create integration tests in pkgs/tcp/tcp_test.go following existing patterns
+    - [ ] Test LPUSH with single element
+    - [ ] Test LPUSH with multiple elements
+    - [ ] Test LPUSH on non-existent key (should create new list)
+    - [ ] Test LPUSH on existing list (should prepend)
+    - [ ] Test error scenarios (empty key, network failures, etc.)
+
+- [ ] 14. IMPLEMENTATION NOTES
+    - [ ] Redis LPUSH returns the length of the list after operation
+    - [ ] Redis LPUSH creates list if key doesn't exist
+    - [ ] Redis LPUSH accepts multiple elements: LPUSH key element [element ...]
+    - [ ] Elements are prepended left-to-right (first element becomes head)
+    - [ ] Consider atomic operations and consistency in distributed environment
+    - [ ] Ensure proper error handling and logging throughout
+
+- [ ] 15. DEPLOYMENT CONSIDERATIONS
+    - [ ] Backward compatibility: old nodes won't understand LPUSH commands
+    - [ ] Consider versioning strategy for protocol changes
+    - [ ] Test cluster behavior during rolling updates
+    - [ ] Document migration strategy for existing deployments
+
+This implementation follows the established patterns in the codebase:
+- Protocol-first design with protobuf
+- Event-driven architecture with channels
+- Command pattern for operations
+- Consistent error handling and logging
+- Client-server RPC communication
+- Raft consensus for distributed coordination 
