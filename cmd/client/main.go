@@ -115,6 +115,15 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 		}
 		key := args[0]
 		commands.Rm(cfg, key)
+	case "lpush":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and at least one element are required for lpush operation\n")
+			commands.ShowUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		elements := args[1:]
+		commands.LpushCommand(cfg, key, elements)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
 		commands.ShowUsage()
@@ -170,6 +179,14 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		}
 		key := args[0]
 		commands.Rm(cfg, key)
+	case "lpush":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and at least one element are required for lpush operation\n")
+			return
+		}
+		key := args[0]
+		elements := args[1:]
+		commands.LpushCommand(cfg, key, elements)
 	case "clear", "cls":
 		commands.ClearScreen()
 	case "help":

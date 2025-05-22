@@ -62,6 +62,7 @@ message Command {
     IncrCommand incrCommand = 3;
     DecrCommand decrCommand = 4;
     RemoveCommand removeCommand = 5;
+    LpushCommand lpushCommand = 6;
   }
 }
 
@@ -82,6 +83,10 @@ message RemoveCommand {
   string key = 1;
 }
 
+message LpushCommand {
+  string key = 1;
+  repeated string elements = 2;
+}
 
 /* Application */
 message SetCommandRequest {
@@ -114,6 +119,8 @@ message RaftRPC {
     DecrCommandRequest decrCommandRequest = 14;
     DecrCommandResponse decrCommandResponse = 15;
     RemoveCommandRequest removeCommandRequest = 16;
+    LpushCommandRequest lpushCommandRequest = 17;
+    LpushCommandResponse lpushCommandResponse = 18;
   }
 }
 
@@ -153,4 +160,14 @@ message DecrCommandResponse {
 
 message RemoveCommandRequest {
   string key = 1;
+}
+
+message LpushCommandRequest {
+  string key = 1;
+  repeated string elements = 2;
+}
+
+message LpushCommandResponse {
+  int32 length = 1;
+  string error = 2;
 }

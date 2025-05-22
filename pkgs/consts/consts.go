@@ -30,6 +30,7 @@ const (
 	IncrCommand
 	DecrCommand
 	RemoveCommand
+	LpushCommand
 )
 
 const (
@@ -37,8 +38,8 @@ const (
 	DeleteOp
 	IncrementOp
 	DecrementOp
+	LpushOp
 )
-
 
 // String method for RaftRPCType for logging/debugging
 func (rt RaftRPCType) String() string {
@@ -65,6 +66,8 @@ func (rt RaftRPCType) String() string {
 		return "DecrCommand"
 	case RemoveCommand:
 		return "RemoveCommand"
+	case LpushCommand:
+		return "LpushCommand"
 	default:
 		return "Unknown"
 	}
@@ -81,6 +84,8 @@ func (ct CommandType) String() string {
 		return "INCREMENT"
 	case DecrementOp:
 		return "DECREMENT"
+	case LpushOp:
+		return "LPUSH"
 	default:
 		return "Unknown"
 	}
@@ -109,6 +114,8 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return DecrCommand, nil
 	case "RemoveCommand":
 		return RemoveCommand, nil
+	case "LpushCommand":
+		return LpushCommand, nil
 	case "GenericResponse":
 		return GenericResponse, nil
 	default:
@@ -146,6 +153,8 @@ func MapStringToCommandType(opString string) CommandType {
 		return IncrementOp
 	case "DECREMENT":
 		return DecrementOp
+	case "LPUSH":
+		return LpushOp
 	default:
 		return SetOp
 	}

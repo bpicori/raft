@@ -2,7 +2,6 @@ package events
 
 import "bpicori/raft/pkgs/dto"
 
-
 type SetCommandEvent struct {
 	Payload *dto.SetCommandRequest
 	Reply   chan *dto.GenericResponse
@@ -26,7 +25,7 @@ type IncrCommandEvent struct {
 	Reply   chan *dto.IncrCommandResponse
 }
 
-type DecrCommandEvent struct {	
+type DecrCommandEvent struct {
 	Payload *dto.DecrCommandRequest
 	Reply   chan *dto.DecrCommandResponse
 }
@@ -34,4 +33,9 @@ type DecrCommandEvent struct {
 type RemoveCommandEvent struct {
 	Payload *dto.RemoveCommandRequest
 	Reply   chan *dto.GenericResponse
+}
+
+type LpushCommandEvent struct {
+	Payload *dto.LpushCommandRequest
+	Reply   chan *dto.LpushCommandResponse
 }
