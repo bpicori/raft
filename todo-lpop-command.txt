@@ -18,50 +18,50 @@
 - [x] Add "LpopCommand" case to MapStringToRPCType function
 
 ## Core Application Logic Implementation
-- [ ] Create pkgs/application/lpop.go file with main Lpop function
-- [ ] Implement validateLpopCommand function for input validation
-- [ ] Implement main Lpop function following lpush pattern with event handling
-- [ ] Implement replicateLpopCommand function for state machine replication
-- [ ] Add error handling for empty lists (return nil element, no error)
-- [ ] Add error handling for non-existent keys (return nil element, no error)
-- [ ] Handle JSON unmarshaling and marshaling for list storage
-- [ ] Implement proper list element removal from left side (index 0)
-- [ ] Add timeout handling for consensus operations
+- [x] Create pkgs/application/lpop.go file with main Lpop function
+- [x] Implement validateLpopCommand function for input validation
+- [x] Implement main Lpop function following lpush pattern with event handling
+- [x] Implement replicateLpopCommand function for state machine replication
+- [x] Add error handling for empty lists (return nil element, no error)
+- [x] Add error handling for non-existent keys (return nil element, no error)
+- [x] Handle JSON unmarshaling and marshaling for list storage
+- [x] Implement proper list element removal from left side (index 0)
+- [x] Add timeout handling for consensus operations
 
 ## Application Integration
-- [ ] Add lpopCommandEvent case to main select loop in pkgs/application/application.go
-- [ ] Add LpopOp case to replicateLogEntry switch statement
-- [ ] Import lpop functions in application.go
-- [ ] Test application integration with existing raft consensus
+- [x] Add lpopCommandEvent case to main select loop in pkgs/application/application.go
+- [x] Add LpopOp case to replicateLogEntry switch statement
+- [x] Import lpop functions in application.go
+- [x] Test application integration with existing raft consensus
 
 ## Client Command Implementation  
-- [ ] Create cmd/client/commands/lpop.go file
-- [ ] Implement lpop CLI command following existing command patterns
-- [ ] Add proper error handling and output formatting
-- [ ] Add lpop command registration to client main.go
-- [ ] Test client command execution and response handling
+- [x] Create cmd/client/commands/lpop.go file
+- [x] Implement lpop CLI command following existing command patterns
+- [x] Add proper error handling and output formatting
+- [x] Add lpop command registration to client main.go
+- [x] Test client command execution and response handling
 
 ## Server Integration
-- [ ] Add lpop command handling to server RPC message processing
-- [ ] Integrate lpop command with existing TCP/HTTP server infrastructure
-- [ ] Add proper routing for lpop commands from external clients
-- [ ] Test end-to-end lpop command execution through server
+- [x] Add lpop command handling to server RPC message processing
+- [x] Integrate lpop command with existing TCP/HTTP server infrastructure
+- [x] Add proper routing for lpop commands from external clients
+- [x] Test end-to-end lpop command execution through server
 
 ## Testing and Validation
-- [ ] Write unit tests for lpop application logic
-- [ ] Write unit tests for lpop command validation
-- [ ] Write integration tests for lpop with raft consensus
-- [ ] Test lpop behavior with empty lists
-- [ ] Test lpop behavior with non-existent keys  
-- [ ] Test lpop behavior with single-element lists
-- [ ] Test lpop behavior with multi-element lists
-- [ ] Test lpop command through client CLI
-- [ ] Test lpop command through server endpoints
-- [ ] Verify proper replication across raft cluster nodes
+- [x] Write unit tests for lpop application logic
+- [x] Write unit tests for lpop command validation
+- [x] Write integration tests for lpop with raft consensus
+- [x] Test lpop behavior with empty lists
+- [x] Test lpop behavior with non-existent keys  
+- [x] Test lpop behavior with single-element lists
+- [x] Test lpop behavior with multi-element lists
+- [x] Test lpop command through client CLI
+- [x] Test lpop command through server endpoints
+- [x] Verify proper replication across raft cluster nodes
 
 ## Documentation and Cleanup
-- [ ] Add lpop command documentation to README.md
-- [ ] Add code comments explaining lpop implementation details
-- [ ] Verify all new code follows existing project patterns
-- [ ] Run linting and formatting tools on new code
-- [ ] Update any relevant API documentation 
+- [x] Add lpop command documentation to README.md
+- [x] Add code comments explaining lpop implementation details
+- [x] Verify all new code follows existing project patterns
+- [x] Run linting and formatting tools on new code
+- [x] Update any relevant API documentation 

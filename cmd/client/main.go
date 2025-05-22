@@ -124,6 +124,14 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 		key := args[0]
 		elements := args[1:]
 		commands.LpushCommand(cfg, key, elements)
+	case "lpop":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for lpop operation\n")
+			commands.ShowUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		commands.LpopCommand(cfg, key)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
 		commands.ShowUsage()
@@ -187,6 +195,13 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		key := args[0]
 		elements := args[1:]
 		commands.LpushCommand(cfg, key, elements)
+	case "lpop":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for lpop operation\n")
+			return
+		}
+		key := args[0]
+		commands.LpopCommand(cfg, key)
 	case "clear", "cls":
 		commands.ClearScreen()
 	case "help":

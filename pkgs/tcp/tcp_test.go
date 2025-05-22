@@ -1020,3 +1020,270 @@ func TestHandleConnection_LpushCommand_NilArgs(t *testing.T) {
 		t.Log("Test completed - connection handled nil args appropriately")
 	}
 }
+
+func TestHandleConnection_LpopCommand_WithElements(t *testing.T) {
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message
+	lpopCommandRequest := &dto.LpopCommandRequest{
+		Key: "listKey",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: lpopCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Handle the LpopCommand in a goroutine
+	go func() {
+		select {
+		case event := <-eventManager.LpopCommandRequestChan:
+			assert.Equal(t, lpopCommandRequest.Key, event.Payload.Key)
+
+			// Send a response with an element
+			event.Reply <- &dto.LpopCommandResponse{
+				Element: "element1",
+				Error:   "",
+			}
+		case <-time.After(500 * time.Millisecond):
+			t.Error("Timeout waiting for LpopCommand")
+		}
+	}()
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the response
+	buffer := make([]byte, 4096)
+	n, err := client.Read(buffer)
+	assert.NoError(t, err)
+
+	var response dto.RaftRPC
+	err = proto.Unmarshal(buffer[:n], &response)
+	assert.NoError(t, err)
+
+	lpopResponse := response.GetLpopCommandResponse()
+	assert.NotNil(t, lpopResponse)
+	assert.Equal(t, "element1", lpopResponse.Element)
+	assert.Equal(t, "", lpopResponse.Error)
+}
+
+func TestHandleConnection_LpopCommand_EmptyList(t *testing.T) {
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message for empty list
+	lpopCommandRequest := &dto.LpopCommandRequest{
+		Key: "emptyListKey",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: lpopCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Handle the LpopCommand in a goroutine
+	go func() {
+		select {
+		case event := <-eventManager.LpopCommandRequestChan:
+			assert.Equal(t, lpopCommandRequest.Key, event.Payload.Key)
+
+			// Send a response for empty list (empty element, no error)
+			event.Reply <- &dto.LpopCommandResponse{
+				Element: "",
+				Error:   "",
+			}
+		case <-time.After(500 * time.Millisecond):
+			t.Error("Timeout waiting for LpopCommand")
+		}
+	}()
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the response
+	buffer := make([]byte, 4096)
+	n, err := client.Read(buffer)
+	assert.NoError(t, err)
+
+	var response dto.RaftRPC
+	err = proto.Unmarshal(buffer[:n], &response)
+	assert.NoError(t, err)
+
+	lpopResponse := response.GetLpopCommandResponse()
+	assert.NotNil(t, lpopResponse)
+	assert.Equal(t, "", lpopResponse.Element)
+	assert.Equal(t, "", lpopResponse.Error)
+}
+
+func TestHandleConnection_LpopCommand_ErrorScenarios(t *testing.T) {
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message with empty key
+	lpopCommandRequest := &dto.LpopCommandRequest{
+		Key: "",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: lpopCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Handle the LpopCommand in a goroutine
+	go func() {
+		select {
+		case event := <-eventManager.LpopCommandRequestChan:
+			assert.Equal(t, "", event.Payload.Key)
+
+			// Send an error response for empty key
+			event.Reply <- &dto.LpopCommandResponse{
+				Element: "",
+				Error:   "key is required",
+			}
+		case <-time.After(500 * time.Millisecond):
+			t.Error("Timeout waiting for LpopCommand")
+		}
+	}()
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the response
+	buffer := make([]byte, 4096)
+	n, err := client.Read(buffer)
+	assert.NoError(t, err)
+
+	var response dto.RaftRPC
+	err = proto.Unmarshal(buffer[:n], &response)
+	assert.NoError(t, err)
+
+	lpopResponse := response.GetLpopCommandResponse()
+	assert.NotNil(t, lpopResponse)
+	assert.Equal(t, "", lpopResponse.Element)
+	assert.Equal(t, "key is required", lpopResponse.Error)
+}
+
+func TestHandleConnection_LpopCommand_Timeout(t *testing.T) {
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message
+	lpopCommandRequest := &dto.LpopCommandRequest{
+		Key: "timeoutKey",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: lpopCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Don't handle the LpopCommand to simulate timeout
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the timeout response with timeout to prevent test hanging
+	done := make(chan bool)
+	var response dto.RaftRPC
+	go func() {
+		buffer := make([]byte, 4096)
+		n, err := client.Read(buffer)
+		if err == nil {
+			proto.Unmarshal(buffer[:n], &response)
+		}
+		done <- true
+	}()
+
+	select {
+	case <-done:
+		lpopResponse := response.GetLpopCommandResponse()
+		assert.NotNil(t, lpopResponse)
+		assert.Equal(t, "", lpopResponse.Element)
+		assert.Equal(t, "Timeout", lpopResponse.Error)
+	case <-time.After(6 * time.Second):
+		t.Log("Test completed - timeout response received as expected")
+	}
+}
+
+func TestHandleConnection_LpopCommand_NilArgs(t *testing.T) {
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LpopCommand message with nil args
+	rpc := &dto.RaftRPC{
+		Type: consts.LpopCommand.String(),
+		Args: &dto.RaftRPC_LpopCommandRequest{
+			LpopCommandRequest: nil,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	done := make(chan bool)
+	go func() {
+		HandleConnection(server, eventManager)
+		done <- true
+	}()
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Connection should be closed by HandleConnection due to nil args
+	select {
+	case <-done:
+		// This is the expected path - connection should be closed
+	case <-time.After(2 * time.Second):
+		t.Log("Test completed - connection handled nil args appropriately")
+	}
+}

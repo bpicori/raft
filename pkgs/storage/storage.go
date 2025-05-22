@@ -16,7 +16,7 @@ type Storage interface {
 }
 
 type StorageImpl struct {
-	ServerId string
+	ServerId             string
 	StateMachineFilePath string
 }
 
