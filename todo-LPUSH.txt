@@ -51,14 +51,14 @@ TODO: LPUSH Command Implementation Plan
    - [x] Add lpush command documentation to ShowUsage()
    - [x] Format: "lpush <key> <element> [element2] [element3] ... - Prepend elements to list"
 
-- [ ] 9. APPLICATION LAYER IMPLEMENTATION (pkgs/application/lpush.go)
-   - [ ] Create new file following the pattern of set.go
-   - [ ] Implement Lpush(eventManager *events.EventManager, lpushCommandEvent *events.LpushCommandEvent)
-   - [ ] Add validation for key and elements (key required, at least one element)
-   - [ ] Create AppendLogEntryEvent with LpushCommand
-   - [ ] Handle timeout scenarios
-   - [ ] Update storage and return new list length
-   - [ ] Implement replicateLpushCommand() for log replay
+- [x] 9. APPLICATION LAYER IMPLEMENTATION (pkgs/application/lpush.go)
+   - [x] Create new file following the pattern of set.go
+   - [x] Implement Lpush(eventManager *events.EventManager, lpushCommandEvent *events.LpushCommandEvent)
+   - [x] Add validation for key and elements (key required, at least one element)
+   - [x] Create AppendLogEntryEvent with LpushCommand
+   - [x] Handle timeout scenarios
+   - [x] Update storage and return new list length
+   - [x] Implement replicateLpushCommand() for log replay
 
 - [ ] 10. STORAGE LAYER CONSIDERATIONS (pkgs/application/application.go)
     - [ ] Current hashMap stores string key-value pairs

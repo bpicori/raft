@@ -45,6 +45,8 @@ func Start(param *ApplicationParam) {
 			go Decr(eventManager, &decrCommandEvent)
 		case removeCommandEvent := <-eventManager.RemoveCommandRequestChan:
 			go Remove(eventManager, &removeCommandEvent)
+		case lpushCommandEvent := <-eventManager.LpushCommandRequestChan:
+			go Lpush(eventManager, &lpushCommandEvent)
 		case syncCommandEvent := <-eventManager.SyncCommandRequestChan:
 			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
 			replicateLogEntry(syncCommandEvent.LogEntry)
@@ -71,5 +73,7 @@ func replicateLogEntry(logEntry *dto.LogEntry) {
 		replicateDecrCommand(command.GetDecrCommand())
 	case consts.DeleteOp:
 		replicateRemoveCommand(command.GetRemoveCommand())
+	case consts.LpushOp:
+		replicateLpushCommand(command.GetLpushCommand())
 	}
 }
