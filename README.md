@@ -25,6 +25,4 @@ All commands are replicated across the Raft cluster for consistency and durabili
 
 # TODO
 
-- [ ] Add unit test for raft package
 - [ ] Implement Snapshotting
-- [ ] Add http server for application commands

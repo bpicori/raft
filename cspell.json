@@ -7,6 +7,8 @@
     "dictionaries": [],
     "words": [
         "Acks",
+        "Lpop",
+        "Lpush",
         "protoc",
         "stretchr"
     ],
