@@ -1,0 +1,96 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Task Todo Generator Rule
+
+## Purpose
+When provided with a task description, generate a structured todo list without writing any code. The goal is to create a comprehensive plan that breaks down the task into actionable items.
+
+## Output Format
+- Create a file named `todo-{TASK_NAME}.txt` where {TASK_NAME} is a kebab-case version of the task name
+- Use unchecked markdown checkboxes: `- [ ]` for all todo items
+- Do NOT write any actual code - only create the planning todos
+
+## Task Size Classification
+
+### Small Tasks
+For simple tasks that can be completed in a few steps:
+- Create a flat list of 3-8 todo items
+- Each item should be a clear, actionable step
+- Example format:
+```
+- [ ] Initialize project structure
+- [ ] Install dependencies
+- [ ] Create main component
+- [ ] Add basic styling
+- [ ] Test functionality
+```
+
+### Large Tasks
+For complex tasks requiring multiple phases:
+- Organize into logical sections
+- Each section should have 3-6 subtasks
+- Use section headers with `##`
+- Example format:
+```
+## Setup and Configuration
+- [ ] Initialize project
+- [ ] Set up development environment
+- [ ] Configure build tools
+
+## Core Implementation
+- [ ] Design data structures
+- [ ] Implement core logic
+- [ ] Add error handling
+
+## Testing and Deployment
+- [ ] Write unit tests
+- [ ] Perform integration testing
+- [ ] Deploy to production
+```
+
+## Task Analysis Guidelines
+1. **Scan the project structure first** - Explore directories, existing files, package managers, frameworks, and current codebase to understand the project context
+2. **Read the task carefully** - Understand the scope and requirements in relation to the existing project
+3. **Identify dependencies** - Note what needs to be done before other tasks, considering existing project components
+4. **Break down complexity** - Divide large features into smaller, manageable pieces that fit the current architecture
+5. **Consider edge cases** - Include tasks for error handling and validation based on existing patterns
+6. **Include testing** - Always add testing-related todos that align with current testing frameworks
+7. **Think about documentation** - Include documentation tasks when appropriate, following existing documentation patterns
+
+## Todo Item Quality
+Each todo item should be:
+- **Specific** - Clear about what exactly needs to be done
+- **Actionable** - Something that can be started and completed
+- **Measurable** - Has a clear definition of "done"
+- **Appropriately sized** - Not too big or too small
+
+## Examples of Good Todo Items
+- [ ] Create user authentication middleware
+- [ ] Implement password validation with minimum 8 characters
+- [ ] Add error handling for database connection failures
+- [ ] Write unit tests for user service methods
+- [ ] Update API documentation with new endpoints
+
+## Examples of Poor Todo Items
+- [ ] Do everything (too vague)
+- [ ] Fix bugs (not specific enough)
+- [ ] Make it work (not actionable)
+- [ ] Add some tests (not specific about what to test)
+
+## Special Considerations
+- If the task involves multiple technologies, create sections for each
+- If the task has frontend and backend components, separate them clearly
+- Always consider the order of operations - some tasks must be done before others
+- Include setup, implementation, testing, and cleanup phases where appropriate
+- Add todos for code review and documentation when relevant
+
+## Response Format
+1. **Scan the project first** - Explore the codebase structure, existing files, technologies used, and current implementation before creating the plan
+2. Analyze the task complexity in context of the existing project
+3. Determine if it's a small or large task
+4. Create the appropriate todo structure based on project context
+5. Save as `todo-{TASK_NAME}.txt`
+6. Confirm the todo list has been created with a brief summary

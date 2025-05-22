@@ -1,0 +1,67 @@
+## Protocol and Data Structure Setup
+- [ ] Add LpopCommand message to pkgs/dto/raft.proto with key field
+- [ ] Add LpopCommandRequest message to raft.proto with key field  
+- [ ] Add LpopCommandResponse message to raft.proto with element and error fields
+- [ ] Add lpopCommand field to Command oneof in raft.proto
+- [ ] Add lpopCommandRequest and lpopCommandResponse to RaftRPC oneof
+- [ ] Regenerate protobuf files using protoc command
+- [ ] Add LpopOp constant to pkgs/consts/consts.go CommandType enum
+- [ ] Add "LPOP" case to CommandType String() method in consts.go
+- [ ] Add "LPOP" case to MapStringToCommandType function in consts.go
+
+## Event System Integration
+- [ ] Add LpopCommandEvent struct to pkgs/events/application_events.go
+- [ ] Add LpopCommandRequestChan field to EventManager struct
+- [ ] Initialize LpopCommandRequestChan in NewEventManager constructor
+- [ ] Add LpopCommand case to RaftRPCType enum in consts.go
+- [ ] Add "LpopCommand" case to RaftRPCType String() method
+- [ ] Add "LpopCommand" case to MapStringToRPCType function
+
+## Core Application Logic Implementation
+- [ ] Create pkgs/application/lpop.go file with main Lpop function
+- [ ] Implement validateLpopCommand function for input validation
+- [ ] Implement main Lpop function following lpush pattern with event handling
+- [ ] Implement replicateLpopCommand function for state machine replication
+- [ ] Add error handling for empty lists (return nil element, no error)
+- [ ] Add error handling for non-existent keys (return nil element, no error)
+- [ ] Handle JSON unmarshaling and marshaling for list storage
+- [ ] Implement proper list element removal from left side (index 0)
+- [ ] Add timeout handling for consensus operations
+
+## Application Integration
+- [ ] Add lpopCommandEvent case to main select loop in pkgs/application/application.go
+- [ ] Add LpopOp case to replicateLogEntry switch statement
+- [ ] Import lpop functions in application.go
+- [ ] Test application integration with existing raft consensus
+
+## Client Command Implementation  
+- [ ] Create cmd/client/commands/lpop.go file
+- [ ] Implement lpop CLI command following existing command patterns
+- [ ] Add proper error handling and output formatting
+- [ ] Add lpop command registration to client main.go
+- [ ] Test client command execution and response handling
+
+## Server Integration
+- [ ] Add lpop command handling to server RPC message processing
+- [ ] Integrate lpop command with existing TCP/HTTP server infrastructure
+- [ ] Add proper routing for lpop commands from external clients
+- [ ] Test end-to-end lpop command execution through server
+
+## Testing and Validation
+- [ ] Write unit tests for lpop application logic
+- [ ] Write unit tests for lpop command validation
+- [ ] Write integration tests for lpop with raft consensus
+- [ ] Test lpop behavior with empty lists
+- [ ] Test lpop behavior with non-existent keys  
+- [ ] Test lpop behavior with single-element lists
+- [ ] Test lpop behavior with multi-element lists
+- [ ] Test lpop command through client CLI
+- [ ] Test lpop command through server endpoints
+- [ ] Verify proper replication across raft cluster nodes
+
+## Documentation and Cleanup
+- [ ] Add lpop command documentation to README.md
+- [ ] Add code comments explaining lpop implementation details
+- [ ] Verify all new code follows existing project patterns
+- [ ] Run linting and formatting tools on new code
+- [ ] Update any relevant API documentation 
