@@ -11,17 +11,17 @@ TODO: LPUSH Command Implementation Plan
    - [x] Add RaftRPC_LpushCommandRequest type
    - [x] Add RaftRPC_LpushCommandResponse type
 
-- [ ] 2. REGENERATE PROTOBUF CODE
-   - [ ] Run protoc to regenerate pkgs/dto/raft.pb.go with new message types
-   - [ ] This will automatically generate getters and setters for new structs
+- [x] 2. REGENERATE PROTOBUF CODE
+   - [x] Run protoc to regenerate pkgs/dto/raft.pb.go with new message types
+   - [x] This will automatically generate getters and setters for new structs
 
-- [ ] 3. CONSTANTS UPDATE (pkgs/consts/consts.go)
-   - [ ] Add LpushCommand to RaftRPCType enum
-   - [ ] Add LpushOp to CommandType enum  
-   - [ ] Update String() method for RaftRPCType to handle LpushCommand
-   - [ ] Update String() method for CommandType to handle LpushOp
-   - [ ] Update MapStringToRPCType() to handle "LpushCommand"
-   - [ ] Update MapStringToCommandType() to handle "LPUSH"
+- [x] 3. CONSTANTS UPDATE (pkgs/consts/consts.go)
+   - [x] Add LpushCommand to RaftRPCType enum
+   - [x] Add LpushOp to CommandType enum  
+   - [x] Update String() method for RaftRPCType to handle LpushCommand
+   - [x] Update String() method for CommandType to handle LpushOp
+   - [x] Update MapStringToRPCType() to handle "LpushCommand"
+   - [x] Update MapStringToCommandType() to handle "LPUSH"
 
 - [ ] 4. EVENT DEFINITIONS (pkgs/events/application_events.go)
    - [ ] Add LpushCommandEvent struct with Payload and Reply channels
