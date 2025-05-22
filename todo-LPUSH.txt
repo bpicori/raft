@@ -23,13 +23,13 @@ TODO: LPUSH Command Implementation Plan
    - [x] Update MapStringToRPCType() to handle "LpushCommand"
    - [x] Update MapStringToCommandType() to handle "LPUSH"
 
-- [ ] 4. EVENT DEFINITIONS (pkgs/events/application_events.go)
-   - [ ] Add LpushCommandEvent struct with Payload and Reply channels
-   - [ ] Follow same pattern as SetCommandEvent, GetCommandEvent, etc.
+- [x] 4. EVENT DEFINITIONS (pkgs/events/application_events.go)
+   - [x] Add LpushCommandEvent struct with Payload and Reply channels
+   - [x] Follow same pattern as SetCommandEvent, GetCommandEvent, etc.
 
-- [ ] 5. EVENT MANAGER UPDATE (pkgs/events/event_manager.go)
-   - [ ] Add LpushCommandRequestChan to EventManager struct
-   - [ ] Initialize channel in NewEventManager() constructor
+- [x] 5. EVENT MANAGER UPDATE (pkgs/events/event_manager.go)
+   - [x] Add LpushCommandRequestChan to EventManager struct
+   - [x] Initialize channel in NewEventManager() constructor
 
 - [ ] 6. CLIENT COMMAND IMPLEMENTATION (cmd/client/commands/lpush.go)
    - [ ] Create new file following the pattern of set.go
