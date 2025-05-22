@@ -31,25 +31,25 @@ TODO: LPUSH Command Implementation Plan
    - [x] Add LpushCommandRequestChan to EventManager struct
    - [x] Initialize channel in NewEventManager() constructor
 
-- [ ] 6. CLIENT COMMAND IMPLEMENTATION (cmd/client/commands/lpush.go)
-   - [ ] Create new file following the pattern of set.go
-   - [ ] Implement LpushCommand(cfg *config.Config, key string, elements []string) function
-   - [ ] Use FindLeader() to locate cluster leader
-   - [ ] Create LpushCommandRequest with key and elements
-   - [ ] Send RPC request and handle response
-   - [ ] Display the new list length to user
-   - [ ] Handle error cases (no leader, RPC failures, etc.)
+- [x] 6. CLIENT COMMAND IMPLEMENTATION (cmd/client/commands/lpush.go)
+   - [x] Create new file following the pattern of set.go
+   - [x] Implement LpushCommand(cfg *config.Config, key string, elements []string) function
+   - [x] Use FindLeader() to locate cluster leader
+   - [x] Create LpushCommandRequest with key and elements
+   - [x] Send RPC request and handle response
+   - [x] Display the new list length to user
+   - [x] Handle error cases (no leader, RPC failures, etc.)
 
-- [ ] 7. CLIENT MAIN INTEGRATION (cmd/client/main.go)
-   - [ ] Add "lpush" case to executeCommand() switch statement
-   - [ ] Add "lpush" case to handleCommandExecution() switch statement
-   - [ ] Add argument validation (require key + at least one element)
-   - [ ] Call commands.LpushCommand() with parsed arguments
+- [x] 7. CLIENT MAIN INTEGRATION (cmd/client/main.go)
+   - [x] Add "lpush" case to executeCommand() switch statement
+   - [x] Add "lpush" case to handleCommandExecution() switch statement
+   - [x] Add argument validation (require key + at least one element)
+   - [x] Call commands.LpushCommand() with parsed arguments
 
-- [ ] 8. HELP AND USAGE UPDATE (cmd/client/commands/util.go)
-   - [ ] Add lpush command documentation to PrintHelp()
-   - [ ] Add lpush command documentation to ShowUsage()
-   - [ ] Format: "lpush <key> <element> [element2] [element3] ... - Prepend elements to list"
+- [x] 8. HELP AND USAGE UPDATE (cmd/client/commands/util.go)
+   - [x] Add lpush command documentation to PrintHelp()
+   - [x] Add lpush command documentation to ShowUsage()
+   - [x] Format: "lpush <key> <element> [element2] [element3] ... - Prepend elements to list"
 
 - [ ] 9. APPLICATION LAYER IMPLEMENTATION (pkgs/application/lpush.go)
    - [ ] Create new file following the pattern of set.go
