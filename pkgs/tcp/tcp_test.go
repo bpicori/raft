@@ -1382,3 +1382,63 @@ func TestHandleConnection_LpopCommand_NilArgs(t *testing.T) {
 		t.Log("Test completed - connection handled nil args appropriately")
 	}
 }
+
+func TestKeysCommand(t *testing.T) {
+	eventManager := events.NewEventManager()
+
+	// Create a pipe to simulate network connection
+	server, client := net.Pipe()
+	defer server.Close()
+	defer client.Close()
+
+	keysCommandRequest := &dto.KeysCommandRequest{}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.KeysCommand.String(),
+		Args: &dto.RaftRPC_KeysCommandRequest{
+			KeysCommandRequest: keysCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Handle the KeysCommand in a goroutine
+	go func() {
+		select {
+		case event := <-eventManager.KeysCommandRequestChan:
+			// Send a response with some test keys
+			event.Reply <- &dto.KeysCommandResponse{
+				Keys:  []string{"key1", "key2", "key3"},
+				Error: "",
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Error("Timeout waiting for KeysCommand")
+		}
+	}()
+
+	// Handle the connection in a goroutine
+	go HandleConnection(server, eventManager)
+
+	// Send the request
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the response
+	buffer := make([]byte, 4096)
+	n, err := client.Read(buffer)
+	assert.NoError(t, err)
+
+	// Unmarshal the response
+	var responseRPC dto.RaftRPC
+	err = proto.Unmarshal(buffer[:n], &responseRPC)
+	assert.NoError(t, err)
+
+	// Verify the response
+	assert.Equal(t, consts.KeysCommand.String(), responseRPC.Type)
+	keysResponse := responseRPC.GetKeysCommandResponse()
+	assert.NotNil(t, keysResponse)
+	assert.Empty(t, keysResponse.Error)
+	assert.ElementsMatch(t, []string{"key1", "key2", "key3"}, keysResponse.Keys)
+}

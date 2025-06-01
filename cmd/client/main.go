@@ -149,6 +149,8 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 		}
 		key := args[0]
 		commands.LlenCommand(cfg, key)
+	case "keys":
+		commands.KeysCommand(cfg)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
 		commands.ShowUsage()
@@ -234,6 +236,8 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		}
 		key := args[0]
 		commands.LlenCommand(cfg, key)
+	case "keys":
+		commands.KeysCommand(cfg)
 	case "clear", "cls":
 		commands.ClearScreen()
 	case "help":

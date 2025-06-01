@@ -57,6 +57,8 @@ func Start(param *ApplicationParam) {
 			go Lindex(eventManager, &lindexCommandEvent)
 		case llenCommandEvent := <-eventManager.LlenCommandRequestChan:
 			go Llen(eventManager, &llenCommandEvent)
+		case keysCommandEvent := <-eventManager.KeysCommandRequestChan:
+			go Keys(eventManager, &keysCommandEvent)
 		case syncCommandEvent := <-eventManager.SyncCommandRequestChan:
 			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
 			replicateLogEntry(syncCommandEvent.LogEntry)

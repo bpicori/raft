@@ -13,6 +13,7 @@ This Raft implementation supports the following distributed data structure comma
 - `rm <key>` - Remove a key-value pair
 - `incr <key>` - Increment a numeric value
 - `decr <key>` - Decrement a numeric value
+- `keys` - Get all keys in the storage
 
 ## List Operations
 

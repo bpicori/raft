@@ -11,8 +11,7 @@ import (
 
 func TestLlen(t *testing.T) {
 	// Save original hashMap and restore after test
-	originalHashMap := hashMap
-	defer func() { hashMap = originalHashMap }()
+	defer func() { hashMap = sync.Map{} }()
 
 	tests := []struct {
 		name           string
@@ -120,8 +119,7 @@ func TestLlen(t *testing.T) {
 
 func TestLlenWithNilPayload(t *testing.T) {
 	// Save original hashMap and restore after test
-	originalHashMap := hashMap
-	defer func() { hashMap = originalHashMap }()
+	defer func() { hashMap = sync.Map{} }()
 
 	// Reset hashMap
 	hashMap = sync.Map{}
@@ -202,8 +200,7 @@ func TestValidateLlenCommand(t *testing.T) {
 // TestLlenIntegrationWithOtherListCommands tests LLEN with other list operations
 func TestLlenIntegrationWithOtherListCommands(t *testing.T) {
 	// Save original hashMap and restore after test
-	originalHashMap := hashMap
-	defer func() { hashMap = originalHashMap }()
+	defer func() { hashMap = sync.Map{} }()
 
 	// Reset hashMap
 	hashMap = sync.Map{}

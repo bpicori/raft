@@ -12,7 +12,6 @@ import (
 	"bpicori/raft/pkgs/application"
 	"bpicori/raft/pkgs/config"
 	"bpicori/raft/pkgs/events"
-	"bpicori/raft/pkgs/http"
 	"bpicori/raft/pkgs/logger"
 	"bpicori/raft/pkgs/raft"
 	"bpicori/raft/pkgs/storage"
@@ -73,12 +72,12 @@ func main() {
 	}()
 
 	// initialize http server
-	httpServer := http.NewHttpServer(config, server, ctx)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		httpServer.Start()
-	}()
+	// httpServer := http.NewHttpServer(config, server, ctx)
+	// wg.Add(1)
+	// go func() {
+	// 	defer wg.Done()
+	// 	httpServer.Start()
+	// }()
 
 	// set up signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)

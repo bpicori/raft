@@ -34,6 +34,7 @@ const (
 	LpopCommand
 	LindexCommand
 	LlenCommand
+	KeysCommand
 )
 
 const (
@@ -80,6 +81,8 @@ func (rt RaftRPCType) String() string {
 		return "LindexCommand"
 	case LlenCommand:
 		return "LlenCommand"
+	case KeysCommand:
+		return "KeysCommand"
 	default:
 		return "Unknown"
 	}
@@ -140,6 +143,8 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return LindexCommand, nil
 	case "LlenCommand":
 		return LlenCommand, nil
+	case "KeysCommand":
+		return KeysCommand, nil
 	case "GenericResponse":
 		return GenericResponse, nil
 	default:

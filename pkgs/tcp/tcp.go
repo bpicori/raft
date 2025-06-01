@@ -396,6 +396,38 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		} else {
 			slog.Warn("Received LlenCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
+	case consts.KeysCommand:
+		if args := rpc.GetKeysCommandRequest(); args != nil {
+			replyCh := make(chan *dto.KeysCommandResponse)
+			eventManager.KeysCommandRequestChan <- events.KeysCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.KeysCommand.String(),
+					Args: &dto.RaftRPC_KeysCommandResponse{
+						KeysCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Received KeysCommand timeout", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.KeysCommand.String(),
+					Args: &dto.RaftRPC_KeysCommandResponse{
+						KeysCommandResponse: &dto.KeysCommandResponse{
+							Keys:  []string{},
+							Error: "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received KeysCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
 	default:
 		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())
 	}

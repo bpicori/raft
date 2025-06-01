@@ -66,6 +66,7 @@ message Command {
     LpopCommand lpopCommand = 7;
     LindexCommand lindexCommand = 8;
     LlenCommand llenCommand = 9;
+    KeysCommand keysCommand = 10;
   }
 }
 
@@ -102,6 +103,10 @@ message LindexCommand {
 
 message LlenCommand {
   string key = 1;
+}
+
+message KeysCommand {
+  // No parameters needed for KEYS command
 }
 
 /* Application */
@@ -143,6 +148,8 @@ message RaftRPC {
     LindexCommandResponse lindexCommandResponse = 22;
     LlenCommandRequest llenCommandRequest = 23;
     LlenCommandResponse llenCommandResponse = 24;
+    KeysCommandRequest keysCommandRequest = 25;
+    KeysCommandResponse keysCommandResponse = 26;
   }
 }
 
@@ -219,5 +226,14 @@ message LlenCommandRequest {
 
 message LlenCommandResponse {
   int32 length = 1;
+  string error = 2;
+}
+
+message KeysCommandRequest {
+  // No parameters needed for KEYS command
+}
+
+message KeysCommandResponse {
+  repeated string keys = 1;
   string error = 2;
 }

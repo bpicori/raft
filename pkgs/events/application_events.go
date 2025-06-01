@@ -54,3 +54,8 @@ type LlenCommandEvent struct {
 	Payload *dto.LlenCommandRequest
 	Reply   chan *dto.LlenCommandResponse
 }
+
+type KeysCommandEvent struct {
+	Payload *dto.KeysCommandRequest
+	Reply   chan *dto.KeysCommandResponse
+}
