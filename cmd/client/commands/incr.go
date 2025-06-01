@@ -42,5 +42,5 @@ func Incr(cfg *config.Config, key string) {
 		return
 	}
 
-	fmt.Println(incrResponse.Value)
+	fmt.Printf("(integer) %d\n", incrResponse.Value)
 }

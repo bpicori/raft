@@ -41,6 +41,14 @@ func GetCommand(cfg *config.Config, key string) {
 		return
 	}
 
-	fmt.Println(getResponse.Value)
-}
+	if getResponse.Error != "" {
+		fmt.Printf("Error: %s\n", getResponse.Error)
+		return
+	}
 
+	if getResponse.Value == "" {
+		fmt.Println("(nil)")
+	} else {
+		fmt.Printf("\"%s\"\n", getResponse.Value)
+	}
+}

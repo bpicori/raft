@@ -34,5 +34,16 @@ func Rm(cfg *config.Config, key string) {
 		return
 	}
 
-	slog.Info("Response from leader", "response", resp)
+	genericResponse := resp.GetGenericResponse()
+	if genericResponse == nil {
+		slog.Error("Error getting rm command response", "error", err)
+		fmt.Printf("Error: Failed to remove key '%s': %v\n", key, err)
+		return
+	}
+
+	if genericResponse.Ok {
+		fmt.Println("OK")
+	} else {
+		fmt.Printf("Error: Failed to remove key '%s'\n", key)
+	}
 }

@@ -42,7 +42,9 @@ func SetCommand(cfg *config.Config, key string, value string) {
 		return
 	}
 
-	fmt.Println(setResponse.Ok)
+	if setResponse.Ok {
+		fmt.Println("OK")
+	} else {
+		fmt.Printf("Error: Failed to set key '%s'\n", key)
+	}
 }
-
-

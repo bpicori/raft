@@ -42,9 +42,9 @@ func Decr(cfg *config.Config, key string) {
 	}
 
 	if decrResponse.Error != "" {
-		fmt.Println(decrResponse.Error)
+		fmt.Printf("Error: %s\n", decrResponse.Error)
 		return
 	}
 
-	fmt.Println(decrResponse.Value)
+	fmt.Printf("(integer) %d\n", decrResponse.Value)
 }

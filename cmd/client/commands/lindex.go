@@ -51,7 +51,11 @@ func LindexCommand(cfg *config.Config, key string, indexStr string) {
 		if lindexResponse.Error != "" {
 			fmt.Printf("Error: %s\n", lindexResponse.Error)
 		} else {
-			fmt.Println(lindexResponse.Element)
+			if lindexResponse.Element == "" {
+				fmt.Println("(nil)")
+			} else {
+				fmt.Printf("\"%s\"\n", lindexResponse.Element)
+			}
 		}
 	} else {
 		fmt.Println("Error: Invalid response from server")
