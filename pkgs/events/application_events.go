@@ -44,3 +44,8 @@ type LpopCommandEvent struct {
 	Payload *dto.LpopCommandRequest
 	Reply   chan *dto.LpopCommandResponse
 }
+
+type LindexCommandEvent struct {
+	Payload *dto.LindexCommandRequest
+	Reply   chan *dto.LindexCommandResponse
+}

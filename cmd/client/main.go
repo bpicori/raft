@@ -132,6 +132,15 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 		}
 		key := args[0]
 		commands.LpopCommand(cfg, key)
+	case "lindex":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and index are required for lindex operation\n")
+			commands.ShowUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		index := args[1]
+		commands.LindexCommand(cfg, key, index)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
 		commands.ShowUsage()
@@ -202,6 +211,14 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		}
 		key := args[0]
 		commands.LpopCommand(cfg, key)
+	case "lindex":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and index are required for lindex operation\n")
+			return
+		}
+		key := args[0]
+		index := args[1]
+		commands.LindexCommand(cfg, key, index)
 	case "clear", "cls":
 		commands.ClearScreen()
 	case "help":

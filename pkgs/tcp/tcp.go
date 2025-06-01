@@ -332,6 +332,38 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		} else {
 			slog.Warn("Received LpopCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
+	case consts.LindexCommand:
+		if args := rpc.GetLindexCommandRequest(); args != nil {
+			replyCh := make(chan *dto.LindexCommandResponse)
+			eventManager.LindexCommandRequestChan <- events.LindexCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.LindexCommand.String(),
+					Args: &dto.RaftRPC_LindexCommandResponse{
+						LindexCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Received LindexCommand timeout", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.LindexCommand.String(),
+					Args: &dto.RaftRPC_LindexCommandResponse{
+						LindexCommandResponse: &dto.LindexCommandResponse{
+							Element: "",
+							Error:   "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received LindexCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
 	default:
 		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())
 	}

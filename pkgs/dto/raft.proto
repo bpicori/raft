@@ -64,6 +64,7 @@ message Command {
     RemoveCommand removeCommand = 5;
     LpushCommand lpushCommand = 6;
     LpopCommand lpopCommand = 7;
+    LindexCommand lindexCommand = 8;
   }
 }
 
@@ -91,6 +92,11 @@ message LpushCommand {
 
 message LpopCommand {
   string key = 1;
+}
+
+message LindexCommand {
+  string key = 1;
+  int32 index = 2;
 }
 
 /* Application */
@@ -128,6 +134,8 @@ message RaftRPC {
     LpushCommandResponse lpushCommandResponse = 18;
     LpopCommandRequest lpopCommandRequest = 19;
     LpopCommandResponse lpopCommandResponse = 20;
+    LindexCommandRequest lindexCommandRequest = 21;
+    LindexCommandResponse lindexCommandResponse = 22;
   }
 }
 
@@ -184,6 +192,16 @@ message LpopCommandRequest {
 }
 
 message LpopCommandResponse {
+  string element = 1;
+  string error = 2;
+}
+
+message LindexCommandRequest {
+  string key = 1;
+  int32 index = 2;
+}
+
+message LindexCommandResponse {
   string element = 1;
   string error = 2;
 }

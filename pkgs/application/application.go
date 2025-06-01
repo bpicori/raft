@@ -49,6 +49,8 @@ func Start(param *ApplicationParam) {
 			go Lpush(eventManager, &lpushCommandEvent)
 		case lpopCommandEvent := <-eventManager.LpopCommandRequestChan:
 			go Lpop(eventManager, &lpopCommandEvent)
+		case lindexCommandEvent := <-eventManager.LindexCommandRequestChan:
+			go Lindex(eventManager, &lindexCommandEvent)
 		case syncCommandEvent := <-eventManager.SyncCommandRequestChan:
 			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
 			replicateLogEntry(syncCommandEvent.LogEntry)
