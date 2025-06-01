@@ -30,7 +30,7 @@ func TestGet(t *testing.T) {
 			setupHashMap: func() {
 				resetHashMap()
 			},
-			expectedVal: "",
+			expectedVal: "(nil)",
 		},
 		{
 			name: "get empty value",
@@ -342,4 +342,3 @@ func TestRemove(t *testing.T) {
 		})
 	}
 }
-

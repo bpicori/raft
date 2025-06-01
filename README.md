@@ -1,9 +1,8 @@
-# RESOURCES
+# Raft implementation of a Key-Value Store
 
-- [Raft Consensus Algorithm Paper](https://raft.github.io/raft.pdf)
-- [Distributed Systems 6.2: Raft](https://www.youtube.com/watch?v=uXEYuDwm7e4)
+This project implements a key-value store using the Raft consensus algorithm. It provides a fault-tolerant, distributed system for storing and retrieving data.
 
-# AVAILABLE COMMANDS
+## AVAILABLE COMMANDS
 
 This Raft implementation supports the following distributed data structure commands:
 
@@ -27,6 +26,11 @@ This Raft implementation supports the following distributed data structure comma
 
 All commands are replicated across the Raft cluster for consistency and durability.
 
-# TODO
+## RESOURCES
+
+- [Raft Consensus Algorithm Paper](https://raft.github.io/raft.pdf)
+- [Distributed Systems 6.2: Raft](https://www.youtube.com/watch?v=uXEYuDwm7e4)
+
+## TODO
 
 - [ ] Implement Snapshotting
