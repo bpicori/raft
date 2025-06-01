@@ -18,17 +18,22 @@ type EventManager struct {
 	HeartbeatTimer Timer
 
 	/* Application */
-	SetCommandRequestChan    chan SetCommandEvent
-	GetCommandRequestChan    chan GetCommandEvent
-	SyncCommandRequestChan   chan SyncCommandEvent
-	IncrCommandRequestChan   chan IncrCommandEvent
-	DecrCommandRequestChan   chan DecrCommandEvent
-	RemoveCommandRequestChan chan RemoveCommandEvent
-	LpushCommandRequestChan  chan LpushCommandEvent
-	LpopCommandRequestChan   chan LpopCommandEvent
-	LindexCommandRequestChan chan LindexCommandEvent
-	LlenCommandRequestChan   chan LlenCommandEvent
-	KeysCommandRequestChan   chan KeysCommandEvent
+	SetCommandRequestChan       chan SetCommandEvent
+	GetCommandRequestChan       chan GetCommandEvent
+	SyncCommandRequestChan      chan SyncCommandEvent
+	IncrCommandRequestChan      chan IncrCommandEvent
+	DecrCommandRequestChan      chan DecrCommandEvent
+	RemoveCommandRequestChan    chan RemoveCommandEvent
+	LpushCommandRequestChan     chan LpushCommandEvent
+	LpopCommandRequestChan      chan LpopCommandEvent
+	LindexCommandRequestChan    chan LindexCommandEvent
+	LlenCommandRequestChan      chan LlenCommandEvent
+	KeysCommandRequestChan      chan KeysCommandEvent
+	SaddCommandRequestChan      chan SaddCommandEvent
+	SremCommandRequestChan      chan SremCommandEvent
+	SismemberCommandRequestChan chan SismemberCommandEvent
+	SinterCommandRequestChan    chan SinterCommandEvent
+	ScardCommandRequestChan     chan ScardCommandEvent
 }
 
 type AppendLogEntryEvent struct {
@@ -52,17 +57,22 @@ func NewEventManager() *EventManager {
 		HeartbeatTimer:     heartbeatTimer,
 
 		/* Application */
-		SetCommandRequestChan:    make(chan SetCommandEvent),
-		GetCommandRequestChan:    make(chan GetCommandEvent),
-		SyncCommandRequestChan:   make(chan SyncCommandEvent),
-		IncrCommandRequestChan:   make(chan IncrCommandEvent),
-		DecrCommandRequestChan:   make(chan DecrCommandEvent),
-		RemoveCommandRequestChan: make(chan RemoveCommandEvent),
-		LpushCommandRequestChan:  make(chan LpushCommandEvent),
-		LpopCommandRequestChan:   make(chan LpopCommandEvent),
-		LindexCommandRequestChan: make(chan LindexCommandEvent),
-		LlenCommandRequestChan:   make(chan LlenCommandEvent),
-		KeysCommandRequestChan:   make(chan KeysCommandEvent),
+		SetCommandRequestChan:       make(chan SetCommandEvent),
+		GetCommandRequestChan:       make(chan GetCommandEvent),
+		SyncCommandRequestChan:      make(chan SyncCommandEvent),
+		IncrCommandRequestChan:      make(chan IncrCommandEvent),
+		DecrCommandRequestChan:      make(chan DecrCommandEvent),
+		RemoveCommandRequestChan:    make(chan RemoveCommandEvent),
+		LpushCommandRequestChan:     make(chan LpushCommandEvent),
+		LpopCommandRequestChan:      make(chan LpopCommandEvent),
+		LindexCommandRequestChan:    make(chan LindexCommandEvent),
+		LlenCommandRequestChan:      make(chan LlenCommandEvent),
+		KeysCommandRequestChan:      make(chan KeysCommandEvent),
+		SaddCommandRequestChan:      make(chan SaddCommandEvent),
+		SremCommandRequestChan:      make(chan SremCommandEvent),
+		SismemberCommandRequestChan: make(chan SismemberCommandEvent),
+		SinterCommandRequestChan:    make(chan SinterCommandEvent),
+		ScardCommandRequestChan:     make(chan ScardCommandEvent),
 	}
 }
 

@@ -20,6 +20,15 @@ This Raft implementation supports the following distributed data structure comma
 - `lpush <key> <element> [element2] [element3]` - Prepend elements to a list
 - `lpop <key>` - Remove and return the leftmost element from a list
 - `lindex <key> <index>` - Get the element at the specified index in a list
+- `llen <key>` - Get the length of a list
+
+## Set Operations
+
+- `sadd <key> <member> [member2] [member3]` - Add one or more members to a set
+- `srem <key> <member> [member2] [member3]` - Remove one or more members from a set
+- `sismember <key> <member>` - Test if member is in the set (returns 1 if true, 0 if false)
+- `sinter <key1> [key2] [key3]` - Return the intersection of multiple sets
+- `scard <key>` - Get the cardinality (number of elements) of a set
 
 ## Cluster Management
 

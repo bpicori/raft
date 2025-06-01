@@ -238,6 +238,44 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		commands.LlenCommand(cfg, key)
 	case "keys":
 		commands.KeysCommand(cfg)
+	case "sadd":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and at least one member are required for sadd operation\n")
+			return
+		}
+		key := args[0]
+		members := args[1:]
+		commands.SaddCommand(cfg, key, members)
+	case "srem":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and at least one member are required for srem operation\n")
+			return
+		}
+		key := args[0]
+		members := args[1:]
+		commands.SremCommand(cfg, key, members)
+	case "sismember":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and member are required for sismember operation\n")
+			return
+		}
+		key := args[0]
+		member := args[1]
+		commands.SismemberCommand(cfg, key, member)
+	case "sinter":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "At least one key is required for sinter operation\n")
+			return
+		}
+		keys := args
+		commands.SinterCommand(cfg, keys)
+	case "scard":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for scard operation\n")
+			return
+		}
+		key := args[0]
+		commands.ScardCommand(cfg, key)
 	case "clear", "cls":
 		commands.ClearScreen()
 	case "help":

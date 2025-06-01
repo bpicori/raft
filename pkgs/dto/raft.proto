@@ -67,6 +67,11 @@ message Command {
     LindexCommand lindexCommand = 8;
     LlenCommand llenCommand = 9;
     KeysCommand keysCommand = 10;
+    SaddCommand saddCommand = 11;
+    SremCommand sremCommand = 12;
+    SismemberCommand sismemberCommand = 13;
+    SinterCommand sinterCommand = 14;
+    ScardCommand scardCommand = 15;
   }
 }
 
@@ -107,6 +112,29 @@ message LlenCommand {
 
 message KeysCommand {
   // No parameters needed for KEYS command
+}
+
+message SaddCommand {
+  string key = 1;
+  repeated string members = 2;
+}
+
+message SremCommand {
+  string key = 1;
+  repeated string members = 2;
+}
+
+message SismemberCommand {
+  string key = 1;
+  string member = 2;
+}
+
+message SinterCommand {
+  repeated string keys = 1;
+}
+
+message ScardCommand {
+  string key = 1;
 }
 
 /* Application */
@@ -150,6 +178,16 @@ message RaftRPC {
     LlenCommandResponse llenCommandResponse = 24;
     KeysCommandRequest keysCommandRequest = 25;
     KeysCommandResponse keysCommandResponse = 26;
+    SaddCommandRequest saddCommandRequest = 27;
+    SaddCommandResponse saddCommandResponse = 28;
+    SremCommandRequest sremCommandRequest = 29;
+    SremCommandResponse sremCommandResponse = 30;
+    SismemberCommandRequest sismemberCommandRequest = 31;
+    SismemberCommandResponse sismemberCommandResponse = 32;
+    SinterCommandRequest sinterCommandRequest = 33;
+    SinterCommandResponse sinterCommandResponse = 34;
+    ScardCommandRequest scardCommandRequest = 35;
+    ScardCommandResponse scardCommandResponse = 36;
   }
 }
 
@@ -235,5 +273,53 @@ message KeysCommandRequest {
 
 message KeysCommandResponse {
   repeated string keys = 1;
+  string error = 2;
+}
+
+message SaddCommandRequest {
+  string key = 1;
+  repeated string members = 2;
+}
+
+message SaddCommandResponse {
+  int32 added = 1;
+  string error = 2;
+}
+
+message SremCommandRequest {
+  string key = 1;
+  repeated string members = 2;
+}
+
+message SremCommandResponse {
+  int32 removed = 1;
+  string error = 2;
+}
+
+message SismemberCommandRequest {
+  string key = 1;
+  string member = 2;
+}
+
+message SismemberCommandResponse {
+  int32 is_member = 1;
+  string error = 2;
+}
+
+message SinterCommandRequest {
+  repeated string keys = 1;
+}
+
+message SinterCommandResponse {
+  repeated string members = 1;
+  string error = 2;
+}
+
+message ScardCommandRequest {
+  string key = 1;
+}
+
+message ScardCommandResponse {
+  int32 cardinality = 1;
   string error = 2;
 }

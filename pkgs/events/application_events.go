@@ -59,3 +59,28 @@ type KeysCommandEvent struct {
 	Payload *dto.KeysCommandRequest
 	Reply   chan *dto.KeysCommandResponse
 }
+
+type SaddCommandEvent struct {
+	Payload *dto.SaddCommandRequest
+	Reply   chan *dto.SaddCommandResponse
+}
+
+type SremCommandEvent struct {
+	Payload *dto.SremCommandRequest
+	Reply   chan *dto.SremCommandResponse
+}
+
+type SismemberCommandEvent struct {
+	Payload *dto.SismemberCommandRequest
+	Reply   chan *dto.SismemberCommandResponse
+}
+
+type SinterCommandEvent struct {
+	Payload *dto.SinterCommandRequest
+	Reply   chan *dto.SinterCommandResponse
+}
+
+type ScardCommandEvent struct {
+	Payload *dto.ScardCommandRequest
+	Reply   chan *dto.ScardCommandResponse
+}

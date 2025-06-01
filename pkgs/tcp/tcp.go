@@ -428,6 +428,166 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		} else {
 			slog.Warn("Received KeysCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
+	case consts.SaddCommand:
+		if args := rpc.GetSaddCommandRequest(); args != nil {
+			replyCh := make(chan *dto.SaddCommandResponse)
+			eventManager.SaddCommandRequestChan <- events.SaddCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.SaddCommand.String(),
+					Args: &dto.RaftRPC_SaddCommandResponse{
+						SaddCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for SaddCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.SaddCommand.String(),
+					Args: &dto.RaftRPC_SaddCommandResponse{
+						SaddCommandResponse: &dto.SaddCommandResponse{
+							Added: 0,
+							Error: "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received SaddCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.SremCommand:
+		if args := rpc.GetSremCommandRequest(); args != nil {
+			replyCh := make(chan *dto.SremCommandResponse)
+			eventManager.SremCommandRequestChan <- events.SremCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.SremCommand.String(),
+					Args: &dto.RaftRPC_SremCommandResponse{
+						SremCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for SremCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.SremCommand.String(),
+					Args: &dto.RaftRPC_SremCommandResponse{
+						SremCommandResponse: &dto.SremCommandResponse{
+							Removed: 0,
+							Error:   "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received SremCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.SismemberCommand:
+		if args := rpc.GetSismemberCommandRequest(); args != nil {
+			replyCh := make(chan *dto.SismemberCommandResponse)
+			eventManager.SismemberCommandRequestChan <- events.SismemberCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.SismemberCommand.String(),
+					Args: &dto.RaftRPC_SismemberCommandResponse{
+						SismemberCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for SismemberCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.SismemberCommand.String(),
+					Args: &dto.RaftRPC_SismemberCommandResponse{
+						SismemberCommandResponse: &dto.SismemberCommandResponse{
+							IsMember: 0,
+							Error:    "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received SismemberCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.SinterCommand:
+		if args := rpc.GetSinterCommandRequest(); args != nil {
+			replyCh := make(chan *dto.SinterCommandResponse)
+			eventManager.SinterCommandRequestChan <- events.SinterCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.SinterCommand.String(),
+					Args: &dto.RaftRPC_SinterCommandResponse{
+						SinterCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for SinterCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.SinterCommand.String(),
+					Args: &dto.RaftRPC_SinterCommandResponse{
+						SinterCommandResponse: &dto.SinterCommandResponse{
+							Members: []string{},
+							Error:   "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received SinterCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.ScardCommand:
+		if args := rpc.GetScardCommandRequest(); args != nil {
+			replyCh := make(chan *dto.ScardCommandResponse)
+			eventManager.ScardCommandRequestChan <- events.ScardCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.ScardCommand.String(),
+					Args: &dto.RaftRPC_ScardCommandResponse{
+						ScardCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for ScardCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.ScardCommand.String(),
+					Args: &dto.RaftRPC_ScardCommandResponse{
+						ScardCommandResponse: &dto.ScardCommandResponse{
+							Cardinality: 0,
+							Error:       "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received ScardCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
 	default:
 		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())
 	}

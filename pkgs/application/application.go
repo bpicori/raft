@@ -59,6 +59,16 @@ func Start(param *ApplicationParam) {
 			go Llen(eventManager, &llenCommandEvent)
 		case keysCommandEvent := <-eventManager.KeysCommandRequestChan:
 			go Keys(eventManager, &keysCommandEvent)
+		case saddCommandEvent := <-eventManager.SaddCommandRequestChan:
+			go Sadd(eventManager, &saddCommandEvent)
+		case sremCommandEvent := <-eventManager.SremCommandRequestChan:
+			go Srem(eventManager, &sremCommandEvent)
+		case sismemberCommandEvent := <-eventManager.SismemberCommandRequestChan:
+			go Sismember(eventManager, &sismemberCommandEvent)
+		case sinterCommandEvent := <-eventManager.SinterCommandRequestChan:
+			go Sinter(eventManager, &sinterCommandEvent)
+		case scardCommandEvent := <-eventManager.ScardCommandRequestChan:
+			go Scard(eventManager, &scardCommandEvent)
 		case syncCommandEvent := <-eventManager.SyncCommandRequestChan:
 			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
 			replicateLogEntry(syncCommandEvent.LogEntry)
@@ -92,5 +102,9 @@ func replicateLogEntry(logEntry *dto.LogEntry) {
 	case consts.LlenOp:
 		// LLEN is a read-only operation, no replication needed
 		slog.Debug("[APPLICATION] LLEN operation does not require replication")
+	case consts.SaddOp:
+		replicateSaddCommand(command.GetSaddCommand())
+	case consts.SremOp:
+		replicateSremCommand(command.GetSremCommand())
 	}
 }

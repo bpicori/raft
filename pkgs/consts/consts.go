@@ -35,6 +35,11 @@ const (
 	LindexCommand
 	LlenCommand
 	KeysCommand
+	SaddCommand
+	SremCommand
+	SismemberCommand
+	SinterCommand
+	ScardCommand
 )
 
 const (
@@ -46,6 +51,11 @@ const (
 	LpopOp
 	LindexOp
 	LlenOp
+	SaddOp
+	SremOp
+	SismemberOp
+	SinterOp
+	ScardOp
 )
 
 // String method for RaftRPCType for logging/debugging
@@ -83,6 +93,16 @@ func (rt RaftRPCType) String() string {
 		return "LlenCommand"
 	case KeysCommand:
 		return "KeysCommand"
+	case SaddCommand:
+		return "SaddCommand"
+	case SremCommand:
+		return "SremCommand"
+	case SismemberCommand:
+		return "SismemberCommand"
+	case SinterCommand:
+		return "SinterCommand"
+	case ScardCommand:
+		return "ScardCommand"
 	default:
 		return "Unknown"
 	}
@@ -107,6 +127,16 @@ func (ct CommandType) String() string {
 		return "LINDEX"
 	case LlenOp:
 		return "LLEN"
+	case SaddOp:
+		return "SADD"
+	case SremOp:
+		return "SREM"
+	case SismemberOp:
+		return "SISMEMBER"
+	case SinterOp:
+		return "SINTER"
+	case ScardOp:
+		return "SCARD"
 	default:
 		return "Unknown"
 	}
@@ -145,6 +175,16 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return LlenCommand, nil
 	case "KeysCommand":
 		return KeysCommand, nil
+	case "SaddCommand":
+		return SaddCommand, nil
+	case "SremCommand":
+		return SremCommand, nil
+	case "SismemberCommand":
+		return SismemberCommand, nil
+	case "SinterCommand":
+		return SinterCommand, nil
+	case "ScardCommand":
+		return ScardCommand, nil
 	case "GenericResponse":
 		return GenericResponse, nil
 	default:
@@ -190,6 +230,16 @@ func MapStringToCommandType(opString string) CommandType {
 		return LindexOp
 	case "LLEN":
 		return LlenOp
+	case "SADD":
+		return SaddOp
+	case "SREM":
+		return SremOp
+	case "SISMEMBER":
+		return SismemberOp
+	case "SINTER":
+		return SinterOp
+	case "SCARD":
+		return ScardOp
 	default:
 		return SetOp
 	}
