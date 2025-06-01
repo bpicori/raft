@@ -45,26 +45,4 @@ func SetCommand(cfg *config.Config, key string, value string) {
 	fmt.Println(setResponse.Ok)
 }
 
-func FindLeader(cfg *config.Config) string {
-	for _, server := range cfg.Servers {
 
-		nodeStatusReq := &dto.RaftRPC{
-			Type: consts.NodeStatus.String(),
-			Args: &dto.RaftRPC_NodeStatusRequest{
-				NodeStatusRequest: &dto.NodeStatusRequest{},
-			},
-		}
-
-		rpcResp, err := tcp.SendSyncRPC(server.Addr, nodeStatusReq)
-		if err != nil {
-			slog.Error("Error in NodeStatus RPC", "server", server.Addr, "error", err)
-			continue
-		}
-
-		nodeStatusResp := rpcResp.GetNodeStatusResponse()
-		if nodeStatusResp.CurrentLeader != "" {
-			return nodeStatusResp.CurrentLeader
-		}
-	}
-	return ""
-}

@@ -22,8 +22,7 @@ func LindexCommand(cfg *config.Config, key string, indexStr string) {
 		return
 	}
 
-	// Use any server for read operations (like GET)
-	server := RandomServer(cfg)
+	server := FindLeader(cfg)
 	if server == "" {
 		slog.Error("No server found")
 		fmt.Println("Error: No server found in the cluster. Try again later.")
