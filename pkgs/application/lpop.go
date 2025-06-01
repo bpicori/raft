@@ -78,7 +78,7 @@ func Lpop(eventManager *events.EventManager, lpopCommandEvent *events.LpopComman
 			}
 
 			lpopCommandEvent.Reply <- &dto.LpopCommandResponse{Element: element, Error: ""}
-		case <-time.After(TIMEOUT):
+		case <-time.After(currentTimeout):
 			slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
 			lpopCommandEvent.Reply <- &dto.LpopCommandResponse{Element: "", Error: "timeout"}
 		}

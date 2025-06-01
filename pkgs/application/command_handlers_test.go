@@ -93,7 +93,7 @@ func TestSet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			resetHashMap()
 			mockEM := NewMockEventManager()
-			ctx, cancel := createTestContext(5 * time.Second)
+			ctx, cancel := createTestContext(200 * time.Millisecond)
 			defer cancel()
 
 			mockEM.StartMockAppendLogEntryHandler(ctx)
@@ -108,7 +108,7 @@ func TestSet(t *testing.T) {
 
 			Set(&mockEM.EventManager, &event)
 
-			response, ok := waitForResponse(event.Reply, 6*time.Second)
+			response, ok := waitForResponse(event.Reply, 300*time.Millisecond)
 			require.True(t, ok, "Should receive response")
 			assert.Equal(t, tt.expectedOk, response.Ok, "Response Ok should match expected")
 
@@ -180,7 +180,7 @@ func TestIncr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupHashMap()
 			mockEM := NewMockEventManager()
-			ctx, cancel := createTestContext(5 * time.Second)
+			ctx, cancel := createTestContext(200 * time.Millisecond)
 			defer cancel()
 
 			mockEM.StartMockAppendLogEntryHandler(ctx)
@@ -194,7 +194,7 @@ func TestIncr(t *testing.T) {
 
 			Incr(&mockEM.EventManager, &event)
 
-			response, ok := waitForResponse(event.Reply, 6*time.Second)
+			response, ok := waitForResponse(event.Reply, 300*time.Millisecond)
 			require.True(t, ok, "Should receive response")
 			assert.Equal(t, tt.expectedVal, response.Value, "Value should match expected")
 
@@ -254,7 +254,7 @@ func TestDecr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupHashMap()
 			mockEM := NewMockEventManager()
-			ctx, cancel := createTestContext(5 * time.Second)
+			ctx, cancel := createTestContext(200 * time.Millisecond)
 			defer cancel()
 
 			mockEM.StartMockAppendLogEntryHandler(ctx)
@@ -267,7 +267,7 @@ func TestDecr(t *testing.T) {
 
 			Decr(&mockEM.EventManager, &event)
 
-			response, ok := waitForResponse(event.Reply, 6*time.Second)
+			response, ok := waitForResponse(event.Reply, 300*time.Millisecond)
 			require.True(t, ok, "Should receive response")
 			assert.Equal(t, tt.expectedVal, response.Value, "Value should match expected")
 
@@ -323,7 +323,7 @@ func TestRemove(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupHashMap()
 			mockEM := NewMockEventManager()
-			ctx, cancel := createTestContext(5 * time.Second)
+			ctx, cancel := createTestContext(200 * time.Millisecond)
 			defer cancel()
 
 			mockEM.StartMockAppendLogEntryHandler(ctx)
@@ -336,7 +336,7 @@ func TestRemove(t *testing.T) {
 
 			Remove(&mockEM.EventManager, &event)
 
-			response, ok := waitForResponse(event.Reply, 6*time.Second)
+			response, ok := waitForResponse(event.Reply, 300*time.Millisecond)
 			require.True(t, ok, "Should receive response")
 			assert.Equal(t, tt.expectedOk, response.Ok, "Response Ok should match expected")
 		})

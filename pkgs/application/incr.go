@@ -53,7 +53,7 @@ func Incr(eventManager *events.EventManager, incrCommandEvent *events.IncrComman
 			hashMap.Store(incrCommandEvent.Payload.Key, strconv.Itoa(int(incrementedValue)))
 
 			incrCommandEvent.Reply <- &dto.IncrCommandResponse{Value: incrementedValue}
-		case <-time.After(TIMEOUT):
+		case <-time.After(currentTimeout):
 			slog.Error("[APPLICATION][INCR] No response from append log entry", "uuid", uuid)
 			incrCommandEvent.Reply <- &dto.IncrCommandResponse{Value: 0}
 		}

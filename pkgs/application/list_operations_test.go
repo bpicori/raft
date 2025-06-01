@@ -12,10 +12,10 @@ import (
 
 func TestReplicateRemoveCommand(t *testing.T) {
 	tests := []struct {
-		name           string
-		removeCommand  *dto.RemoveCommand
-		setupHashMap   func()
-		shouldExist    bool
+		name          string
+		removeCommand *dto.RemoveCommand
+		setupHashMap  func()
+		shouldExist   bool
 	}{
 		{
 			name: "remove existing key",
@@ -54,10 +54,10 @@ func TestReplicateRemoveCommand(t *testing.T) {
 
 func TestReplicateLpushCommand(t *testing.T) {
 	tests := []struct {
-		name          string
-		lpushCommand  *dto.LpushCommand
-		setupHashMap  func()
-		expectedList  []string
+		name         string
+		lpushCommand *dto.LpushCommand
+		setupHashMap func()
+		expectedList []string
 	}{
 		{
 			name: "push to new list",
@@ -336,7 +336,7 @@ func TestLpop(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupHashMap()
 			mockEM := NewMockEventManager()
-			ctx, cancel := createTestContext(5 * time.Second)
+			ctx, cancel := createTestContext(200 * time.Millisecond)
 			defer cancel()
 
 			mockEM.StartMockAppendLogEntryHandler(ctx)
@@ -349,7 +349,7 @@ func TestLpop(t *testing.T) {
 
 			Lpop(&mockEM.EventManager, &event)
 
-			response, ok := waitForResponse(event.Reply, 6*time.Second)
+			response, ok := waitForResponse(event.Reply, 300*time.Millisecond)
 			require.True(t, ok, "Should receive response")
 			assert.Equal(t, tt.expectedElem, response.Element, "Element should match expected")
 
@@ -519,7 +519,7 @@ func TestLpush(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupHashMap()
 			mockEM := NewMockEventManager()
-			ctx, cancel := createTestContext(5 * time.Second)
+			ctx, cancel := createTestContext(200 * time.Millisecond)
 			defer cancel()
 
 			mockEM.StartMockAppendLogEntryHandler(ctx)
@@ -532,7 +532,7 @@ func TestLpush(t *testing.T) {
 
 			Lpush(&mockEM.EventManager, &event)
 
-			response, ok := waitForResponse(event.Reply, 6*time.Second)
+			response, ok := waitForResponse(event.Reply, 300*time.Millisecond)
 			require.True(t, ok, "Should receive response")
 			assert.Equal(t, tt.expectedLen, response.Length, "Length should match expected")
 
@@ -544,4 +544,3 @@ func TestLpush(t *testing.T) {
 		})
 	}
 }
-

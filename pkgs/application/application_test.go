@@ -9,6 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func init() {
+	// Enable test mode for faster timeouts
+	SetTestMode(true)
+}
+
 // Test helper to reset global hashMap state
 func resetHashMap() {
 	hashMap = sync.Map{}

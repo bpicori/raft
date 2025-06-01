@@ -13,8 +13,23 @@ import (
 // Timeout for waiting for append log entry response
 var TIMEOUT = 5 * time.Second
 
+// Test timeout for faster tests
+var TEST_TIMEOUT = 100 * time.Millisecond
+
+// Current timeout to use (can be switched for testing)
+var currentTimeout = TIMEOUT
+
 // global hashmap to store the key-value pairs
 var hashMap = sync.Map{}
+
+// SetTestMode enables test mode with faster timeouts
+func SetTestMode(enabled bool) {
+	if enabled {
+		currentTimeout = TEST_TIMEOUT
+	} else {
+		currentTimeout = TIMEOUT
+	}
+}
 
 type ApplicationParam struct {
 	EventManager *events.EventManager

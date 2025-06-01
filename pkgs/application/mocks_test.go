@@ -67,9 +67,11 @@ func (m *MockEventManager) StartMockAppendLogEntryHandler(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case event := <-m.AppendLogEntryChan:
+				// Handle synchronously for faster tests, but still in separate goroutine to avoid blocking
 				go func(e events.AppendLogEntryEvent) {
 					if m.SimulateTimeout {
-						// Don't send any response to simulate timeout
+						// For timeout simulation, don't send any response to simulate timeout
+						// The application layer will handle the timeout and send appropriate response
 						return
 					}
 
@@ -79,7 +81,10 @@ func (m *MockEventManager) StartMockAppendLogEntryHandler(ctx context.Context) {
 							if m.AppendLogEntryDelay > 0 {
 								time.Sleep(m.AppendLogEntryDelay)
 							}
-							e.Reply <- true
+							select {
+							case e.Reply <- true:
+							case <-time.After(10 * time.Millisecond): // Prevent hanging
+							}
 						}
 						// If response is false, we don't send anything (simulates timeout)
 					} else {
@@ -88,7 +93,10 @@ func (m *MockEventManager) StartMockAppendLogEntryHandler(ctx context.Context) {
 							if m.AppendLogEntryDelay > 0 {
 								time.Sleep(m.AppendLogEntryDelay)
 							}
-							e.Reply <- true
+							select {
+							case e.Reply <- true:
+							case <-time.After(10 * time.Millisecond): // Prevent hanging
+							}
 						}
 					}
 				}(event)

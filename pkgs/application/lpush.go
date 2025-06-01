@@ -62,7 +62,7 @@ func Lpush(eventManager *events.EventManager, lpushCommandEvent *events.LpushCom
 			hashMap.Store(lpushCommandEvent.Payload.Key, string(jsonData))
 
 			lpushCommandEvent.Reply <- &dto.LpushCommandResponse{Length: int32(len(newList)), Error: ""}
-		case <-time.After(TIMEOUT):
+		case <-time.After(currentTimeout):
 			slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
 			lpushCommandEvent.Reply <- &dto.LpushCommandResponse{Length: 0, Error: "timeout"}
 		}

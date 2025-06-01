@@ -60,7 +60,7 @@ func Decr(eventManager *events.EventManager, decrCommandEvent *events.DecrComman
 			hashMap.Store(decrCommandEvent.Payload.Key, strconv.Itoa(int(decrementedValue)))
 
 			decrCommandEvent.Reply <- &dto.DecrCommandResponse{Value: decrementedValue}
-		case <-time.After(TIMEOUT):
+		case <-time.After(currentTimeout):
 			slog.Error("[APPLICATION][DECR] No response from append log entry", "uuid", uuid)
 			decrCommandEvent.Reply <- &dto.DecrCommandResponse{Value: 0}
 		}

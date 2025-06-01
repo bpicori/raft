@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 func Set(eventManager *events.EventManager, setCommandEvent *events.SetCommandEvent) {
 	slog.Debug("[APPLICATION] Received set command", "command", setCommandEvent.Payload)
 
@@ -47,7 +46,7 @@ func Set(eventManager *events.EventManager, setCommandEvent *events.SetCommandEv
 			slog.Debug("[APPLICATION] Received response from append log entry", "uuid", uuid)
 			setCommandEvent.Reply <- &dto.GenericResponse{Ok: true}
 			hashMap.Store(setCommandEvent.Payload.Key, setCommandEvent.Payload.Value)
-		case <-time.After(TIMEOUT):
+		case <-time.After(currentTimeout):
 			slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
 			setCommandEvent.Reply <- &dto.GenericResponse{Ok: false}
 		}

@@ -44,7 +44,7 @@ func Remove(eventManager *events.EventManager, removeCommandEvent *events.Remove
 			slog.Debug("[APPLICATION][REMOVE] Received response from append log entry", "uuid", uuid)
 			hashMap.Delete(removeCommandEvent.Payload.Key)
 			removeCommandEvent.Reply <- &dto.GenericResponse{Ok: true}
-		case <-time.After(TIMEOUT):
+		case <-time.After(currentTimeout):
 			slog.Error("[APPLICATION][REMOVE] No response from append log entry", "uuid", uuid)
 			removeCommandEvent.Reply <- &dto.GenericResponse{Ok: false}
 		}

@@ -82,7 +82,7 @@ func Srem(eventManager *events.EventManager, sremCommandEvent *events.SremComman
 			hashMap.Store(sremCommandEvent.Payload.Key, string(jsonData))
 
 			sremCommandEvent.Reply <- &dto.SremCommandResponse{Removed: removedCount, Error: ""}
-		case <-time.After(TIMEOUT):
+		case <-time.After(currentTimeout):
 			slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
 			sremCommandEvent.Reply <- &dto.SremCommandResponse{Removed: 0, Error: "timeout"}
 		}

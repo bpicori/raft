@@ -16,7 +16,7 @@ func TestSetOperationsIntegration(t *testing.T) {
 	// Reset hashMap for clean test
 	resetHashMap()
 	mockEM := NewMockEventManager()
-	ctx, cancel := createTestContext(10 * time.Second)
+	ctx, cancel := createTestContext(1 * time.Second)
 	defer cancel()
 
 	mockEM.StartMockAppendLogEntryHandler(ctx)
@@ -25,7 +25,7 @@ func TestSetOperationsIntegration(t *testing.T) {
 	saddEvent := createSaddCommandEvent("myset", []string{"member1", "member2", "member3"})
 	Sadd(&mockEM.EventManager, &saddEvent)
 
-	saddResponse, ok := waitForSaddResponse(saddEvent.Reply, 1*time.Second)
+	saddResponse, ok := waitForSaddResponse(saddEvent.Reply, 200*time.Millisecond)
 	require.True(t, ok, "Should receive SADD response")
 	assert.Equal(t, int32(3), saddResponse.Added, "Should add 3 members")
 	assert.Empty(t, saddResponse.Error, "Should not have error")
@@ -61,7 +61,7 @@ func TestSetOperationsIntegration(t *testing.T) {
 	saddEvent2 := createSaddCommandEvent("myset", []string{"member2", "member4", "member5"})
 	Sadd(&mockEM.EventManager, &saddEvent2)
 
-	saddResponse2, ok := waitForSaddResponse(saddEvent2.Reply, 1*time.Second)
+	saddResponse2, ok := waitForSaddResponse(saddEvent2.Reply, 200*time.Millisecond)
 	require.True(t, ok, "Should receive SADD response")
 	assert.Equal(t, int32(2), saddResponse2.Added, "Should add 2 new members (member4, member5)")
 	assert.Empty(t, saddResponse2.Error, "Should not have error")
@@ -79,7 +79,7 @@ func TestSetOperationsIntegration(t *testing.T) {
 	sremEvent := createSremCommandEvent("myset", []string{"member1", "member3", "member6"})
 	Srem(&mockEM.EventManager, &sremEvent)
 
-	sremResponse, ok := waitForSremResponse(sremEvent.Reply, 1*time.Second)
+	sremResponse, ok := waitForSremResponse(sremEvent.Reply, 200*time.Millisecond)
 	require.True(t, ok, "Should receive SREM response")
 	assert.Equal(t, int32(2), sremResponse.Removed, "Should remove 2 members (member1, member3)")
 	assert.Empty(t, sremResponse.Error, "Should not have error")
@@ -99,7 +99,7 @@ func TestSetIntersectionIntegration(t *testing.T) {
 	// Reset hashMap for clean test
 	resetHashMap()
 	mockEM := NewMockEventManager()
-	ctx, cancel := createTestContext(10 * time.Second)
+	ctx, cancel := createTestContext(1 * time.Second)
 	defer cancel()
 
 	mockEM.StartMockAppendLogEntryHandler(ctx)
@@ -107,21 +107,21 @@ func TestSetIntersectionIntegration(t *testing.T) {
 	// Create first set
 	saddEvent1 := createSaddCommandEvent("set1", []string{"a", "b", "c", "d"})
 	Sadd(&mockEM.EventManager, &saddEvent1)
-	saddResponse1, ok := waitForSaddResponse(saddEvent1.Reply, 1*time.Second)
+	saddResponse1, ok := waitForSaddResponse(saddEvent1.Reply, 200*time.Millisecond)
 	require.True(t, ok, "Should receive SADD response for set1")
 	assert.Equal(t, int32(4), saddResponse1.Added, "Should add 4 members to set1")
 
 	// Create second set
 	saddEvent2 := createSaddCommandEvent("set2", []string{"b", "c", "e", "f"})
 	Sadd(&mockEM.EventManager, &saddEvent2)
-	saddResponse2, ok := waitForSaddResponse(saddEvent2.Reply, 1*time.Second)
+	saddResponse2, ok := waitForSaddResponse(saddEvent2.Reply, 200*time.Millisecond)
 	require.True(t, ok, "Should receive SADD response for set2")
 	assert.Equal(t, int32(4), saddResponse2.Added, "Should add 4 members to set2")
 
 	// Create third set
 	saddEvent3 := createSaddCommandEvent("set3", []string{"c", "d", "g", "h"})
 	Sadd(&mockEM.EventManager, &saddEvent3)
-	saddResponse3, ok := waitForSaddResponse(saddEvent3.Reply, 1*time.Second)
+	saddResponse3, ok := waitForSaddResponse(saddEvent3.Reply, 200*time.Millisecond)
 	require.True(t, ok, "Should receive SADD response for set3")
 	assert.Equal(t, int32(4), saddResponse3.Added, "Should add 4 members to set3")
 

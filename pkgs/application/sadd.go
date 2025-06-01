@@ -82,7 +82,7 @@ func Sadd(eventManager *events.EventManager, saddCommandEvent *events.SaddComman
 			hashMap.Store(saddCommandEvent.Payload.Key, string(jsonData))
 
 			saddCommandEvent.Reply <- &dto.SaddCommandResponse{Added: addedCount, Error: ""}
-		case <-time.After(TIMEOUT):
+		case <-time.After(currentTimeout):
 			slog.Error("[APPLICATION] No response from append log entry", "uuid", uuid)
 			saddCommandEvent.Reply <- &dto.SaddCommandResponse{Added: 0, Error: "timeout"}
 		}
