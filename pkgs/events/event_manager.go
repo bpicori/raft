@@ -27,6 +27,7 @@ type EventManager struct {
 	LpushCommandRequestChan  chan LpushCommandEvent
 	LpopCommandRequestChan   chan LpopCommandEvent
 	LindexCommandRequestChan chan LindexCommandEvent
+	LlenCommandRequestChan   chan LlenCommandEvent
 }
 
 type AppendLogEntryEvent struct {
@@ -59,6 +60,7 @@ func NewEventManager() *EventManager {
 		LpushCommandRequestChan:  make(chan LpushCommandEvent),
 		LpopCommandRequestChan:   make(chan LpopCommandEvent),
 		LindexCommandRequestChan: make(chan LindexCommandEvent),
+		LlenCommandRequestChan:   make(chan LlenCommandEvent),
 	}
 }
 

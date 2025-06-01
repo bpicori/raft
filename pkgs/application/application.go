@@ -55,6 +55,8 @@ func Start(param *ApplicationParam) {
 			go Lpop(eventManager, &lpopCommandEvent)
 		case lindexCommandEvent := <-eventManager.LindexCommandRequestChan:
 			go Lindex(eventManager, &lindexCommandEvent)
+		case llenCommandEvent := <-eventManager.LlenCommandRequestChan:
+			go Llen(eventManager, &llenCommandEvent)
 		case syncCommandEvent := <-eventManager.SyncCommandRequestChan:
 			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
 			replicateLogEntry(syncCommandEvent.LogEntry)
@@ -85,5 +87,8 @@ func replicateLogEntry(logEntry *dto.LogEntry) {
 		replicateLpushCommand(command.GetLpushCommand())
 	case consts.LpopOp:
 		replicateLpopCommand(command.GetLpopCommand())
+	case consts.LlenOp:
+		// LLEN is a read-only operation, no replication needed
+		slog.Debug("[APPLICATION] LLEN operation does not require replication")
 	}
 }

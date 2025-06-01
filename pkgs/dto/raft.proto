@@ -65,6 +65,7 @@ message Command {
     LpushCommand lpushCommand = 6;
     LpopCommand lpopCommand = 7;
     LindexCommand lindexCommand = 8;
+    LlenCommand llenCommand = 9;
   }
 }
 
@@ -97,6 +98,10 @@ message LpopCommand {
 message LindexCommand {
   string key = 1;
   int32 index = 2;
+}
+
+message LlenCommand {
+  string key = 1;
 }
 
 /* Application */
@@ -136,6 +141,8 @@ message RaftRPC {
     LpopCommandResponse lpopCommandResponse = 20;
     LindexCommandRequest lindexCommandRequest = 21;
     LindexCommandResponse lindexCommandResponse = 22;
+    LlenCommandRequest llenCommandRequest = 23;
+    LlenCommandResponse llenCommandResponse = 24;
   }
 }
 
@@ -203,5 +210,14 @@ message LindexCommandRequest {
 
 message LindexCommandResponse {
   string element = 1;
+  string error = 2;
+}
+
+message LlenCommandRequest {
+  string key = 1;
+}
+
+message LlenCommandResponse {
+  int32 length = 1;
   string error = 2;
 }

@@ -510,6 +510,7 @@ type Command struct {
 	//	*Command_LpushCommand
 	//	*Command_LpopCommand
 	//	*Command_LindexCommand
+	//	*Command_LlenCommand
 	Args          isCommand_Args `protobuf_oneof:"args"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -622,6 +623,15 @@ func (x *Command) GetLindexCommand() *LindexCommand {
 	return nil
 }
 
+func (x *Command) GetLlenCommand() *LlenCommand {
+	if x != nil {
+		if x, ok := x.Args.(*Command_LlenCommand); ok {
+			return x.LlenCommand
+		}
+	}
+	return nil
+}
+
 type isCommand_Args interface {
 	isCommand_Args()
 }
@@ -654,6 +664,10 @@ type Command_LindexCommand struct {
 	LindexCommand *LindexCommand `protobuf:"bytes,8,opt,name=lindexCommand,proto3,oneof"`
 }
 
+type Command_LlenCommand struct {
+	LlenCommand *LlenCommand `protobuf:"bytes,9,opt,name=llenCommand,proto3,oneof"`
+}
+
 func (*Command_SetCommand) isCommand_Args() {}
 
 func (*Command_IncrCommand) isCommand_Args() {}
@@ -667,6 +681,8 @@ func (*Command_LpushCommand) isCommand_Args() {}
 func (*Command_LpopCommand) isCommand_Args() {}
 
 func (*Command_LindexCommand) isCommand_Args() {}
+
+func (*Command_LlenCommand) isCommand_Args() {}
 
 type SetCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1000,6 +1016,50 @@ func (x *LindexCommand) GetIndex() int32 {
 	return 0
 }
 
+type LlenCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LlenCommand) Reset() {
+	*x = LlenCommand{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LlenCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LlenCommand) ProtoMessage() {}
+
+func (x *LlenCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LlenCommand.ProtoReflect.Descriptor instead.
+func (*LlenCommand) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *LlenCommand) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
 // Application
 type SetCommandRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1011,7 +1071,7 @@ type SetCommandRequest struct {
 
 func (x *SetCommandRequest) Reset() {
 	*x = SetCommandRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[15]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1023,7 +1083,7 @@ func (x *SetCommandRequest) String() string {
 func (*SetCommandRequest) ProtoMessage() {}
 
 func (x *SetCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[15]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1036,7 +1096,7 @@ func (x *SetCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetCommandRequest.ProtoReflect.Descriptor instead.
 func (*SetCommandRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{15}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SetCommandRequest) GetKey() string {
@@ -1062,7 +1122,7 @@ type GenericResponse struct {
 
 func (x *GenericResponse) Reset() {
 	*x = GenericResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[16]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1074,7 +1134,7 @@ func (x *GenericResponse) String() string {
 func (*GenericResponse) ProtoMessage() {}
 
 func (x *GenericResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[16]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1087,7 +1147,7 @@ func (x *GenericResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenericResponse.ProtoReflect.Descriptor instead.
 func (*GenericResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{16}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GenericResponse) GetOk() bool {
@@ -1125,6 +1185,8 @@ type RaftRPC struct {
 	//	*RaftRPC_LpopCommandResponse
 	//	*RaftRPC_LindexCommandRequest
 	//	*RaftRPC_LindexCommandResponse
+	//	*RaftRPC_LlenCommandRequest
+	//	*RaftRPC_LlenCommandResponse
 	Args          isRaftRPC_Args `protobuf_oneof:"args"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1132,7 +1194,7 @@ type RaftRPC struct {
 
 func (x *RaftRPC) Reset() {
 	*x = RaftRPC{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[17]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1144,7 +1206,7 @@ func (x *RaftRPC) String() string {
 func (*RaftRPC) ProtoMessage() {}
 
 func (x *RaftRPC) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[17]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1157,7 +1219,7 @@ func (x *RaftRPC) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RaftRPC.ProtoReflect.Descriptor instead.
 func (*RaftRPC) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{17}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *RaftRPC) GetType() string {
@@ -1363,6 +1425,24 @@ func (x *RaftRPC) GetLindexCommandResponse() *LindexCommandResponse {
 	return nil
 }
 
+func (x *RaftRPC) GetLlenCommandRequest() *LlenCommandRequest {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_LlenCommandRequest); ok {
+			return x.LlenCommandRequest
+		}
+	}
+	return nil
+}
+
+func (x *RaftRPC) GetLlenCommandResponse() *LlenCommandResponse {
+	if x != nil {
+		if x, ok := x.Args.(*RaftRPC_LlenCommandResponse); ok {
+			return x.LlenCommandResponse
+		}
+	}
+	return nil
+}
+
 type isRaftRPC_Args interface {
 	isRaftRPC_Args()
 }
@@ -1451,6 +1531,14 @@ type RaftRPC_LindexCommandResponse struct {
 	LindexCommandResponse *LindexCommandResponse `protobuf:"bytes,22,opt,name=lindexCommandResponse,proto3,oneof"`
 }
 
+type RaftRPC_LlenCommandRequest struct {
+	LlenCommandRequest *LlenCommandRequest `protobuf:"bytes,23,opt,name=llenCommandRequest,proto3,oneof"`
+}
+
+type RaftRPC_LlenCommandResponse struct {
+	LlenCommandResponse *LlenCommandResponse `protobuf:"bytes,24,opt,name=llenCommandResponse,proto3,oneof"`
+}
+
 func (*RaftRPC_VoteRequest) isRaftRPC_Args() {}
 
 func (*RaftRPC_VoteResponse) isRaftRPC_Args() {}
@@ -1493,6 +1581,10 @@ func (*RaftRPC_LindexCommandRequest) isRaftRPC_Args() {}
 
 func (*RaftRPC_LindexCommandResponse) isRaftRPC_Args() {}
 
+func (*RaftRPC_LlenCommandRequest) isRaftRPC_Args() {}
+
+func (*RaftRPC_LlenCommandResponse) isRaftRPC_Args() {}
+
 type StateMachineState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CurrentTerm   int32                  `protobuf:"varint,1,opt,name=current_term,json=currentTerm,proto3" json:"current_term,omitempty"`
@@ -1505,7 +1597,7 @@ type StateMachineState struct {
 
 func (x *StateMachineState) Reset() {
 	*x = StateMachineState{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[18]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1517,7 +1609,7 @@ func (x *StateMachineState) String() string {
 func (*StateMachineState) ProtoMessage() {}
 
 func (x *StateMachineState) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[18]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1530,7 +1622,7 @@ func (x *StateMachineState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StateMachineState.ProtoReflect.Descriptor instead.
 func (*StateMachineState) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{18}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *StateMachineState) GetCurrentTerm() int32 {
@@ -1570,7 +1662,7 @@ type GetCommandRequest struct {
 
 func (x *GetCommandRequest) Reset() {
 	*x = GetCommandRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[19]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1582,7 +1674,7 @@ func (x *GetCommandRequest) String() string {
 func (*GetCommandRequest) ProtoMessage() {}
 
 func (x *GetCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[19]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1595,7 +1687,7 @@ func (x *GetCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCommandRequest.ProtoReflect.Descriptor instead.
 func (*GetCommandRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{19}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GetCommandRequest) GetKey() string {
@@ -1615,7 +1707,7 @@ type GetCommandResponse struct {
 
 func (x *GetCommandResponse) Reset() {
 	*x = GetCommandResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[20]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1627,7 +1719,7 @@ func (x *GetCommandResponse) String() string {
 func (*GetCommandResponse) ProtoMessage() {}
 
 func (x *GetCommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[20]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1640,7 +1732,7 @@ func (x *GetCommandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCommandResponse.ProtoReflect.Descriptor instead.
 func (*GetCommandResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{20}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetCommandResponse) GetValue() string {
@@ -1666,7 +1758,7 @@ type IncrCommandRequest struct {
 
 func (x *IncrCommandRequest) Reset() {
 	*x = IncrCommandRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[21]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1678,7 +1770,7 @@ func (x *IncrCommandRequest) String() string {
 func (*IncrCommandRequest) ProtoMessage() {}
 
 func (x *IncrCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[21]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1691,7 +1783,7 @@ func (x *IncrCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IncrCommandRequest.ProtoReflect.Descriptor instead.
 func (*IncrCommandRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{21}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *IncrCommandRequest) GetKey() string {
@@ -1711,7 +1803,7 @@ type IncrCommandResponse struct {
 
 func (x *IncrCommandResponse) Reset() {
 	*x = IncrCommandResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[22]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1723,7 +1815,7 @@ func (x *IncrCommandResponse) String() string {
 func (*IncrCommandResponse) ProtoMessage() {}
 
 func (x *IncrCommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[22]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1736,7 +1828,7 @@ func (x *IncrCommandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IncrCommandResponse.ProtoReflect.Descriptor instead.
 func (*IncrCommandResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{22}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *IncrCommandResponse) GetValue() int32 {
@@ -1762,7 +1854,7 @@ type DecrCommandRequest struct {
 
 func (x *DecrCommandRequest) Reset() {
 	*x = DecrCommandRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[23]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1774,7 +1866,7 @@ func (x *DecrCommandRequest) String() string {
 func (*DecrCommandRequest) ProtoMessage() {}
 
 func (x *DecrCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[23]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1787,7 +1879,7 @@ func (x *DecrCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecrCommandRequest.ProtoReflect.Descriptor instead.
 func (*DecrCommandRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{23}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *DecrCommandRequest) GetKey() string {
@@ -1807,7 +1899,7 @@ type DecrCommandResponse struct {
 
 func (x *DecrCommandResponse) Reset() {
 	*x = DecrCommandResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[24]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1819,7 +1911,7 @@ func (x *DecrCommandResponse) String() string {
 func (*DecrCommandResponse) ProtoMessage() {}
 
 func (x *DecrCommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[24]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1832,7 +1924,7 @@ func (x *DecrCommandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecrCommandResponse.ProtoReflect.Descriptor instead.
 func (*DecrCommandResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{24}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *DecrCommandResponse) GetValue() int32 {
@@ -1858,7 +1950,7 @@ type RemoveCommandRequest struct {
 
 func (x *RemoveCommandRequest) Reset() {
 	*x = RemoveCommandRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[25]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1870,7 +1962,7 @@ func (x *RemoveCommandRequest) String() string {
 func (*RemoveCommandRequest) ProtoMessage() {}
 
 func (x *RemoveCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[25]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1883,7 +1975,7 @@ func (x *RemoveCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveCommandRequest.ProtoReflect.Descriptor instead.
 func (*RemoveCommandRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{25}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *RemoveCommandRequest) GetKey() string {
@@ -1903,7 +1995,7 @@ type LpushCommandRequest struct {
 
 func (x *LpushCommandRequest) Reset() {
 	*x = LpushCommandRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[26]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1915,7 +2007,7 @@ func (x *LpushCommandRequest) String() string {
 func (*LpushCommandRequest) ProtoMessage() {}
 
 func (x *LpushCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[26]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1928,7 +2020,7 @@ func (x *LpushCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LpushCommandRequest.ProtoReflect.Descriptor instead.
 func (*LpushCommandRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{26}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *LpushCommandRequest) GetKey() string {
@@ -1955,7 +2047,7 @@ type LpushCommandResponse struct {
 
 func (x *LpushCommandResponse) Reset() {
 	*x = LpushCommandResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[27]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1967,7 +2059,7 @@ func (x *LpushCommandResponse) String() string {
 func (*LpushCommandResponse) ProtoMessage() {}
 
 func (x *LpushCommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[27]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1980,7 +2072,7 @@ func (x *LpushCommandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LpushCommandResponse.ProtoReflect.Descriptor instead.
 func (*LpushCommandResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{27}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *LpushCommandResponse) GetLength() int32 {
@@ -2006,7 +2098,7 @@ type LpopCommandRequest struct {
 
 func (x *LpopCommandRequest) Reset() {
 	*x = LpopCommandRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[28]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2018,7 +2110,7 @@ func (x *LpopCommandRequest) String() string {
 func (*LpopCommandRequest) ProtoMessage() {}
 
 func (x *LpopCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[28]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2031,7 +2123,7 @@ func (x *LpopCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LpopCommandRequest.ProtoReflect.Descriptor instead.
 func (*LpopCommandRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{28}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *LpopCommandRequest) GetKey() string {
@@ -2051,7 +2143,7 @@ type LpopCommandResponse struct {
 
 func (x *LpopCommandResponse) Reset() {
 	*x = LpopCommandResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[29]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2063,7 +2155,7 @@ func (x *LpopCommandResponse) String() string {
 func (*LpopCommandResponse) ProtoMessage() {}
 
 func (x *LpopCommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[29]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2076,7 +2168,7 @@ func (x *LpopCommandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LpopCommandResponse.ProtoReflect.Descriptor instead.
 func (*LpopCommandResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{29}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *LpopCommandResponse) GetElement() string {
@@ -2103,7 +2195,7 @@ type LindexCommandRequest struct {
 
 func (x *LindexCommandRequest) Reset() {
 	*x = LindexCommandRequest{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[30]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2115,7 +2207,7 @@ func (x *LindexCommandRequest) String() string {
 func (*LindexCommandRequest) ProtoMessage() {}
 
 func (x *LindexCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[30]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2128,7 +2220,7 @@ func (x *LindexCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LindexCommandRequest.ProtoReflect.Descriptor instead.
 func (*LindexCommandRequest) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{30}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *LindexCommandRequest) GetKey() string {
@@ -2155,7 +2247,7 @@ type LindexCommandResponse struct {
 
 func (x *LindexCommandResponse) Reset() {
 	*x = LindexCommandResponse{}
-	mi := &file_pkgs_dto_raft_proto_msgTypes[31]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2167,7 +2259,7 @@ func (x *LindexCommandResponse) String() string {
 func (*LindexCommandResponse) ProtoMessage() {}
 
 func (x *LindexCommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkgs_dto_raft_proto_msgTypes[31]
+	mi := &file_pkgs_dto_raft_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2180,7 +2272,7 @@ func (x *LindexCommandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LindexCommandResponse.ProtoReflect.Descriptor instead.
 func (*LindexCommandResponse) Descriptor() ([]byte, []int) {
-	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{31}
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *LindexCommandResponse) GetElement() string {
@@ -2191,6 +2283,102 @@ func (x *LindexCommandResponse) GetElement() string {
 }
 
 func (x *LindexCommandResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type LlenCommandRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LlenCommandRequest) Reset() {
+	*x = LlenCommandRequest{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LlenCommandRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LlenCommandRequest) ProtoMessage() {}
+
+func (x *LlenCommandRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LlenCommandRequest.ProtoReflect.Descriptor instead.
+func (*LlenCommandRequest) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *LlenCommandRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type LlenCommandResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Length        int32                  `protobuf:"varint,1,opt,name=length,proto3" json:"length,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LlenCommandResponse) Reset() {
+	*x = LlenCommandResponse{}
+	mi := &file_pkgs_dto_raft_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LlenCommandResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LlenCommandResponse) ProtoMessage() {}
+
+func (x *LlenCommandResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkgs_dto_raft_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LlenCommandResponse.ProtoReflect.Descriptor instead.
+func (*LlenCommandResponse) Descriptor() ([]byte, []int) {
+	return file_pkgs_dto_raft_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *LlenCommandResponse) GetLength() int32 {
+	if x != nil {
+		return x.Length
+	}
+	return 0
+}
+
+func (x *LlenCommandResponse) GetError() string {
 	if x != nil {
 		return x.Error
 	}
@@ -2243,7 +2431,7 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\bLogEntry\x12\x12\n" +
 	"\x04term\x18\x01 \x01(\x05R\x04term\x12\x12\n" +
 	"\x04uuid\x18\x02 \x01(\tR\x04uuid\x12&\n" +
-	"\acommand\x18\x03 \x01(\v2\f.dto.CommandR\acommand\"\xb5\x03\n" +
+	"\acommand\x18\x03 \x01(\v2\f.dto.CommandR\acommand\"\xeb\x03\n" +
 	"\aCommand\x12\x1c\n" +
 	"\toperation\x18\x01 \x01(\tR\toperation\x121\n" +
 	"\n" +
@@ -2254,7 +2442,8 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\rremoveCommand\x18\x05 \x01(\v2\x12.dto.RemoveCommandH\x00R\rremoveCommand\x127\n" +
 	"\flpushCommand\x18\x06 \x01(\v2\x11.dto.LpushCommandH\x00R\flpushCommand\x124\n" +
 	"\vlpopCommand\x18\a \x01(\v2\x10.dto.LpopCommandH\x00R\vlpopCommand\x12:\n" +
-	"\rlindexCommand\x18\b \x01(\v2\x12.dto.LindexCommandH\x00R\rlindexCommandB\x06\n" +
+	"\rlindexCommand\x18\b \x01(\v2\x12.dto.LindexCommandH\x00R\rlindexCommand\x124\n" +
+	"\vllenCommand\x18\t \x01(\v2\x10.dto.LlenCommandH\x00R\vllenCommandB\x06\n" +
 	"\x04args\"4\n" +
 	"\n" +
 	"SetCommand\x12\x10\n" +
@@ -2273,12 +2462,14 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\"7\n" +
 	"\rLindexCommand\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05index\x18\x02 \x01(\x05R\x05index\";\n" +
+	"\x05index\x18\x02 \x01(\x05R\x05index\"\x1f\n" +
+	"\vLlenCommand\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\";\n" +
 	"\x11SetCommandRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"!\n" +
 	"\x0fGenericResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x8d\f\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xa6\r\n" +
 	"\aRaftRPC\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x124\n" +
 	"\vvoteRequest\x18\x02 \x01(\v2\x10.dto.VoteRequestH\x00R\vvoteRequest\x127\n" +
@@ -2304,7 +2495,9 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\x12lpopCommandRequest\x18\x13 \x01(\v2\x17.dto.LpopCommandRequestH\x00R\x12lpopCommandRequest\x12L\n" +
 	"\x13lpopCommandResponse\x18\x14 \x01(\v2\x18.dto.LpopCommandResponseH\x00R\x13lpopCommandResponse\x12O\n" +
 	"\x14lindexCommandRequest\x18\x15 \x01(\v2\x19.dto.LindexCommandRequestH\x00R\x14lindexCommandRequest\x12R\n" +
-	"\x15lindexCommandResponse\x18\x16 \x01(\v2\x1a.dto.LindexCommandResponseH\x00R\x15lindexCommandResponseB\x06\n" +
+	"\x15lindexCommandResponse\x18\x16 \x01(\v2\x1a.dto.LindexCommandResponseH\x00R\x15lindexCommandResponse\x12I\n" +
+	"\x12llenCommandRequest\x18\x17 \x01(\v2\x17.dto.LlenCommandRequestH\x00R\x12llenCommandRequest\x12L\n" +
+	"\x13llenCommandResponse\x18\x18 \x01(\v2\x18.dto.LlenCommandResponseH\x00R\x13llenCommandResponseB\x06\n" +
 	"\x04args\"\xa4\x01\n" +
 	"\x11StateMachineState\x12!\n" +
 	"\fcurrent_term\x18\x01 \x01(\x05R\vcurrentTerm\x12\x1b\n" +
@@ -2344,6 +2537,11 @@ const file_pkgs_dto_raft_proto_rawDesc = "" +
 	"\x05index\x18\x02 \x01(\x05R\x05index\"G\n" +
 	"\x15LindexCommandResponse\x12\x18\n" +
 	"\aelement\x18\x01 \x01(\tR\aelement\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"&\n" +
+	"\x12LlenCommandRequest\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\"C\n" +
+	"\x13LlenCommandResponse\x12\x16\n" +
+	"\x06length\x18\x01 \x01(\x05R\x06length\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05errorB\fZ\n" +
 	"./pkgs/dtob\x06proto3"
 
@@ -2359,7 +2557,7 @@ func file_pkgs_dto_raft_proto_rawDescGZIP() []byte {
 	return file_pkgs_dto_raft_proto_rawDescData
 }
 
-var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_pkgs_dto_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_pkgs_dto_raft_proto_goTypes = []any{
 	(*VoteRequest)(nil),           // 0: dto.VoteRequest
 	(*VoteResponse)(nil),          // 1: dto.VoteResponse
@@ -2376,23 +2574,26 @@ var file_pkgs_dto_raft_proto_goTypes = []any{
 	(*LpushCommand)(nil),          // 12: dto.LpushCommand
 	(*LpopCommand)(nil),           // 13: dto.LpopCommand
 	(*LindexCommand)(nil),         // 14: dto.LindexCommand
-	(*SetCommandRequest)(nil),     // 15: dto.SetCommandRequest
-	(*GenericResponse)(nil),       // 16: dto.GenericResponse
-	(*RaftRPC)(nil),               // 17: dto.RaftRPC
-	(*StateMachineState)(nil),     // 18: dto.StateMachineState
-	(*GetCommandRequest)(nil),     // 19: dto.GetCommandRequest
-	(*GetCommandResponse)(nil),    // 20: dto.GetCommandResponse
-	(*IncrCommandRequest)(nil),    // 21: dto.IncrCommandRequest
-	(*IncrCommandResponse)(nil),   // 22: dto.IncrCommandResponse
-	(*DecrCommandRequest)(nil),    // 23: dto.DecrCommandRequest
-	(*DecrCommandResponse)(nil),   // 24: dto.DecrCommandResponse
-	(*RemoveCommandRequest)(nil),  // 25: dto.RemoveCommandRequest
-	(*LpushCommandRequest)(nil),   // 26: dto.LpushCommandRequest
-	(*LpushCommandResponse)(nil),  // 27: dto.LpushCommandResponse
-	(*LpopCommandRequest)(nil),    // 28: dto.LpopCommandRequest
-	(*LpopCommandResponse)(nil),   // 29: dto.LpopCommandResponse
-	(*LindexCommandRequest)(nil),  // 30: dto.LindexCommandRequest
-	(*LindexCommandResponse)(nil), // 31: dto.LindexCommandResponse
+	(*LlenCommand)(nil),           // 15: dto.LlenCommand
+	(*SetCommandRequest)(nil),     // 16: dto.SetCommandRequest
+	(*GenericResponse)(nil),       // 17: dto.GenericResponse
+	(*RaftRPC)(nil),               // 18: dto.RaftRPC
+	(*StateMachineState)(nil),     // 19: dto.StateMachineState
+	(*GetCommandRequest)(nil),     // 20: dto.GetCommandRequest
+	(*GetCommandResponse)(nil),    // 21: dto.GetCommandResponse
+	(*IncrCommandRequest)(nil),    // 22: dto.IncrCommandRequest
+	(*IncrCommandResponse)(nil),   // 23: dto.IncrCommandResponse
+	(*DecrCommandRequest)(nil),    // 24: dto.DecrCommandRequest
+	(*DecrCommandResponse)(nil),   // 25: dto.DecrCommandResponse
+	(*RemoveCommandRequest)(nil),  // 26: dto.RemoveCommandRequest
+	(*LpushCommandRequest)(nil),   // 27: dto.LpushCommandRequest
+	(*LpushCommandResponse)(nil),  // 28: dto.LpushCommandResponse
+	(*LpopCommandRequest)(nil),    // 29: dto.LpopCommandRequest
+	(*LpopCommandResponse)(nil),   // 30: dto.LpopCommandResponse
+	(*LindexCommandRequest)(nil),  // 31: dto.LindexCommandRequest
+	(*LindexCommandResponse)(nil), // 32: dto.LindexCommandResponse
+	(*LlenCommandRequest)(nil),    // 33: dto.LlenCommandRequest
+	(*LlenCommandResponse)(nil),   // 34: dto.LlenCommandResponse
 }
 var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	6,  // 0: dto.LogRequest.suffix:type_name -> dto.LogEntry
@@ -2405,33 +2606,36 @@ var file_pkgs_dto_raft_proto_depIdxs = []int32{
 	12, // 7: dto.Command.lpushCommand:type_name -> dto.LpushCommand
 	13, // 8: dto.Command.lpopCommand:type_name -> dto.LpopCommand
 	14, // 9: dto.Command.lindexCommand:type_name -> dto.LindexCommand
-	0,  // 10: dto.RaftRPC.voteRequest:type_name -> dto.VoteRequest
-	1,  // 11: dto.RaftRPC.voteResponse:type_name -> dto.VoteResponse
-	2,  // 12: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
-	3,  // 13: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
-	4,  // 14: dto.RaftRPC.nodeStatusRequest:type_name -> dto.NodeStatusRequest
-	5,  // 15: dto.RaftRPC.nodeStatusResponse:type_name -> dto.NodeStatusResponse
-	16, // 16: dto.RaftRPC.genericResponse:type_name -> dto.GenericResponse
-	15, // 17: dto.RaftRPC.setCommandRequest:type_name -> dto.SetCommandRequest
-	19, // 18: dto.RaftRPC.getCommandRequest:type_name -> dto.GetCommandRequest
-	20, // 19: dto.RaftRPC.getCommandResponse:type_name -> dto.GetCommandResponse
-	21, // 20: dto.RaftRPC.incrCommandRequest:type_name -> dto.IncrCommandRequest
-	22, // 21: dto.RaftRPC.incrCommandResponse:type_name -> dto.IncrCommandResponse
-	23, // 22: dto.RaftRPC.decrCommandRequest:type_name -> dto.DecrCommandRequest
-	24, // 23: dto.RaftRPC.decrCommandResponse:type_name -> dto.DecrCommandResponse
-	25, // 24: dto.RaftRPC.removeCommandRequest:type_name -> dto.RemoveCommandRequest
-	26, // 25: dto.RaftRPC.lpushCommandRequest:type_name -> dto.LpushCommandRequest
-	27, // 26: dto.RaftRPC.lpushCommandResponse:type_name -> dto.LpushCommandResponse
-	28, // 27: dto.RaftRPC.lpopCommandRequest:type_name -> dto.LpopCommandRequest
-	29, // 28: dto.RaftRPC.lpopCommandResponse:type_name -> dto.LpopCommandResponse
-	30, // 29: dto.RaftRPC.lindexCommandRequest:type_name -> dto.LindexCommandRequest
-	31, // 30: dto.RaftRPC.lindexCommandResponse:type_name -> dto.LindexCommandResponse
-	6,  // 31: dto.StateMachineState.log_entry:type_name -> dto.LogEntry
-	32, // [32:32] is the sub-list for method output_type
-	32, // [32:32] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	15, // 10: dto.Command.llenCommand:type_name -> dto.LlenCommand
+	0,  // 11: dto.RaftRPC.voteRequest:type_name -> dto.VoteRequest
+	1,  // 12: dto.RaftRPC.voteResponse:type_name -> dto.VoteResponse
+	2,  // 13: dto.RaftRPC.logRequest:type_name -> dto.LogRequest
+	3,  // 14: dto.RaftRPC.logResponse:type_name -> dto.LogResponse
+	4,  // 15: dto.RaftRPC.nodeStatusRequest:type_name -> dto.NodeStatusRequest
+	5,  // 16: dto.RaftRPC.nodeStatusResponse:type_name -> dto.NodeStatusResponse
+	17, // 17: dto.RaftRPC.genericResponse:type_name -> dto.GenericResponse
+	16, // 18: dto.RaftRPC.setCommandRequest:type_name -> dto.SetCommandRequest
+	20, // 19: dto.RaftRPC.getCommandRequest:type_name -> dto.GetCommandRequest
+	21, // 20: dto.RaftRPC.getCommandResponse:type_name -> dto.GetCommandResponse
+	22, // 21: dto.RaftRPC.incrCommandRequest:type_name -> dto.IncrCommandRequest
+	23, // 22: dto.RaftRPC.incrCommandResponse:type_name -> dto.IncrCommandResponse
+	24, // 23: dto.RaftRPC.decrCommandRequest:type_name -> dto.DecrCommandRequest
+	25, // 24: dto.RaftRPC.decrCommandResponse:type_name -> dto.DecrCommandResponse
+	26, // 25: dto.RaftRPC.removeCommandRequest:type_name -> dto.RemoveCommandRequest
+	27, // 26: dto.RaftRPC.lpushCommandRequest:type_name -> dto.LpushCommandRequest
+	28, // 27: dto.RaftRPC.lpushCommandResponse:type_name -> dto.LpushCommandResponse
+	29, // 28: dto.RaftRPC.lpopCommandRequest:type_name -> dto.LpopCommandRequest
+	30, // 29: dto.RaftRPC.lpopCommandResponse:type_name -> dto.LpopCommandResponse
+	31, // 30: dto.RaftRPC.lindexCommandRequest:type_name -> dto.LindexCommandRequest
+	32, // 31: dto.RaftRPC.lindexCommandResponse:type_name -> dto.LindexCommandResponse
+	33, // 32: dto.RaftRPC.llenCommandRequest:type_name -> dto.LlenCommandRequest
+	34, // 33: dto.RaftRPC.llenCommandResponse:type_name -> dto.LlenCommandResponse
+	6,  // 34: dto.StateMachineState.log_entry:type_name -> dto.LogEntry
+	35, // [35:35] is the sub-list for method output_type
+	35, // [35:35] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_pkgs_dto_raft_proto_init() }
@@ -2447,8 +2651,9 @@ func file_pkgs_dto_raft_proto_init() {
 		(*Command_LpushCommand)(nil),
 		(*Command_LpopCommand)(nil),
 		(*Command_LindexCommand)(nil),
+		(*Command_LlenCommand)(nil),
 	}
-	file_pkgs_dto_raft_proto_msgTypes[17].OneofWrappers = []any{
+	file_pkgs_dto_raft_proto_msgTypes[18].OneofWrappers = []any{
 		(*RaftRPC_VoteRequest)(nil),
 		(*RaftRPC_VoteResponse)(nil),
 		(*RaftRPC_LogRequest)(nil),
@@ -2470,6 +2675,8 @@ func file_pkgs_dto_raft_proto_init() {
 		(*RaftRPC_LpopCommandResponse)(nil),
 		(*RaftRPC_LindexCommandRequest)(nil),
 		(*RaftRPC_LindexCommandResponse)(nil),
+		(*RaftRPC_LlenCommandRequest)(nil),
+		(*RaftRPC_LlenCommandResponse)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2477,7 +2684,7 @@ func file_pkgs_dto_raft_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkgs_dto_raft_proto_rawDesc), len(file_pkgs_dto_raft_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   32,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

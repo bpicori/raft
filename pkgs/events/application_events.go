@@ -49,3 +49,8 @@ type LindexCommandEvent struct {
 	Payload *dto.LindexCommandRequest
 	Reply   chan *dto.LindexCommandResponse
 }
+
+type LlenCommandEvent struct {
+	Payload *dto.LlenCommandRequest
+	Reply   chan *dto.LlenCommandResponse
+}

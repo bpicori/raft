@@ -141,6 +141,14 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 		key := args[0]
 		index := args[1]
 		commands.LindexCommand(cfg, key, index)
+	case "llen":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for llen operation\n")
+			commands.ShowUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		commands.LlenCommand(cfg, key)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
 		commands.ShowUsage()
@@ -219,6 +227,13 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		key := args[0]
 		index := args[1]
 		commands.LindexCommand(cfg, key, index)
+	case "llen":
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "Key is required for llen operation\n")
+			return
+		}
+		key := args[0]
+		commands.LlenCommand(cfg, key)
 	case "clear", "cls":
 		commands.ClearScreen()
 	case "help":

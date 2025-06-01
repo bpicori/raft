@@ -520,6 +520,66 @@ func TestHandleConnection_GetCommand(t *testing.T) {
 	assert.Equal(t, "testValue", getResponse.Value)
 }
 
+func TestHandleConnection_LlenCommand(t *testing.T) {
+	t.Parallel()
+	eventManager := events.NewEventManager()
+
+	// Create a pair of connected net.Conn objects
+	client, server := net.Pipe()
+	defer client.Close()
+
+	// Create an LlenCommand message
+	llenCommandRequest := &dto.LlenCommandRequest{
+		Key: "testList",
+	}
+
+	rpc := &dto.RaftRPC{
+		Type: consts.LlenCommand.String(),
+		Args: &dto.RaftRPC_LlenCommandRequest{
+			LlenCommandRequest: llenCommandRequest,
+		},
+	}
+
+	// Marshal and send the message
+	data, err := proto.Marshal(rpc)
+	assert.NoError(t, err)
+
+	// Handle the LlenCommand in a goroutine
+	go func() {
+		select {
+		case event := <-eventManager.LlenCommandRequestChan:
+			assert.Equal(t, llenCommandRequest.Key, event.Payload.Key)
+
+			// Send a response
+			event.Reply <- &dto.LlenCommandResponse{
+				Length: 3,
+				Error:  "",
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Error("Timeout waiting for LlenCommand")
+		}
+	}()
+
+	go HandleConnection(server, eventManager)
+
+	_, err = client.Write(data)
+	assert.NoError(t, err)
+
+	// Read the response
+	buffer := make([]byte, 4096)
+	n, err := client.Read(buffer)
+	assert.NoError(t, err)
+
+	var response dto.RaftRPC
+	err = proto.Unmarshal(buffer[:n], &response)
+	assert.NoError(t, err)
+
+	llenResponse := response.GetLlenCommandResponse()
+	assert.NotNil(t, llenResponse)
+	assert.Equal(t, int32(3), llenResponse.Length)
+	assert.Equal(t, "", llenResponse.Error)
+}
+
 func TestHandleConnection_IncrCommand(t *testing.T) {
 	t.Parallel()
 	eventManager := events.NewEventManager()

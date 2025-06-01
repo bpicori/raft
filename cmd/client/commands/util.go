@@ -26,6 +26,7 @@ func PrintHelp() {
 	fmt.Println("  lpush <key> <element> [element2] [element3] - Prepend elements to list")
 	fmt.Println("  lpop <key>                                  - Remove and return left element from list")
 	fmt.Println("  lindex <key> <index>                        - Get element at index in list")
+	fmt.Println("  llen <key>                                  - Get length of list")
 	fmt.Println("  clear/cls                                   - Clear the screen")
 	fmt.Println("  help                                        - Show this help message")
 	fmt.Println("  exit/quit                                   - Exit the CLI")
@@ -44,6 +45,7 @@ func ShowUsage() {
 	fmt.Fprintf(os.Stderr, "  lpush <key> <element> [element2] [element3] - Prepend elements to list\n")
 	fmt.Fprintf(os.Stderr, "  lpop <key>                                  - Remove and return left element from list\n")
 	fmt.Fprintf(os.Stderr, "  lindex <key> <index>                        - Get element at index in list\n")
+	fmt.Fprintf(os.Stderr, "  llen <key>                                  - Get length of list\n")
 	fmt.Fprintf(os.Stderr, "If no operation is provided, the CLI will start in interactive mode.\n")
 	flag.PrintDefaults()
 }

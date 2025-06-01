@@ -33,6 +33,7 @@ const (
 	LpushCommand
 	LpopCommand
 	LindexCommand
+	LlenCommand
 )
 
 const (
@@ -43,6 +44,7 @@ const (
 	LpushOp
 	LpopOp
 	LindexOp
+	LlenOp
 )
 
 // String method for RaftRPCType for logging/debugging
@@ -76,6 +78,8 @@ func (rt RaftRPCType) String() string {
 		return "LpopCommand"
 	case LindexCommand:
 		return "LindexCommand"
+	case LlenCommand:
+		return "LlenCommand"
 	default:
 		return "Unknown"
 	}
@@ -98,6 +102,8 @@ func (ct CommandType) String() string {
 		return "LPOP"
 	case LindexOp:
 		return "LINDEX"
+	case LlenOp:
+		return "LLEN"
 	default:
 		return "Unknown"
 	}
@@ -132,6 +138,8 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return LpopCommand, nil
 	case "LindexCommand":
 		return LindexCommand, nil
+	case "LlenCommand":
+		return LlenCommand, nil
 	case "GenericResponse":
 		return GenericResponse, nil
 	default:
@@ -175,6 +183,8 @@ func MapStringToCommandType(opString string) CommandType {
 		return LpopOp
 	case "LINDEX":
 		return LindexOp
+	case "LLEN":
+		return LlenOp
 	default:
 		return SetOp
 	}
