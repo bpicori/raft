@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var TIMEOUT = 5 * time.Second
 
 func Set(eventManager *events.EventManager, setCommandEvent *events.SetCommandEvent) {
 	slog.Debug("[APPLICATION] Received set command", "command", setCommandEvent.Payload)

@@ -11,7 +11,7 @@ func Get(eventManager *events.EventManager, getCommandEvent *events.GetCommandEv
 
 	value, ok := hashMap.Load(getCommandEvent.Payload.Key)
 	if !ok {
-		getCommandEvent.Reply <- &dto.GetCommandResponse{Value: ""}
+		getCommandEvent.Reply <- &dto.GetCommandResponse{Value: "(nil)"}
 		return
 	}
 

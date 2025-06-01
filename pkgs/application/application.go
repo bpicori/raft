@@ -7,7 +7,11 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 )
+
+// Timeout for waiting for append log entry response
+var TIMEOUT = 5 * time.Second
 
 // global hashmap to store the key-value pairs
 var hashMap = sync.Map{}
