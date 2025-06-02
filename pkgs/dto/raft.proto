@@ -72,6 +72,10 @@ message Command {
     SismemberCommand sismemberCommand = 13;
     SinterCommand sinterCommand = 14;
     ScardCommand scardCommand = 15;
+    HsetCommand hsetCommand = 16;
+    HgetCommand hgetCommand = 17;
+    HmgetCommand hmgetCommand = 18;
+    HincrbyCommand hincrbyCommand = 19;
   }
 }
 
@@ -137,6 +141,27 @@ message ScardCommand {
   string key = 1;
 }
 
+message HsetCommand {
+  string key = 1;
+  map<string, string> fields = 2;
+}
+
+message HgetCommand {
+  string key = 1;
+  string field = 2;
+}
+
+message HmgetCommand {
+  string key = 1;
+  repeated string fields = 2;
+}
+
+message HincrbyCommand {
+  string key = 1;
+  string field = 2;
+  int32 increment = 3;
+}
+
 /* Application */
 message SetCommandRequest {
   string key = 1;
@@ -188,6 +213,14 @@ message RaftRPC {
     SinterCommandResponse sinterCommandResponse = 34;
     ScardCommandRequest scardCommandRequest = 35;
     ScardCommandResponse scardCommandResponse = 36;
+    HsetCommandRequest hsetCommandRequest = 37;
+    HsetCommandResponse hsetCommandResponse = 38;
+    HgetCommandRequest hgetCommandRequest = 39;
+    HgetCommandResponse hgetCommandResponse = 40;
+    HmgetCommandRequest hmgetCommandRequest = 41;
+    HmgetCommandResponse hmgetCommandResponse = 42;
+    HincrbyCommandRequest hincrbyCommandRequest = 43;
+    HincrbyCommandResponse hincrbyCommandResponse = 44;
   }
 }
 
@@ -321,5 +354,46 @@ message ScardCommandRequest {
 
 message ScardCommandResponse {
   int32 cardinality = 1;
+  string error = 2;
+}
+
+message HsetCommandRequest {
+  string key = 1;
+  map<string, string> fields = 2;
+}
+
+message HsetCommandResponse {
+  int32 added = 1;
+  string error = 2;
+}
+
+message HgetCommandRequest {
+  string key = 1;
+  string field = 2;
+}
+
+message HgetCommandResponse {
+  string value = 1;
+  string error = 2;
+}
+
+message HmgetCommandRequest {
+  string key = 1;
+  repeated string fields = 2;
+}
+
+message HmgetCommandResponse {
+  repeated string values = 1;
+  string error = 2;
+}
+
+message HincrbyCommandRequest {
+  string key = 1;
+  string field = 2;
+  int32 increment = 3;
+}
+
+message HincrbyCommandResponse {
+  int32 value = 1;
   string error = 2;
 }

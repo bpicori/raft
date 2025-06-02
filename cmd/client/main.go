@@ -151,6 +151,43 @@ func executeCommand(cfg *config.Config, operation string, args []string) {
 		commands.LlenCommand(cfg, key)
 	case "keys":
 		commands.KeysCommand(cfg)
+	case "hset":
+		if len(args) < 3 {
+			fmt.Fprintf(os.Stderr, "Key, field, and value are required for hset operation\n")
+			commands.ShowUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		fieldValuePairs := args[1:]
+		commands.HsetCommand(cfg, key, fieldValuePairs)
+	case "hget":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and field are required for hget operation\n")
+			commands.ShowUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		field := args[1]
+		commands.HgetCommand(cfg, key, field)
+	case "hmget":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and at least one field are required for hmget operation\n")
+			commands.ShowUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		fields := args[1:]
+		commands.HmgetCommand(cfg, key, fields)
+	case "hincrby":
+		if len(args) < 3 {
+			fmt.Fprintf(os.Stderr, "Key, field, and increment are required for hincrby operation\n")
+			commands.ShowUsage()
+			os.Exit(1)
+		}
+		key := args[0]
+		field := args[1]
+		increment := args[2]
+		commands.HincrbyCommand(cfg, key, field, increment)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown operation: %s\n", operation)
 		commands.ShowUsage()
@@ -276,6 +313,39 @@ func handleCommandExecution(cfg *config.Config, operation string, args []string)
 		}
 		key := args[0]
 		commands.ScardCommand(cfg, key)
+	case "hset":
+		if len(args) < 3 {
+			fmt.Fprintf(os.Stderr, "Key, field, and value are required for hset operation\n")
+			return
+		}
+		key := args[0]
+		fieldValuePairs := args[1:]
+		commands.HsetCommand(cfg, key, fieldValuePairs)
+	case "hget":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and field are required for hget operation\n")
+			return
+		}
+		key := args[0]
+		field := args[1]
+		commands.HgetCommand(cfg, key, field)
+	case "hmget":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Key and at least one field are required for hmget operation\n")
+			return
+		}
+		key := args[0]
+		fields := args[1:]
+		commands.HmgetCommand(cfg, key, fields)
+	case "hincrby":
+		if len(args) < 3 {
+			fmt.Fprintf(os.Stderr, "Key, field, and increment are required for hincrby operation\n")
+			return
+		}
+		key := args[0]
+		field := args[1]
+		increment := args[2]
+		commands.HincrbyCommand(cfg, key, field, increment)
 	case "clear", "cls":
 		commands.ClearScreen()
 	case "help":

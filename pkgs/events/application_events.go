@@ -84,3 +84,23 @@ type ScardCommandEvent struct {
 	Payload *dto.ScardCommandRequest
 	Reply   chan *dto.ScardCommandResponse
 }
+
+type HsetCommandEvent struct {
+	Payload *dto.HsetCommandRequest
+	Reply   chan *dto.HsetCommandResponse
+}
+
+type HgetCommandEvent struct {
+	Payload *dto.HgetCommandRequest
+	Reply   chan *dto.HgetCommandResponse
+}
+
+type HmgetCommandEvent struct {
+	Payload *dto.HmgetCommandRequest
+	Reply   chan *dto.HmgetCommandResponse
+}
+
+type HincrbyCommandEvent struct {
+	Payload *dto.HincrbyCommandRequest
+	Reply   chan *dto.HincrbyCommandResponse
+}

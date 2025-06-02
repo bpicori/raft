@@ -84,6 +84,14 @@ func Start(param *ApplicationParam) {
 			go Sinter(eventManager, &sinterCommandEvent)
 		case scardCommandEvent := <-eventManager.ScardCommandRequestChan:
 			go Scard(eventManager, &scardCommandEvent)
+		case hsetCommandEvent := <-eventManager.HsetCommandRequestChan:
+			go Hset(eventManager, &hsetCommandEvent)
+		case hgetCommandEvent := <-eventManager.HgetCommandRequestChan:
+			go Hget(eventManager, &hgetCommandEvent)
+		case hmgetCommandEvent := <-eventManager.HmgetCommandRequestChan:
+			go Hmget(eventManager, &hmgetCommandEvent)
+		case hincrbyCommandEvent := <-eventManager.HincrbyCommandRequestChan:
+			go Hincrby(eventManager, &hincrbyCommandEvent)
 		case syncCommandEvent := <-eventManager.SyncCommandRequestChan:
 			slog.Debug("[APPLICATION] Received sync command", "command", syncCommandEvent.LogEntry)
 			replicateLogEntry(syncCommandEvent.LogEntry)
@@ -121,5 +129,9 @@ func replicateLogEntry(logEntry *dto.LogEntry) {
 		replicateSaddCommand(command.GetSaddCommand())
 	case consts.SremOp:
 		replicateSremCommand(command.GetSremCommand())
+	case consts.HsetOp:
+		replicateHsetCommand(command.GetHsetCommand())
+	case consts.HincrbyOp:
+		replicateHincrbyCommand(command.GetHincrbyCommand())
 	}
 }

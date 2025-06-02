@@ -30,6 +30,15 @@ This Raft implementation supports the following distributed data structure comma
 - `sinter <key1> [key2] [key3]` - Return the intersection of multiple sets
 - `scard <key>` - Get the cardinality (number of elements) of a set
 
+## Hash Operations
+
+Hash operations allow you to store field-value pairs within a single key, similar to Redis hashes.
+
+- `hset <key> <field> <value> [field value ...]` - Set field-value pairs in a hash
+- `hget <key> <field>` - Get the value of a hash field
+- `hmget <key> <field> [field2] [field3]` - Get the values of multiple hash fields
+- `hincrby <key> <field> <increment>` - Increment the integer value of a hash field by the given number
+
 ## Cluster Management
 
 - `status` - Get the current cluster status

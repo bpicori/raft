@@ -34,6 +34,10 @@ type EventManager struct {
 	SismemberCommandRequestChan chan SismemberCommandEvent
 	SinterCommandRequestChan    chan SinterCommandEvent
 	ScardCommandRequestChan     chan ScardCommandEvent
+	HsetCommandRequestChan      chan HsetCommandEvent
+	HgetCommandRequestChan      chan HgetCommandEvent
+	HmgetCommandRequestChan     chan HmgetCommandEvent
+	HincrbyCommandRequestChan   chan HincrbyCommandEvent
 }
 
 type AppendLogEntryEvent struct {
@@ -73,6 +77,10 @@ func NewEventManager() *EventManager {
 		SismemberCommandRequestChan: make(chan SismemberCommandEvent),
 		SinterCommandRequestChan:    make(chan SinterCommandEvent),
 		ScardCommandRequestChan:     make(chan ScardCommandEvent),
+		HsetCommandRequestChan:      make(chan HsetCommandEvent),
+		HgetCommandRequestChan:      make(chan HgetCommandEvent),
+		HmgetCommandRequestChan:     make(chan HmgetCommandEvent),
+		HincrbyCommandRequestChan:   make(chan HincrbyCommandEvent),
 	}
 }
 

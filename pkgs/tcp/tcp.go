@@ -588,6 +588,134 @@ func HandleConnection(conn net.Conn, eventManager *events.EventManager) {
 		} else {
 			slog.Warn("Received ScardCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
 		}
+	case consts.HsetCommand:
+		if args := rpc.GetHsetCommandRequest(); args != nil {
+			replyCh := make(chan *dto.HsetCommandResponse)
+			eventManager.HsetCommandRequestChan <- events.HsetCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.HsetCommand.String(),
+					Args: &dto.RaftRPC_HsetCommandResponse{
+						HsetCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for HsetCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.HsetCommand.String(),
+					Args: &dto.RaftRPC_HsetCommandResponse{
+						HsetCommandResponse: &dto.HsetCommandResponse{
+							Added: 0,
+							Error: "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received HsetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.HgetCommand:
+		if args := rpc.GetHgetCommandRequest(); args != nil {
+			replyCh := make(chan *dto.HgetCommandResponse)
+			eventManager.HgetCommandRequestChan <- events.HgetCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.HgetCommand.String(),
+					Args: &dto.RaftRPC_HgetCommandResponse{
+						HgetCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for HgetCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.HgetCommand.String(),
+					Args: &dto.RaftRPC_HgetCommandResponse{
+						HgetCommandResponse: &dto.HgetCommandResponse{
+							Value: "",
+							Error: "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received HgetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.HmgetCommand:
+		if args := rpc.GetHmgetCommandRequest(); args != nil {
+			replyCh := make(chan *dto.HmgetCommandResponse)
+			eventManager.HmgetCommandRequestChan <- events.HmgetCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.HmgetCommand.String(),
+					Args: &dto.RaftRPC_HmgetCommandResponse{
+						HmgetCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for HmgetCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.HmgetCommand.String(),
+					Args: &dto.RaftRPC_HmgetCommandResponse{
+						HmgetCommandResponse: &dto.HmgetCommandResponse{
+							Values: []string{},
+							Error:  "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received HmgetCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
+	case consts.HincrbyCommand:
+		if args := rpc.GetHincrbyCommandRequest(); args != nil {
+			replyCh := make(chan *dto.HincrbyCommandResponse)
+			eventManager.HincrbyCommandRequestChan <- events.HincrbyCommandEvent{
+				Payload: args,
+				Reply:   replyCh,
+			}
+
+			select {
+			case response := <-replyCh:
+				rpcResponse := &dto.RaftRPC{
+					Type: consts.HincrbyCommand.String(),
+					Args: &dto.RaftRPC_HincrbyCommandResponse{
+						HincrbyCommandResponse: response,
+					},
+				}
+				sendResponse(conn, rpcResponse)
+			case <-time.After(TCP_TIMEOUT):
+				slog.Warn("Timeout waiting for HincrbyCommand response", "remote_addr", conn.RemoteAddr())
+				sendResponse(conn, &dto.RaftRPC{
+					Type: consts.HincrbyCommand.String(),
+					Args: &dto.RaftRPC_HincrbyCommandResponse{
+						HincrbyCommandResponse: &dto.HincrbyCommandResponse{
+							Value: 0,
+							Error: "Timeout",
+						},
+					},
+				})
+			}
+		} else {
+			slog.Warn("Received HincrbyCommand with nil args", "rpcType", rpcType.String(), "remote_addr", conn.RemoteAddr())
+		}
 	default:
 		slog.Error("Unhandled RaftRPCType enum value in switch", "rpcType", rpcType, "remote_addr", conn.RemoteAddr())
 	}

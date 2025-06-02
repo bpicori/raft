@@ -40,6 +40,10 @@ const (
 	SismemberCommand
 	SinterCommand
 	ScardCommand
+	HsetCommand
+	HgetCommand
+	HmgetCommand
+	HincrbyCommand
 )
 
 const (
@@ -56,6 +60,10 @@ const (
 	SismemberOp
 	SinterOp
 	ScardOp
+	HsetOp
+	HgetOp
+	HmgetOp
+	HincrbyOp
 )
 
 // String method for RaftRPCType for logging/debugging
@@ -103,6 +111,14 @@ func (rt RaftRPCType) String() string {
 		return "SinterCommand"
 	case ScardCommand:
 		return "ScardCommand"
+	case HsetCommand:
+		return "HsetCommand"
+	case HgetCommand:
+		return "HgetCommand"
+	case HmgetCommand:
+		return "HmgetCommand"
+	case HincrbyCommand:
+		return "HincrbyCommand"
 	default:
 		return "Unknown"
 	}
@@ -137,6 +153,14 @@ func (ct CommandType) String() string {
 		return "SINTER"
 	case ScardOp:
 		return "SCARD"
+	case HsetOp:
+		return "HSET"
+	case HgetOp:
+		return "HGET"
+	case HmgetOp:
+		return "HMGET"
+	case HincrbyOp:
+		return "HINCRBY"
 	default:
 		return "Unknown"
 	}
@@ -185,6 +209,14 @@ func MapStringToRPCType(rpcTypeStr string) (RaftRPCType, error) {
 		return SinterCommand, nil
 	case "ScardCommand":
 		return ScardCommand, nil
+	case "HsetCommand":
+		return HsetCommand, nil
+	case "HgetCommand":
+		return HgetCommand, nil
+	case "HmgetCommand":
+		return HmgetCommand, nil
+	case "HincrbyCommand":
+		return HincrbyCommand, nil
 	case "GenericResponse":
 		return GenericResponse, nil
 	default:
@@ -240,6 +272,14 @@ func MapStringToCommandType(opString string) CommandType {
 		return SinterOp
 	case "SCARD":
 		return ScardOp
+	case "HSET":
+		return HsetOp
+	case "HGET":
+		return HgetOp
+	case "HMGET":
+		return HmgetOp
+	case "HINCRBY":
+		return HincrbyOp
 	default:
 		return SetOp
 	}
